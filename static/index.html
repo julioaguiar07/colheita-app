@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colheita — Sistema de Controle</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #2d7a3a;
+    --verde-claro: #4aaa5c;
+    --verde-escuro: #1a4d23;
+    --terra: #8B5E3C;
+    --terra-claro: #c4895a;
+    --amarelo: #f0b429;
+    --creme: #fdf6ec;
+    --bg: #f5f0e8;
+    --branco: #ffffff;
+    --cinza: #6b7280;
+    --cinza-claro: #e8e3da;
+    --texto: #1c1a17;
+    --sombra: 0 2px 12px rgba(0,0,0,0.08);
+    --sombra-md: 0 4px 24px rgba(0,0,0,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--verde-escuro);
+    color: white;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .logo-icon { font-size: 1.5rem; }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  nav button {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  nav button:hover { background: rgba(255,255,255,0.1); color: white; }
+  nav button.active { background: var(--verde-claro); color: white; }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* ── SECTIONS ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--verde-escuro);
+    margin-bottom: 8px;
+    letter-spacing: -0.03em;
+  }
+  .section-sub {
+    color: var(--cinza);
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--branco);
+    border-radius: var(--radius);
+    box-shadow: var(--sombra);
+    padding: 28px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--verde-escuro);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── FORM ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--cinza);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  input, select, textarea {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.92rem;
+    padding: 10px 14px;
+    border: 1.5px solid var(--cinza-claro);
+    border-radius: var(--radius-sm);
+    background: var(--creme);
+    color: var(--texto);
+    transition: border-color 0.18s, box-shadow 0.18s;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--verde-claro);
+    box-shadow: 0 0 0 3px rgba(74,170,92,0.15);
+  }
+
+  .calc-preview {
+    background: linear-gradient(135deg, var(--verde-escuro), var(--verde));
+    color: white;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .calc-preview span { font-size: 0.85rem; opacity: 0.85; }
+  .calc-preview strong {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 11px 22px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary {
+    background: var(--verde);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--verde-claro); transform: translateY(-1px); box-shadow: var(--sombra); }
+  .btn-secondary {
+    background: var(--cinza-claro);
+    color: var(--texto);
+  }
+  .btn-secondary:hover { background: #d5cfc6; }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-danger:hover { background: #fca5a5; }
+  .btn-warning { background: #fef3c7; color: #92400e; }
+  .btn-warning:hover { background: #fde68a; }
+  .btn-export { background: #dbeafe; color: #1e40af; }
+  .btn-export:hover { background: #bfdbfe; }
+  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--branco);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--sombra);
+    border-left: 4px solid var(--verde);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-left: 4px solid var(--verde);
+  }
+  .stat-card.amarelo { border-left-color: var(--amarelo); }
+  .stat-card.terra { border-left-color: var(--terra); }
+  .stat-card.azul { border-left-color: #3b82f6; }
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cinza);
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--verde-escuro);
+    letter-spacing: -0.02em;
+  }
+  .stat-card.amarelo .stat-value { color: #92400e; }
+  .stat-card.terra .stat-value { color: var(--terra); }
+  .stat-card.azul .stat-value { color: #1e40af; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--sombra);
+    background: var(--branco);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  thead {
+    background: var(--verde-escuro);
+    color: white;
+  }
+  thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--cinza-claro);
+    transition: background 0.12s;
+  }
+  tbody tr:hover { background: var(--creme); }
+  tbody td {
+    padding: 10px 14px;
+    vertical-align: middle;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.73rem;
+    font-weight: 600;
+  }
+  .badge-prod { background: #dcfce7; color: #166534; }
+  .badge-diaria { background: #dbeafe; color: #1e40af; }
+
+  /* ── PERSON SUMMARY TABLE ── */
+  .person-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .person-card {
+    background: var(--branco);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--sombra);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border: 1px solid rgba(0,0,0,0.05);
+  }
+  .person-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--verde-escuro);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .person-details {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--cinza);
+  }
+  .person-total {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--verde);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ── FILTERS ── */
+  .filter-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-row input, .filter-row select {
+    max-width: 200px;
+    padding: 8px 12px;
+  }
+
+  /* ── TABS ── */
+  .tab-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    background: var(--cinza-claro);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    width: fit-content;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cinza);
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--branco);
+    color: var(--verde-escuro);
+    font-weight: 600;
+    box-shadow: var(--sombra);
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--verde-escuro);
+    color: white;
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: var(--sombra-md);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--cinza);
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty p { font-size: 0.9rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: var(--sombra-md);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--verde-escuro);
+    margin-bottom: 20px;
+  }
+  .modal-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+
+  /* ── PRODUCT SECTION ── */
+  .product-list { display: flex; flex-direction: column; gap: 8px; }
+  .product-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--creme);
+    border-radius: var(--radius-sm);
+    gap: 12px;
+  }
+  .product-item span { font-weight: 500; font-size: 0.9rem; }
+  .product-price {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--verde);
+    font-weight: 600;
+  }
+
+  @media (max-width: 600px) {
+    .header-inner { flex-direction: column; height: auto; padding: 12px 0; gap: 8px; }
+    nav button { padding: 6px 10px; font-size: 0.75rem; }
+    .logo { font-size: 0.95rem; }
+    .stat-value { font-size: 1.25rem; }
+    thead th, tbody td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">🌿</span>
+      Sistema de Controle de Colheita
+    </div>
+    <nav>
+      <button class="active" onclick="showSection('producao', this)">🌾 Produção</button>
+      <button onclick="showSection('diaria', this)">📅 Diária</button>
+      <button onclick="showSection('resumo', this)">📊 Resumo</button>
+      <button onclick="showSection('folha', this)">📋 Folha</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══ SEÇÃO 1: PRODUÇÃO ═══ -->
+  <section id="producao" class="section active">
+    <div class="section-title">🌾 Registrar Produção</div>
+    <div class="section-sub">Registre a colheita diária de cada trabalhador</div>
+
+    <div class="card">
+      <div class="card-title">📝 Novo Registro de Produção</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="p-data">
+        </div>
+        <div class="form-group">
+          <label>Nome do Trabalhador</label>
+          <input type="text" id="p-nome" placeholder="Ex: Roberta Silva" list="lista-nomes">
+          <datalist id="lista-nomes"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Produto</label>
+          <select id="p-produto" onchange="checkOutros()">
+            <option value="">Selecione...</option>
+            <option>Acerola</option>
+            <option>Caju</option>
+            <option>Castanha</option>
+            <option value="outros">Outros (digitar)</option>
+          </select>
+        </div>
+        <div class="form-group" id="p-outros-group" style="display:none">
+          <label>Nome do Produto</label>
+          <input type="text" id="p-outros" placeholder="Ex: Manga">
+        </div>
+        <div class="form-group">
+          <label>Área da Fazenda</label>
+          <input type="text" id="p-area" placeholder="Ex: Talhão A, Sector 2" list="lista-areas">
+          <datalist id="lista-areas"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Unidade de Medida</label>
+          <select id="p-unidade">
+            <option>Balde</option>
+            <option>Kg</option>
+            <option>Caixa</option>
+            <option>Saco</option>
+            <option>Unidade</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantidade</label>
+          <input type="number" id="p-qtd" placeholder="0" min="0" step="0.5" oninput="calcPreview()">
+        </div>
+        <div class="form-group">
+          <label>Valor por Unidade (R$)</label>
+          <input type="number" id="p-valor" placeholder="0.00" min="0" step="0.01" oninput="calcPreview()">
+        </div>
+      </div>
+
+      <div class="calc-preview">
+        <span>Valor Total Calculado</span>
+        <strong id="preview-total">R$ 0,00</strong>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addProducao()">✅ Salvar Registro</button>
+        <button class="btn btn-secondary" onclick="limparFormProd()">🔄 Limpar</button>
+      </div>
+    </div>
+
+    <!-- Mini tabela recentes -->
+    <div class="card">
+      <div class="card-title">🕒 Últimos Registros de Produção</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th><th>Trabalhador</th><th>Produto</th><th>Área</th>
+              <th>Qtd</th><th>Vl. Unit.</th><th>Total</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-prod-recent"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SEÇÃO 2: DIÁRIA ═══ -->
+  <section id="diaria" class="section">
+    <div class="section-title">📅 Registrar Diária</div>
+    <div class="section-sub">Registre os trabalhadores que recebem por diária</div>
+
+    <div class="card">
+      <div class="card-title">📝 Novo Registro de Diária</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="d-data">
+        </div>
+        <div class="form-group">
+          <label>Nome do Trabalhador</label>
+          <input type="text" id="d-nome" placeholder="Ex: João Pedro" list="lista-nomes">
+        </div>
+        <div class="form-group">
+          <label>Área da Fazenda</label>
+          <input type="text" id="d-area" placeholder="Ex: Talhão B" list="lista-areas">
+        </div>
+        <div class="form-group">
+          <label>Tipo de Diária</label>
+          <select id="d-tipo" onchange="calcDiariaPreview()">
+            <option value="">Selecione...</option>
+            <option value="120">Diária R$ 120,00</option>
+            <option value="85">Diária R$ 85,00</option>
+            <option value="80">Diária R$ 80,00</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Observação (opcional)</label>
+          <input type="text" id="d-obs" placeholder="Ex: Serviço extra">
+        </div>
+      </div>
+
+      <div class="calc-preview">
+        <span>Valor da Diária</span>
+        <strong id="preview-diaria">R$ 0,00</strong>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addDiaria()">✅ Salvar Diária</button>
+        <button class="btn btn-secondary" onclick="limparFormDiaria()">🔄 Limpar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🕒 Últimas Diárias Registradas</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th><th>Trabalhador</th><th>Área</th><th>Tipo</th><th>Valor</th><th>Obs</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-diaria-recent"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SEÇÃO 3: RESUMO ═══ -->
+  <section id="resumo" class="section">
+    <div class="section-title">📊 Resumo Geral</div>
+    <div class="section-sub">Visão consolidada da produção e pagamentos</div>
+
+    <div class="summary-grid" id="cards-geral"></div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('tab-pessoas', this)">👷 Por Pessoa</button>
+      <button class="tab-btn" onclick="showTab('tab-produtos', this)">🌱 Por Produto</button>
+      <button class="tab-btn" onclick="showTab('tab-areas', this)">🗺️ Por Área</button>
+    </div>
+
+    <div id="tab-pessoas">
+      <div class="person-grid" id="resumo-pessoas"></div>
+    </div>
+    <div id="tab-produtos" style="display:none">
+      <div class="card">
+        <div class="card-title">🌱 Produção por Produto</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produto</th><th>Qtd Total</th><th>Valor Total</th></tr></thead>
+            <tbody id="tbody-produtos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="tab-areas" style="display:none">
+      <div class="card">
+        <div class="card-title">🗺️ Produção por Área</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Área</th><th>Registros</th><th>Qtd Total</th><th>Valor Total</th></tr></thead>
+            <tbody id="tbody-areas"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SEÇÃO 4: FOLHA ═══ -->
+  <section id="folha" class="section">
+    <div class="section-title">📋 Folha de Pagamento</div>
+    <div class="section-sub">Todos os registros com filtros e exportação</div>
+
+    <div class="card" style="padding: 16px 20px;">
+      <div class="filter-row">
+        <input type="date" id="f-data-ini" placeholder="De" title="Data inicial">
+        <input type="date" id="f-data-fim" placeholder="Até" title="Data final">
+        <input type="text" id="f-pessoa" placeholder="🔍 Buscar pessoa..." oninput="renderFolha()">
+        <select id="f-produto" onchange="renderFolha()">
+          <option value="">Todos os produtos</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">✖ Limpar Filtros</button>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+        <button class="btn btn-export btn-sm" onclick="exportarExcel()">📥 Exportar Excel</button>
+        <button class="btn btn-danger btn-sm" onclick="limparTodos()">🗑️ Limpar Todos os Dados</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Trabalhador</th><th>Produto/Tipo</th><th>Área</th>
+            <th>Qtd</th><th>Vl. Unit.</th><th>Total</th><th>Tipo</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-folha"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px; text-align:right;">
+      <strong id="total-folha" style="font-family:'JetBrains Mono';font-size:1.1rem;color:var(--verde-escuro)"></strong>
+    </div>
+  </section>
+
+</main>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL EDIÇÃO PRODUÇÃO -->
+<div class="modal-overlay" id="modal-prod">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Registro de Produção</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Data</label><input type="date" id="ep-data"></div>
+      <div class="form-group"><label>Trabalhador</label><input type="text" id="ep-nome"></div>
+      <div class="form-group"><label>Produto</label><input type="text" id="ep-produto"></div>
+      <div class="form-group"><label>Área</label><input type="text" id="ep-area"></div>
+      <div class="form-group"><label>Unidade</label><input type="text" id="ep-unidade"></div>
+      <div class="form-group"><label>Quantidade</label><input type="number" id="ep-qtd" step="0.5"></div>
+      <div class="form-group"><label>Valor Unitário</label><input type="number" id="ep-valor" step="0.01"></div>
+    </div>
+    <input type="hidden" id="ep-id">
+    <div class="modal-btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('modal-prod')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditProd()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO DIÁRIA -->
+<div class="modal-overlay" id="modal-diaria">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Diária</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Data</label><input type="date" id="ed-data"></div>
+      <div class="form-group"><label>Trabalhador</label><input type="text" id="ed-nome"></div>
+      <div class="form-group"><label>Área</label><input type="text" id="ed-area"></div>
+      <div class="form-group">
+        <label>Tipo de Diária</label>
+        <select id="ed-tipo">
+          <option value="120">R$ 120,00</option>
+          <option value="85">R$ 85,00</option>
+          <option value="80">R$ 80,00</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Observação</label><input type="text" id="ed-obs"></div>
+    </div>
+    <input type="hidden" id="ed-id">
+    <div class="modal-btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('modal-diaria')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditDiaria()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════════════════
+let producoes = JSON.parse(localStorage.getItem('colheita_prod') || '[]');
+let diarias   = JSON.parse(localStorage.getItem('colheita_diaria') || '[]');
+
+function salvar() {
+  localStorage.setItem('colheita_prod', JSON.stringify(producoes));
+  localStorage.setItem('colheita_diaria', JSON.stringify(diarias));
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ═══════════════════════════════════════════════════
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'resumo') renderResumo();
+  if (id === 'folha') renderFolha();
+  updateDataLists();
+}
+
+function showTab(id, btn) {
+  ['tab-pessoas','tab-produtos','tab-areas'].forEach(t => {
+    document.getElementById(t).style.display = 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).style.display = 'block';
+  btn.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function uid() { return Date.now() + Math.random().toString(36).slice(2); }
+function fmt(v) { return 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function checkOutros() {
+  const v = document.getElementById('p-produto').value;
+  document.getElementById('p-outros-group').style.display = v === 'outros' ? 'block' : 'none';
+}
+
+function getProduto() {
+  const v = document.getElementById('p-produto').value;
+  if (v === 'outros') return document.getElementById('p-outros').value.trim() || 'Outros';
+  return v;
+}
+
+function calcPreview() {
+  const q = parseFloat(document.getElementById('p-qtd').value) || 0;
+  const v = parseFloat(document.getElementById('p-valor').value) || 0;
+  document.getElementById('preview-total').textContent = fmt(q * v);
+}
+
+function calcDiariaPreview() {
+  const v = document.getElementById('d-tipo').value;
+  document.getElementById('preview-diaria').textContent = v ? fmt(v) : 'R$ 0,00';
+}
+
+function updateDataLists() {
+  const nomes = [...new Set([...producoes, ...diarias].map(r => r.nome))];
+  const areas = [...new Set([...producoes, ...diarias].map(r => r.area).filter(Boolean))];
+  document.querySelectorAll('#lista-nomes').forEach(dl => {
+    dl.innerHTML = nomes.map(n => `<option value="${n}">`).join('');
+  });
+  document.querySelectorAll('#lista-areas').forEach(dl => {
+    dl.innerHTML = areas.map(a => `<option value="${a}">`).join('');
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  PRODUÇÃO: ADD / DELETE / EDIT
+// ═══════════════════════════════════════════════════
+function addProducao() {
+  const data = document.getElementById('p-data').value;
+  const nome = document.getElementById('p-nome').value.trim();
+  const produto = getProduto();
+  const area = document.getElementById('p-area').value.trim();
+  const unidade = document.getElementById('p-unidade').value;
+  const qtd = parseFloat(document.getElementById('p-qtd').value);
+  const valor = parseFloat(document.getElementById('p-valor').value);
+
+  if (!data || !nome || !produto || isNaN(qtd) || isNaN(valor)) {
+    toast('⚠️ Preencha todos os campos obrigatórios!');
+    return;
+  }
+  producoes.push({ id: uid(), data, nome, produto, area, unidade, qtd, valor, total: qtd * valor });
+  salvar();
+  limparFormProd();
+  renderProdRecent();
+  toast('✅ Produção registrada com sucesso!');
+  updateDataLists();
+}
+
+function limparFormProd() {
+  ['p-data','p-nome','p-area','p-qtd','p-valor','p-outros'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('p-produto').value = '';
+  document.getElementById('p-outros-group').style.display = 'none';
+  document.getElementById('preview-total').textContent = 'R$ 0,00';
+  // Set today's date
+  document.getElementById('p-data').value = new Date().toISOString().split('T')[0];
+}
+
+function deleteProd(id) {
+  if (!confirm('Excluir este registro?')) return;
+  producoes = producoes.filter(r => r.id !== id);
+  salvar();
+  renderProdRecent();
+  renderFolha();
+  toast('🗑️ Registro excluído.');
+}
+
+function editProd(id) {
+  const r = producoes.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('ep-id').value = id;
+  document.getElementById('ep-data').value = r.data;
+  document.getElementById('ep-nome').value = r.nome;
+  document.getElementById('ep-produto').value = r.produto;
+  document.getElementById('ep-area').value = r.area;
+  document.getElementById('ep-unidade').value = r.unidade;
+  document.getElementById('ep-qtd').value = r.qtd;
+  document.getElementById('ep-valor').value = r.valor;
+  document.getElementById('modal-prod').classList.add('open');
+}
+
+function saveEditProd() {
+  const id = document.getElementById('ep-id').value;
+  const idx = producoes.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  const qtd = parseFloat(document.getElementById('ep-qtd').value);
+  const valor = parseFloat(document.getElementById('ep-valor').value);
+  producoes[idx] = {
+    ...producoes[idx],
+    data: document.getElementById('ep-data').value,
+    nome: document.getElementById('ep-nome').value,
+    produto: document.getElementById('ep-produto').value,
+    area: document.getElementById('ep-area').value,
+    unidade: document.getElementById('ep-unidade').value,
+    qtd, valor, total: qtd * valor
+  };
+  salvar();
+  closeModal('modal-prod');
+  renderProdRecent();
+  renderFolha();
+  toast('✅ Registro atualizado!');
+}
+
+function renderProdRecent() {
+  const tbody = document.getElementById('tbody-prod-recent');
+  const list = [...producoes].sort((a,b) => b.data.localeCompare(a.data)).slice(0, 20);
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro ainda</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${fmtDate(r.data)}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${r.produto}</td>
+      <td>${r.area || '—'}</td>
+      <td>${r.qtd} ${r.unidade}</td>
+      <td>${fmt(r.valor)}</td>
+      <td><strong style="color:var(--verde)">${fmt(r.total)}</strong></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-warning btn-sm" onclick="editProd('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProd('${r.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  DIÁRIAS: ADD / DELETE / EDIT
+// ═══════════════════════════════════════════════════
+function addDiaria() {
+  const data = document.getElementById('d-data').value;
+  const nome = document.getElementById('d-nome').value.trim();
+  const area = document.getElementById('d-area').value.trim();
+  const tipo = document.getElementById('d-tipo').value;
+  const obs  = document.getElementById('d-obs').value.trim();
+
+  if (!data || !nome || !tipo) {
+    toast('⚠️ Preencha todos os campos obrigatórios!');
+    return;
+  }
+  diarias.push({ id: uid(), data, nome, area, tipo: parseFloat(tipo), obs });
+  salvar();
+  limparFormDiaria();
+  renderDiariaRecent();
+  toast('✅ Diária registrada!');
+  updateDataLists();
+}
+
+function limparFormDiaria() {
+  ['d-data','d-nome','d-area','d-obs'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('d-tipo').value = '';
+  document.getElementById('preview-diaria').textContent = 'R$ 0,00';
+  document.getElementById('d-data').value = new Date().toISOString().split('T')[0];
+}
+
+function deleteDiaria(id) {
+  if (!confirm('Excluir esta diária?')) return;
+  diarias = diarias.filter(r => r.id !== id);
+  salvar();
+  renderDiariaRecent();
+  renderFolha();
+  toast('🗑️ Diária excluída.');
+}
+
+function editDiaria(id) {
+  const r = diarias.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('ed-id').value = id;
+  document.getElementById('ed-data').value = r.data;
+  document.getElementById('ed-nome').value = r.nome;
+  document.getElementById('ed-area').value = r.area;
+  document.getElementById('ed-tipo').value = r.tipo;
+  document.getElementById('ed-obs').value = r.obs;
+  document.getElementById('modal-diaria').classList.add('open');
+}
+
+function saveEditDiaria() {
+  const id = document.getElementById('ed-id').value;
+  const idx = diarias.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  diarias[idx] = {
+    ...diarias[idx],
+    data: document.getElementById('ed-data').value,
+    nome: document.getElementById('ed-nome').value,
+    area: document.getElementById('ed-area').value,
+    tipo: parseFloat(document.getElementById('ed-tipo').value),
+    obs:  document.getElementById('ed-obs').value
+  };
+  salvar();
+  closeModal('modal-diaria');
+  renderDiariaRecent();
+  renderFolha();
+  toast('✅ Diária atualizada!');
+}
+
+function renderDiariaRecent() {
+  const tbody = document.getElementById('tbody-diaria-recent');
+  const list = [...diarias].sort((a,b) => b.data.localeCompare(a.data)).slice(0, 20);
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><p>Nenhuma diária registrada</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${fmtDate(r.data)}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${r.area || '—'}</td>
+      <td>Diária</td>
+      <td><strong style="color:var(--verde)">${fmt(r.tipo)}</strong></td>
+      <td>${r.obs || '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-warning btn-sm" onclick="editDiaria('${r.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteDiaria('${r.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  RESUMO
+// ═══════════════════════════════════════════════════
+function renderResumo() {
+  const totalProd = producoes.reduce((a,r) => a + r.total, 0);
+  const totalDiar = diarias.reduce((a,r) => a + r.tipo, 0);
+  const totalGeral = totalProd + totalDiar;
+  const numPessoas = new Set([...producoes, ...diarias].map(r => r.nome)).size;
+
+  document.getElementById('cards-geral').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total em Produção</div><div class="stat-value">${fmt(totalProd)}</div></div>
+    <div class="stat-card amarelo"><div class="stat-label">Total em Diárias</div><div class="stat-value">${fmt(totalDiar)}</div></div>
+    <div class="stat-card terra"><div class="stat-label">Total Geral a Pagar</div><div class="stat-value">${fmt(totalGeral)}</div></div>
+    <div class="stat-card azul"><div class="stat-label">Trabalhadores</div><div class="stat-value">${numPessoas}</div></div>
+  `;
+
+  // Por pessoa
+  const pessoas = {};
+  producoes.forEach(r => {
+    if (!pessoas[r.nome]) pessoas[r.nome] = { prod: 0, diar: 0 };
+    pessoas[r.nome].prod += r.total;
+  });
+  diarias.forEach(r => {
+    if (!pessoas[r.nome]) pessoas[r.nome] = { prod: 0, diar: 0 };
+    pessoas[r.nome].diar += r.tipo;
+  });
+
+  const resumoPessoas = document.getElementById('resumo-pessoas');
+  if (!Object.keys(pessoas).length) {
+    resumoPessoas.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>Nenhum dado registrado ainda</p></div>`;
+  } else {
+    resumoPessoas.innerHTML = Object.entries(pessoas)
+      .sort((a,b) => (b[1].prod+b[1].diar) - (a[1].prod+a[1].diar))
+      .map(([nome, v]) => `
+        <div class="person-card">
+          <div class="person-name">👷 ${nome}</div>
+          <div class="person-details">
+            <span>Produção: <strong>${fmt(v.prod)}</strong></span>
+            <span>Diárias: <strong>${fmt(v.diar)}</strong></span>
+          </div>
+          <div class="person-total">${fmt(v.prod + v.diar)}</div>
+        </div>
+      `).join('');
+  }
+
+  // Por produto
+  const produtos = {};
+  producoes.forEach(r => {
+    if (!produtos[r.produto]) produtos[r.produto] = { qtd: 0, total: 0, unidade: r.unidade };
+    produtos[r.produto].qtd += r.qtd;
+    produtos[r.produto].total += r.total;
+  });
+  const tbodyProd = document.getElementById('tbody-produtos');
+  tbodyProd.innerHTML = Object.entries(produtos).length
+    ? Object.entries(produtos).map(([p, v]) => `
+        <tr>
+          <td><strong>${p}</strong></td>
+          <td>${v.qtd.toLocaleString('pt-BR')} ${v.unidade}</td>
+          <td><strong style="color:var(--verde)">${fmt(v.total)}</strong></td>
+        </tr>`).join('')
+    : `<tr><td colspan="3" style="text-align:center;color:var(--cinza);padding:24px">Sem dados</td></tr>`;
+
+  // Por área
+  const areas = {};
+  [...producoes, ...diarias].forEach(r => {
+    const a = r.area || 'Sem área';
+    if (!areas[a]) areas[a] = { count: 0, qtd: 0, total: 0 };
+    areas[a].count++;
+    if (r.qtd) areas[a].qtd += r.qtd;
+    areas[a].total += (r.total || r.tipo || 0);
+  });
+  const tbodyAreas = document.getElementById('tbody-areas');
+  tbodyAreas.innerHTML = Object.entries(areas).length
+    ? Object.entries(areas).map(([a, v]) => `
+        <tr>
+          <td><strong>${a}</strong></td>
+          <td>${v.count}</td>
+          <td>${v.qtd.toLocaleString('pt-BR')}</td>
+          <td><strong style="color:var(--verde)">${fmt(v.total)}</strong></td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:var(--cinza);padding:24px">Sem dados</td></tr>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  FOLHA DE PAGAMENTO
+// ═══════════════════════════════════════════════════
+function renderFolha() {
+  const di = document.getElementById('f-data-ini').value;
+  const df = document.getElementById('f-data-fim').value;
+  const pessoa = (document.getElementById('f-pessoa').value || '').toLowerCase();
+  const produto = document.getElementById('f-produto').value;
+
+  // Montar select produtos
+  const prodList = [...new Set(producoes.map(r => r.produto))];
+  const sel = document.getElementById('f-produto');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os produtos</option>' + prodList.map(p => `<option ${p===cur?'selected':''}>${p}</option>`).join('');
+
+  let todos = [
+    ...producoes.map(r => ({ ...r, tipo: 'producao' })),
+    ...diarias.map(r => ({ ...r, produto: `Diária R$${r.tipo}`, qtd: 1, valor: r.tipo, total: r.tipo, tipo: 'diaria', unidade: '' }))
+  ].sort((a,b) => b.data.localeCompare(a.data));
+
+  if (di) todos = todos.filter(r => r.data >= di);
+  if (df) todos = todos.filter(r => r.data <= df);
+  if (pessoa) todos = todos.filter(r => r.nome.toLowerCase().includes(pessoa));
+  if (produto) todos = todos.filter(r => r.produto === produto);
+
+  const soma = todos.reduce((a,r) => a + (r.total || 0), 0);
+  document.getElementById('total-folha').textContent = `Total filtrado: ${fmt(soma)}`;
+
+  const tbody = document.getElementById('tbody-folha');
+  if (!todos.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div><p>Nenhum registro encontrado</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = todos.map(r => `
+    <tr>
+      <td>${fmtDate(r.data)}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${r.produto}</td>
+      <td>${r.area || '—'}</td>
+      <td>${r.tipo === 'producao' ? r.qtd + ' ' + r.unidade : '1 dia'}</td>
+      <td>${r.tipo === 'producao' ? fmt(r.valor) : '—'}</td>
+      <td><strong style="color:var(--verde)">${fmt(r.total)}</strong></td>
+      <td><span class="badge ${r.tipo === 'producao' ? 'badge-prod' : 'badge-diaria'}">${r.tipo === 'producao' ? 'Produção' : 'Diária'}</span></td>
+      <td style="white-space:nowrap">
+        ${r.tipo === 'producao'
+          ? `<button class="btn btn-warning btn-sm" onclick="editProd('${r.id}')">✏️</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteProd('${r.id}')">🗑️</button>`
+          : `<button class="btn btn-warning btn-sm" onclick="editDiaria('${r.id}')">✏️</button>
+             <button class="btn btn-danger btn-sm" onclick="deleteDiaria('${r.id}')">🗑️</button>`
+        }
+      </td>
+    </tr>
+  `).join('');
+}
+
+function clearFilters() {
+  document.getElementById('f-data-ini').value = '';
+  document.getElementById('f-data-fim').value = '';
+  document.getElementById('f-pessoa').value = '';
+  document.getElementById('f-produto').value = '';
+  renderFolha();
+}
+
+// ═══════════════════════════════════════════════════
+//  EXPORTAR EXCEL (CSV)
+// ═══════════════════════════════════════════════════
+function exportarExcel() {
+  const todos = [
+    ...producoes.map(r => ({
+      Data: fmtDate(r.data), Trabalhador: r.nome, Produto: r.produto, Área: r.area,
+      Quantidade: r.qtd, Unidade: r.unidade, 'Valor Unitário': r.valor.toFixed(2), Total: r.total.toFixed(2), Tipo: 'Produção'
+    })),
+    ...diarias.map(r => ({
+      Data: fmtDate(r.data), Trabalhador: r.nome, Produto: `Diária R$${r.tipo}`, Área: r.area,
+      Quantidade: 1, Unidade: 'dia', 'Valor Unitário': r.tipo.toFixed(2), Total: r.tipo.toFixed(2), Tipo: 'Diária'
+    }))
+  ].sort((a,b) => a.Data.localeCompare(b.Data));
+
+  if (!todos.length) { toast('⚠️ Nenhum dado para exportar!'); return; }
+
+  const headers = Object.keys(todos[0]);
+  const csv = [
+    headers.join(';'),
+    ...todos.map(r => headers.map(h => `"${r[h] ?? ''}"`).join(';'))
+  ].join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `colheita_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  toast('📥 Exportado com sucesso!');
+}
+
+// ═══════════════════════════════════════════════════
+//  LIMPAR TUDO
+// ═══════════════════════════════════════════════════
+function limparTodos() {
+  if (!confirm('⚠️ Deseja APAGAR todos os dados? Esta ação não pode ser desfeita!')) return;
+  producoes = [];
+  diarias = [];
+  salvar();
+  renderProdRecent();
+  renderDiariaRecent();
+  renderFolha();
+  toast('🗑️ Todos os dados foram apagados.');
+}
+
+// ═══════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+(function init() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('p-data').value = today;
+  document.getElementById('d-data').value = today;
+  renderProdRecent();
+  renderDiariaRecent();
+  updateDataLists();
+})();
+</script>
+</body>
+</html>
