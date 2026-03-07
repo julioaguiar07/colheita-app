@@ -877,7 +877,7 @@ async function deleteVenda(id) {
 }
 
 // ============================================
-// GASTOS (com observação)
+// GASTOS (com observação - CORRIGIDO)
 // ============================================
 function calcPreviewGasto() {
   const valor = parseFloat(document.getElementById('gasto-valor').value) || 0;
@@ -892,8 +892,17 @@ async function addGasto() {
   const obs = document.getElementById('gasto-obs').value.trim();
   const valor = parseFloat(document.getElementById('gasto-valor').value);
 
-  if (!data || !tipo || !valor) {
-    toast('⚠️ Preencha tipo e valor!');
+  // Validação
+  if (!data) {
+    toast('⚠️ Selecione a data!');
+    return;
+  }
+  if (!tipo) {
+    toast('⚠️ Preencha o tipo do gasto!');
+    return;
+  }
+  if (!valor || valor <= 0) {
+    toast('⚠️ Preencha um valor válido!');
     return;
   }
 
@@ -901,16 +910,20 @@ async function addGasto() {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     data,
     tipo,
-    categoria,
+    categoria: categoria || 'Outros',
     area: area || '',
     obs: obs || '',
-    valor
+    valor: valor
   };
+
+  console.log('Enviando gasto:', novo); // Para debug
 
   try {
     const response = await fetch('/api/gastos', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(novo)
     });
     
@@ -919,9 +932,14 @@ async function addGasto() {
       limparFormGasto();
       atualizarTudo();
       toast('💸 Gasto registrado!');
+    } else {
+      const error = await response.text();
+      console.error('Erro na resposta:', error);
+      toast('❌ Erro ao salvar no servidor');
     }
   } catch (error) {
-    toast('❌ Erro ao salvar');
+    console.error('Erro na requisição:', error);
+    toast('❌ Erro ao conectar com o servidor');
   }
 }
 
@@ -962,7 +980,7 @@ function atualizarListas() {
   document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 20).map(p => `
     <tr>
       <td>${formatDate(p.data)}</td>
-      <td><span class="badge badge-prod">${p.produto}</span></td>
+      <td><span class="badge badge-prod">${p.produto || ''}</span></td>
       <td>${p.tipo || '—'}</td>
       <td>${p.area || '—'}</td>
       <td>${p.qtd ? p.qtd + ' un' : '—'}</td>
@@ -975,10 +993,10 @@ function atualizarListas() {
   document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 20).map(v => `
     <tr>
       <td>${formatDate(v.data)}</td>
-      <td><span class="badge badge-venda">${v.produto}</span></td>
+      <td><span class="badge badge-venda">${v.produto || ''}</span></td>
       <td>${v.cliente || '—'}</td>
       <td>${v.area || '—'}</td>
-      <td>${v.qtd} ${v.unidade}</td>
+      <td>${v.qtd || 0} ${v.unidade || ''}</td>
       <td>${formatMoney(v.total)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteVenda('${v.id}')">🗑️</button></td>
     </tr>
@@ -988,8 +1006,8 @@ function atualizarListas() {
   document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 20).map(g => `
     <tr>
       <td>${formatDate(g.data)}</td>
-      <td><span class="badge badge-gasto">${g.tipo}</span></td>
-      <td>${g.categoria}</td>
+      <td><span class="badge badge-gasto">${g.tipo || ''}</span></td>
+      <td>${g.categoria || '—'}</td>
       <td>${g.area || '—'}</td>
       <td class="observacao" title="${g.obs || ''}">${g.obs ? g.obs.substring(0, 30) + (g.obs.length > 30 ? '...' : '') : '—'}</td>
       <td>${formatMoney(g.valor)}</td>
@@ -1013,7 +1031,7 @@ function atualizarDashboard() {
   // Cards de últimas produções (5 itens)
   const ultimasProd = producoes.slice(0, 5).map(p => `
     <div class="resumo-item">
-      <span class="resumo-desc" title="${p.data} ${p.produto} - ${p.tipo}">${formatDate(p.data)} ${p.produto} (${p.tipo})</span>
+      <span class="resumo-desc" title="${p.data} ${p.produto || ''} - ${p.tipo || ''}">${formatDate(p.data)} ${p.produto || ''}</span>
       <span class="resumo-valor prod">${formatMoney(p.total)}</span>
     </div>
   `).join('') || '<div class="empty" style="padding: 20px;">Nenhum custo</div>';
@@ -1021,18 +1039,22 @@ function atualizarDashboard() {
   // Cards de últimas vendas (5 itens)
   const ultimasVendas = vendas.slice(0, 5).map(v => `
     <div class="resumo-item">
-      <span class="resumo-desc" title="${v.data} ${v.produto} - ${v.cliente || 'sem cliente'}">${formatDate(v.data)} ${v.produto} (${v.qtd} ${v.unidade})</span>
+      <span class="resumo-desc" title="${v.data} ${v.produto || ''} - ${v.cliente || ''}">${formatDate(v.data)} ${v.produto || ''}</span>
       <span class="resumo-valor venda">${formatMoney(v.total)}</span>
     </div>
   `).join('') || '<div class="empty" style="padding: 20px;">Nenhuma venda</div>';
 
-  // Cards de últimos gastos (5 itens)
-  const ultimosGastos = gastos.slice(0, 5).map(g => `
-    <div class="resumo-item">
-      <span class="resumo-desc" title="${g.data} ${g.tipo} - ${g.obs || ''}">${formatDate(g.data)} ${g.tipo}</span>
-      <span class="resumo-valor gasto">${formatMoney(g.valor)}</span>
-    </div>
-  `).join('') || '<div class="empty" style="padding: 20px;">Nenhum gasto</div>';
+  // Cards de últimos gastos (5 itens) - CORRIGIDO
+  const ultimosGastos = gastos.slice(0, 5).map(g => {
+    const dataFormatada = formatDate(g.data);
+    const descricao = g.obs ? ` - ${g.obs.substring(0, 20)}` : '';
+    return `
+      <div class="resumo-item">
+        <span class="resumo-desc" title="${g.tipo || ''} ${g.obs || ''}">${dataFormatada} ${g.tipo || ''}${descricao}</span>
+        <span class="resumo-valor gasto">${formatMoney(g.valor)}</span>
+      </div>
+    `;
+  }).join('') || '<div class="empty" style="padding: 20px;">Nenhum gasto</div>';
 
   document.getElementById('ultimas-producoes').innerHTML = ultimasProd;
   document.getElementById('ultimas-vendas').innerHTML = ultimasVendas;
@@ -1044,8 +1066,8 @@ function atualizarDashboard() {
 function criarGraficos() {
   // GRÁFICO 1: Produção vs Vendas por Produto
   const produtos = new Set();
-  producoes.forEach(p => produtos.add(p.produto));
-  vendas.forEach(v => produtos.add(v.produto));
+  producoes.forEach(p => { if (p?.produto) produtos.add(p.produto); });
+  vendas.forEach(v => { if (v?.produto) produtos.add(v.produto); });
   
   const labels = Array.from(produtos).sort();
   const dadosProducao = labels.map(prod => 
@@ -1056,21 +1078,23 @@ function criarGraficos() {
   );
 
   if (charts.produtos) charts.produtos.destroy();
-  charts.produtos = new Chart(document.getElementById('chartProdutos'), {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: 'Custo de Produção', data: dadosProducao, backgroundColor: '#2d7a3a' },
-        { label: 'Vendas', data: dadosVendas, backgroundColor: '#3b82f6' }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } }
-    }
-  });
+  if (document.getElementById('chartProdutos')) {
+    charts.produtos = new Chart(document.getElementById('chartProdutos'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Custo de Produção', data: dadosProducao, backgroundColor: '#2d7a3a' },
+          { label: 'Vendas', data: dadosVendas, backgroundColor: '#3b82f6' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
 
   // GRÁFICO 2: Gastos por Categoria
   const gastosCat = {};
@@ -1080,22 +1104,24 @@ function criarGraficos() {
   });
 
   if (charts.gastos) charts.gastos.destroy();
-  charts.gastos = new Chart(document.getElementById('chartGastos'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(gastosCat),
-      datasets: [{
-        data: Object.values(gastosCat),
-        backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } },
-      cutout: '65%'
-    }
-  });
+  if (document.getElementById('chartGastos')) {
+    charts.gastos = new Chart(document.getElementById('chartGastos'), {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(gastosCat),
+        datasets: [{
+          data: Object.values(gastosCat),
+          backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        cutout: '65%'
+      }
+    });
+  }
 
   // GRÁFICO 3: Rentabilidade dos Produtos
   const rentabilidade = labels.map(prod => {
@@ -1105,22 +1131,24 @@ function criarGraficos() {
   });
 
   if (charts.rentabilidade) charts.rentabilidade.destroy();
-  charts.rentabilidade = new Chart(document.getElementById('chartRentabilidade'), {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Lucro/Prejuízo',
-        data: rentabilidade,
-        backgroundColor: rentabilidade.map(r => r >= 0 ? '#10b981' : '#dc2626')
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
-  });
+  if (document.getElementById('chartRentabilidade')) {
+    charts.rentabilidade = new Chart(document.getElementById('chartRentabilidade'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Lucro/Prejuízo',
+          data: rentabilidade,
+          backgroundColor: rentabilidade.map(r => r >= 0 ? '#10b981' : '#dc2626')
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 
   // GRÁFICO 4: Evolução Mensal
   const meses = {};
@@ -1153,32 +1181,45 @@ function criarGraficos() {
   });
 
   if (charts.evolucao) charts.evolucao.destroy();
-  charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
-    type: 'line',
-    data: {
-      labels: Object.keys(meses),
-      datasets: [
-        { label: 'Vendas', data: Object.values(meses).map(m => m.vendas), borderColor: '#3b82f6', tension: 0.4 },
-        { label: 'Gastos', data: Object.values(meses).map(m => m.gastos), borderColor: '#dc2626', tension: 0.4 },
-        { label: 'Custos', data: Object.values(meses).map(m => m.custos), borderColor: '#2d7a3a', tension: 0.4 }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } }
-    }
-  });
+  if (document.getElementById('chartEvolucao')) {
+    charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
+      type: 'line',
+      data: {
+        labels: Object.keys(meses),
+        datasets: [
+          { label: 'Vendas', data: Object.values(meses).map(m => m.vendas), borderColor: '#3b82f6', tension: 0.4 },
+          { label: 'Gastos', data: Object.values(meses).map(m => m.gastos), borderColor: '#dc2626', tension: 0.4 },
+          { label: 'Custos', data: Object.values(meses).map(m => m.custos), borderColor: '#2d7a3a', tension: 0.4 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
 }
 
 function atualizarDataLists() {
-  const produtosSet = new Set([...producoes, ...vendas].map(r => r.produto).filter(Boolean));
-  const areasSet = new Set([...producoes, ...vendas, ...gastos].map(r => r.area).filter(Boolean));
-  const tiposGastoSet = new Set(gastos.map(g => g.tipo).filter(Boolean));
+  const produtosSet = new Set([...producoes, ...vendas].map(r => r?.produto).filter(Boolean));
+  const areasSet = new Set([...producoes, ...vendas, ...gastos].map(r => r?.area).filter(Boolean));
+  const tiposGastoSet = new Set(gastos.map(g => g?.tipo).filter(Boolean));
   
-  document.getElementById('lista-produtos').innerHTML = Array.from(produtosSet).map(p => `<option value="${p}">`).join('');
-  document.getElementById('lista-areas').innerHTML = Array.from(areasSet).map(a => `<option value="${a}">`).join('');
-  document.getElementById('lista-tipos-gasto').innerHTML = Array.from(tiposGastoSet).map(t => `<option value="${t}">`).join('');
+  const listaProdutos = document.getElementById('lista-produtos');
+  if (listaProdutos) {
+    listaProdutos.innerHTML = Array.from(produtosSet).map(p => `<option value="${p}">`).join('');
+  }
+  
+  const listaAreas = document.getElementById('lista-areas');
+  if (listaAreas) {
+    listaAreas.innerHTML = Array.from(areasSet).map(a => `<option value="${a}">`).join('');
+  }
+  
+  const listaTiposGasto = document.getElementById('lista-tipos-gasto');
+  if (listaTiposGasto) {
+    listaTiposGasto.innerHTML = Array.from(tiposGastoSet).map(t => `<option value="${t}">`).join('');
+  }
 }
 
 // ============================================
@@ -1191,8 +1232,13 @@ function formatMoney(valor) {
 
 function formatDate(data) {
   if (!data) return '';
-  const [ano, mes, dia] = data.split('-');
-  return `${dia}/${mes}/${ano}`;
+  try {
+    const [ano, mes, dia] = data.split('-');
+    if (!ano || !mes || !dia) return data;
+    return `${dia}/${mes}/${ano}`;
+  } catch (e) {
+    return data;
+  }
 }
 
 function toast(msg) {
