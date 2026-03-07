@@ -225,6 +225,49 @@ def delete_gasto(id):
     conn.close()
     return jsonify({'message': 'Gasto deletado'})
 
+# Adicione esta rota TEMPORÁRIA no seu app.py
+@app.route('/recriar-tabela-gastos')
+def recriar_tabela_gastos():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # 1. Renomear a tabela antiga (backup)
+        cur.execute('ALTER TABLE gastos RENAME TO gastos_backup')
+        
+        # 2. Criar nova tabela com a coluna obs
+        cur.execute('''
+            CREATE TABLE gastos (
+                id VARCHAR(50) PRIMARY KEY,
+                data DATE NOT NULL,
+                tipo VARCHAR(255) NOT NULL,
+                categoria VARCHAR(50),
+                area VARCHAR(255),
+                obs TEXT,
+                valor DECIMAL(10,2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 3. Copiar dados da tabela antiga (sem a coluna obs)
+        cur.execute('''
+            INSERT INTO gastos (id, data, tipo, categoria, area, valor, created_at)
+            SELECT id, data, tipo, categoria, area, valor, created_at 
+            FROM gastos_backup
+        ''')
+        
+        # 4. Remover tabela antiga (opcional - comente se quiser manter backup)
+        # cur.execute('DROP TABLE gastos_backup')
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return "✅ Tabela 'gastos' recriada com sucesso! <a href='/'>Voltar</a>"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+
+
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
