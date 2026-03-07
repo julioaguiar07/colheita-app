@@ -267,6 +267,18 @@ def recriar_tabela_gastos():
     except Exception as e:
         return f"❌ Erro: {str(e)}"
 
+@app.route('/add-tipo-column')
+def add_tipo_column():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('ALTER TABLE producoes ADD COLUMN tipo VARCHAR(255)')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "✅ Coluna 'tipo' adicionada com sucesso! <a href='/'>Voltar</a>"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
