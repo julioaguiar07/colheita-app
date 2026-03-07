@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Colheita — Sistema Completo</title>
+<title>Colheita — Sistema de Controle</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -40,7 +40,6 @@
     min-height: 100vh;
   }
 
-  /* ── HEADER ── */
   header {
     background: var(--verde-escuro);
     color: white;
@@ -91,14 +90,12 @@
   nav button:hover { background: rgba(255,255,255,0.1); color: white; }
   nav button.active { background: var(--verde-claro); color: white; }
 
-  /* ── MAIN ── */
   main {
     max-width: 1400px;
     margin: 0 auto;
     padding: 28px 20px 60px;
   }
 
-  /* ── SECTIONS ── */
   .section { display: none; }
   .section.active { display: block; }
 
@@ -115,7 +112,6 @@
     margin-bottom: 28px;
   }
 
-  /* ── CARDS ── */
   .card {
     background: var(--branco);
     border-radius: var(--radius);
@@ -134,7 +130,6 @@
     gap: 8px;
   }
 
-  /* ── FORM ── */
   .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -191,7 +186,6 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* ── BUTTONS ── */
   .btn {
     font-family: 'Sora', sans-serif;
     font-size: 0.88rem;
@@ -216,7 +210,6 @@
   }
   .btn-secondary:hover { background: #d5cfc6; }
   .btn-danger { background: #fee2e2; color: #dc2626; }
-  .btn-success { background: #dcfce7; color: #166534; }
   .btn-venda { background: #dbeafe; color: #1e40af; }
   .btn-gasto { background: #fee2e2; color: #991b1b; }
   .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
@@ -228,7 +221,6 @@
     flex-wrap: wrap;
   }
 
-  /* ── KPI CARDS ── */
   .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -246,7 +238,6 @@
   .kpi-card.azul { border-left-color: var(--azul); }
   .kpi-card.vermelho { border-left-color: var(--vermelho); }
   .kpi-card.roxo { border-left-color: var(--roxo); }
-  .kpi-card.laranja { border-left-color: var(--laranja); }
   
   .kpi-label {
     font-size: 0.75rem;
@@ -267,15 +258,7 @@
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
-  .kpi-trend {
-    font-size: 0.8rem;
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
 
-  /* ── CHARTS GRID ── */
   .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -303,7 +286,6 @@
     width: 100%;
   }
 
-  /* ── TABLE ── */
   .table-wrap {
     overflow-x: auto;
     border-radius: var(--radius);
@@ -348,7 +330,6 @@
   .badge-venda { background: #dbeafe; color: #1e40af; }
   .badge-gasto { background: #fee2e2; color: #991b1b; }
 
-  /* ── AREA TAGS ── */
   .areas-grid {
     display: flex;
     flex-direction: column;
@@ -364,28 +345,7 @@
     font-weight: 500;
     border: 1px solid var(--cinza-claro);
   }
-  .area-nome {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-  }
-  .area-valores {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-  .area-prod { color: var(--verde); font-weight: 600; }
-  .area-venda { color: var(--azul); font-weight: 600; }
-  .area-gasto { color: var(--vermelho); font-weight: 600; }
-  .area-lucro {
-    font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 20px;
-    background: var(--branco);
-  }
 
-  /* ── TOAST ── */
   #toast {
     position: fixed;
     bottom: 28px;
@@ -399,13 +359,11 @@
     box-shadow: var(--sombra-md);
     transform: translateY(80px);
     opacity: 0;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.3s;
     z-index: 999;
-    max-width: 320px;
   }
   #toast.show { transform: translateY(0); opacity: 1; }
 
-  /* ── EMPTY STATE ── */
   .empty {
     text-align: center;
     padding: 48px 20px;
@@ -425,142 +383,90 @@
   <div class="header-inner">
     <div class="logo">
       <span class="logo-icon">🌿</span>
-      Gestão Agrícola Completa
+      Gestão Agrícola
     </div>
     <nav>
       <button class="active" onclick="showSection('dashboard', this)">📊 Dashboard</button>
       <button onclick="showSection('producao', this)">🌾 Produção</button>
       <button onclick="showSection('vendas', this)">💰 Vendas</button>
       <button onclick="showSection('gastos', this)">💸 Gastos</button>
-      <button onclick="showSection('areas', this)">🗺️ Áreas</button>
     </nav>
   </div>
 </header>
 
 <main>
-
-  <!-- ═══ DASHBOARD ═══ -->
+  <!-- DASHBOARD -->
   <section id="dashboard" class="section active">
-    <div class="section-title">📊 Dashboard Inteligente</div>
-    <div class="section-sub">Visão completa da sua operação</div>
+    <div class="section-title">📊 Dashboard</div>
+    <div class="section-sub">Visão geral da sua operação</div>
 
-    <!-- KPIs -->
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🌾 Produção Total</div>
+        <div class="kpi-label">🌾 Produção</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
       </div>
       <div class="kpi-card azul">
-        <div class="kpi-label">💰 Vendas Totais</div>
+        <div class="kpi-label">💰 Vendas</div>
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
       </div>
       <div class="kpi-card vermelho">
-        <div class="kpi-label">💸 Gastos Totais</div>
+        <div class="kpi-label">💸 Gastos</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
       </div>
       <div class="kpi-card roxo">
-        <div class="kpi-label">📊 Lucro Líquido</div>
+        <div class="kpi-label">📊 Lucro</div>
         <div class="kpi-value" id="kpi-lucro">R$ 0</div>
-        <div class="kpi-trend" id="kpi-margem"></div>
       </div>
     </div>
 
-    <!-- Gráficos -->
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">📈 Evolução Receita vs Gastos</div>
-        <div class="chart-container">
-          <canvas id="chartEvolucao"></canvas>
-        </div>
+        <div class="chart-title">📈 Evolução</div>
+        <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">🥧 Distribuição de Gastos</div>
-        <div class="chart-container">
-          <canvas id="chartGastos"></canvas>
-        </div>
+        <div class="chart-title">🥧 Gastos por Categoria</div>
+        <div class="chart-container"><canvas id="chartGastos"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">🌱 Top Produtos (Vendas)</div>
-        <div class="chart-container">
-          <canvas id="chartProdutos"></canvas>
-        </div>
+        <div class="chart-title">🌱 Top Produtos</div>
+        <div class="chart-container"><canvas id="chartProdutos"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">💰 Rentabilidade por Área</div>
-        <div class="chart-container">
-          <canvas id="chartAreas"></canvas>
-        </div>
+        <div class="chart-title">💰 Áreas</div>
+        <div class="chart-container"><canvas id="chartAreas"></canvas></div>
       </div>
     </div>
 
-    <!-- Últimos registros -->
     <div class="card">
       <div class="card-title">🕒 Últimos Registros</div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Descrição</th>
-              <th>Área</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Área</th><th>Valor</th></tr></thead>
           <tbody id="dashboard-ultimos"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- ═══ PRODUÇÃO ═══ -->
+  <!-- PRODUÇÃO -->
   <section id="producao" class="section">
-    <div class="section-title">🌾 Registrar Produção</div>
-    <div class="section-sub">Registre a colheita por produto e área</div>
+    <div class="section-title">🌾 Produção</div>
+    <div class="section-sub">Registre a colheita</div>
 
     <div class="card">
       <div class="card-title">📝 Nova Produção</div>
       <div class="form-grid">
-        <div class="form-group">
-          <label>Data</label>
-          <input type="date" id="prod-data">
-        </div>
-        <div class="form-group">
-          <label>Produto</label>
-          <input type="text" id="prod-produto" placeholder="Ex: Acerola" list="lista-produtos">
-          <datalist id="lista-produtos"></datalist>
-        </div>
-        <div class="form-group">
-          <label>Área</label>
-          <input type="text" id="prod-area" placeholder="Ex: Talhão A" list="lista-areas">
-          <datalist id="lista-areas"></datalist>
-        </div>
-        <div class="form-group">
-          <label>Unidade</label>
-          <select id="prod-unidade">
-            <option>Balde</option>
-            <option>Caixa</option>
-            <option>Kg</option>
-            <option>Saco</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Quantidade</label>
-          <input type="number" id="prod-qtd" step="0.5" oninput="calcPreviewProducao()">
-        </div>
-        <div class="form-group">
-          <label>Valor Unitário (R$)</label>
-          <input type="number" id="prod-valor" step="0.01" oninput="calcPreviewProducao()">
-        </div>
+        <div class="form-group"><label>Data</label><input type="date" id="prod-data"></div>
+        <div class="form-group"><label>Produto</label><input type="text" id="prod-produto" placeholder="Ex: Acerola"></div>
+        <div class="form-group"><label>Área</label><input type="text" id="prod-area" placeholder="Ex: Talhão A"></div>
+        <div class="form-group"><label>Unidade</label><select id="prod-unidade"><option>Balde</option><option>Caixa</option><option>Kg</option><option>Saco</option></select></div>
+        <div class="form-group"><label>Quantidade</label><input type="number" id="prod-qtd" step="0.5" oninput="calcPreviewProducao()"></div>
+        <div class="form-group"><label>Valor Unit.</label><input type="number" id="prod-valor" step="0.01" oninput="calcPreviewProducao()"></div>
       </div>
-
-      <div class="calc-preview">
-        <span>Total da Produção</span>
-        <strong id="preview-producao">R$ 0,00</strong>
-      </div>
-
+      <div class="calc-preview"><span>Total</span><strong id="preview-producao">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="addProducao()">✅ Registrar Produção</button>
+        <button class="btn btn-primary" onclick="addProducao()">✅ Salvar</button>
         <button class="btn btn-secondary" onclick="limparFormProducao()">🔄 Limpar</button>
       </div>
     </div>
@@ -569,72 +475,32 @@
       <div class="card-title">📋 Últimas Produções</div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Produto</th>
-              <th>Área</th>
-              <th>Qtd</th>
-              <th>Total</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Data</th><th>Produto</th><th>Área</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
           <tbody id="lista-producoes"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- ═══ VENDAS ═══ -->
+  <!-- VENDAS -->
   <section id="vendas" class="section">
-    <div class="section-title">💰 Registrar Vendas</div>
-    <div class="section-sub">Registre as vendas realizadas</div>
+    <div class="section-title">💰 Vendas</div>
+    <div class="section-sub">Registre as vendas</div>
 
     <div class="card">
       <div class="card-title">📝 Nova Venda</div>
       <div class="form-grid">
-        <div class="form-group">
-          <label>Data</label>
-          <input type="date" id="venda-data">
-        </div>
-        <div class="form-group">
-          <label>Produto</label>
-          <input type="text" id="venda-produto" placeholder="Ex: Acerola" list="lista-produtos">
-        </div>
-        <div class="form-group">
-          <label>Cliente (opcional)</label>
-          <input type="text" id="venda-cliente" placeholder="Ex: CEASA">
-        </div>
-        <div class="form-group">
-          <label>Área de Origem</label>
-          <input type="text" id="venda-area" placeholder="Ex: Talhão A" list="lista-areas">
-        </div>
-        <div class="form-group">
-          <label>Unidade</label>
-          <select id="venda-unidade">
-            <option>Balde</option>
-            <option>Caixa</option>
-            <option>Kg</option>
-            <option>Saco</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Quantidade</label>
-          <input type="number" id="venda-qtd" step="0.5" oninput="calcPreviewVenda()">
-        </div>
-        <div class="form-group">
-          <label>Valor Unitário (R$)</label>
-          <input type="number" id="venda-valor" step="0.01" oninput="calcPreviewVenda()">
-        </div>
+        <div class="form-group"><label>Data</label><input type="date" id="venda-data"></div>
+        <div class="form-group"><label>Produto</label><input type="text" id="venda-produto" placeholder="Ex: Acerola"></div>
+        <div class="form-group"><label>Cliente</label><input type="text" id="venda-cliente" placeholder="Opcional"></div>
+        <div class="form-group"><label>Área</label><input type="text" id="venda-area" placeholder="Opcional"></div>
+        <div class="form-group"><label>Unidade</label><select id="venda-unidade"><option>Balde</option><option>Caixa</option><option>Kg</option><option>Saco</option></select></div>
+        <div class="form-group"><label>Quantidade</label><input type="number" id="venda-qtd" step="0.5" oninput="calcPreviewVenda()"></div>
+        <div class="form-group"><label>Valor Unit.</label><input type="number" id="venda-valor" step="0.01" oninput="calcPreviewVenda()"></div>
       </div>
-
-      <div class="calc-preview venda">
-        <span>Total da Venda</span>
-        <strong id="preview-venda">R$ 0,00</strong>
-      </div>
-
+      <div class="calc-preview venda"><span>Total</span><strong id="preview-venda">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-venda" onclick="addVenda()">💰 Registrar Venda</button>
+        <button class="btn btn-venda" onclick="addVenda()">💰 Salvar Venda</button>
         <button class="btn btn-secondary" onclick="limparFormVenda()">🔄 Limpar</button>
       </div>
     </div>
@@ -643,42 +509,24 @@
       <div class="card-title">📋 Últimas Vendas</div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Produto</th>
-              <th>Cliente</th>
-              <th>Área</th>
-              <th>Qtd</th>
-              <th>Total</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Data</th><th>Produto</th><th>Cliente</th><th>Área</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
           <tbody id="lista-vendas"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- ═══ GASTOS ═══ -->
+  <!-- GASTOS -->
   <section id="gastos" class="section">
-    <div class="section-title">💸 Registrar Gastos</div>
-    <div class="section-sub">Registre todos os custos da operação</div>
+    <div class="section-title">💸 Gastos</div>
+    <div class="section-sub">Registre os custos</div>
 
     <div class="card">
       <div class="card-title">📝 Novo Gasto</div>
       <div class="form-grid">
-        <div class="form-group">
-          <label>Data</label>
-          <input type="date" id="gasto-data">
-        </div>
-        <div class="form-group">
-          <label>Tipo de Gasto</label>
-          <input type="text" id="gasto-tipo" placeholder="Ex: Óleo Diesel" list="lista-tipos-gasto">
-          <datalist id="lista-tipos-gasto"></datalist>
-        </div>
-        <div class="form-group">
-          <label>Categoria</label>
+        <div class="form-group"><label>Data</label><input type="date" id="gasto-data"></div>
+        <div class="form-group"><label>Tipo</label><input type="text" id="gasto-tipo" placeholder="Ex: Óleo Diesel"></div>
+        <div class="form-group"><label>Categoria</label>
           <select id="gasto-categoria">
             <option value="Combustível">⛽ Combustível</option>
             <option value="Manutenção">🔧 Manutenção</option>
@@ -688,23 +536,12 @@
             <option value="Outros">📦 Outros</option>
           </select>
         </div>
-        <div class="form-group">
-          <label>Área (opcional)</label>
-          <input type="text" id="gasto-area" placeholder="Ex: Talhão A" list="lista-areas">
-        </div>
-        <div class="form-group full">
-          <label>Valor (R$)</label>
-          <input type="number" id="gasto-valor" step="0.01" oninput="calcPreviewGasto()">
-        </div>
+        <div class="form-group"><label>Área</label><input type="text" id="gasto-area" placeholder="Opcional"></div>
+        <div class="form-group full"><label>Valor</label><input type="number" id="gasto-valor" step="0.01" oninput="calcPreviewGasto()"></div>
       </div>
-
-      <div class="calc-preview gasto">
-        <span>Valor do Gasto</span>
-        <strong id="preview-gasto">R$ 0,00</strong>
-      </div>
-
+      <div class="calc-preview gasto"><span>Total</span><strong id="preview-gasto">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-gasto" onclick="addGasto()">💸 Registrar Gasto</button>
+        <button class="btn btn-gasto" onclick="addGasto()">💸 Salvar Gasto</button>
         <button class="btn btn-secondary" onclick="limparFormGasto()">🔄 Limpar</button>
       </div>
     </div>
@@ -713,92 +550,19 @@
       <div class="card-title">📋 Últimos Gastos</div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Tipo</th>
-              <th>Categoria</th>
-              <th>Área</th>
-              <th>Valor</th>
-              <th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Área</th><th>Valor</th><th></th></tr></thead>
           <tbody id="lista-gastos"></tbody>
         </table>
       </div>
     </div>
   </section>
-
-  <!-- ═══ ÁREAS ═══ -->
-  <section id="areas" class="section">
-    <div class="section-title">🗺️ Análise por Área</div>
-    <div class="section-sub">Rentabilidade detalhada de cada área</div>
-
-    <div class="card">
-      <div class="card-title">📊 Resumo por Área</div>
-      <div class="areas-grid" id="areas-resumo"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🌾 Produção por Área</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>Produto</th>
-              <th>Quantidade</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody id="areas-producao"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">💰 Vendas por Área</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>Produto</th>
-              <th>Cliente</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody id="areas-vendas"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">💸 Gastos por Área</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>Tipo</th>
-              <th>Categoria</th>
-              <th>Valor</th>
-            </tr>
-          </thead>
-          <tbody id="areas-gastos"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
 </main>
 
-<!-- TOAST -->
 <div id="toast"></div>
 
 <script>
 // ============================================
-// ESTADO DA APLICAÇÃO
+// ESTADO
 // ============================================
 let producoes = [];
 let vendas = [];
@@ -815,28 +579,28 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gasto-data').value = hoje;
   
   carregarDados();
-  atualizarTudo();
 });
 
 // ============================================
-// PERSISTÊNCIA
+// API
 // ============================================
-function carregarDados() {
+async function carregarDados() {
   try {
-    producoes = JSON.parse(localStorage.getItem('colheita_producoes')) || [];
-    vendas = JSON.parse(localStorage.getItem('colheita_vendas')) || [];
-    gastos = JSON.parse(localStorage.getItem('colheita_gastos')) || [];
-  } catch (e) {
-    producoes = [];
-    vendas = [];
-    gastos = [];
+    const [prodRes, vendasRes, gastosRes] = await Promise.all([
+      fetch('/api/producoes'),
+      fetch('/api/vendas'),
+      fetch('/api/gastos')
+    ]);
+    
+    if (prodRes.ok) producoes = await prodRes.json();
+    if (vendasRes.ok) vendas = await vendasRes.json();
+    if (gastosRes.ok) gastos = await gastosRes.json();
+    
+    atualizarTudo();
+  } catch (error) {
+    console.error('Erro ao carregar:', error);
+    toast('Erro ao conectar com o servidor');
   }
-}
-
-function salvarDados() {
-  localStorage.setItem('colheita_producoes', JSON.stringify(producoes));
-  localStorage.setItem('colheita_vendas', JSON.stringify(vendas));
-  localStorage.setItem('colheita_gastos', JSON.stringify(gastos));
 }
 
 // ============================================
@@ -847,10 +611,6 @@ function showSection(id, btn) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
-  
-  if (id === 'dashboard') atualizarDashboard();
-  if (id === 'areas') atualizarAreas();
-  atualizarDataLists();
 }
 
 // ============================================
@@ -862,7 +622,7 @@ function calcPreviewProducao() {
   document.getElementById('preview-producao').textContent = formatMoney(qtd * valor);
 }
 
-function addProducao() {
+async function addProducao() {
   const data = document.getElementById('prod-data').value;
   const produto = document.getElementById('prod-produto').value.trim();
   const area = document.getElementById('prod-area').value.trim();
@@ -883,15 +643,25 @@ function addProducao() {
     unidade,
     qtd,
     valorUnit: valor,
-    total: qtd * valor,
-    timestamp: Date.now()
+    total: qtd * valor
   };
 
-  producoes.unshift(novo);
-  salvarDados();
-  limparFormProducao();
-  atualizarTudo();
-  toast('✅ Produção registrada!');
+  try {
+    const response = await fetch('/api/producoes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      producoes.unshift(novo);
+      limparFormProducao();
+      atualizarTudo();
+      toast('✅ Produção registrada!');
+    }
+  } catch (error) {
+    toast('❌ Erro ao salvar');
+  }
 }
 
 function limparFormProducao() {
@@ -902,12 +672,19 @@ function limparFormProducao() {
   document.getElementById('preview-producao').textContent = formatMoney(0);
 }
 
-function deleteProducao(id) {
-  if (!confirm('Remover este registro?')) return;
-  producoes = producoes.filter(p => p.id !== id);
-  salvarDados();
-  atualizarTudo();
-  toast('🗑️ Registro removido');
+async function deleteProducao(id) {
+  if (!confirm('Remover?')) return;
+  
+  try {
+    const response = await fetch(`/api/producoes/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      producoes = producoes.filter(p => p.id !== id);
+      atualizarTudo();
+      toast('🗑️ Removido');
+    }
+  } catch (error) {
+    toast('❌ Erro ao remover');
+  }
 }
 
 // ============================================
@@ -919,7 +696,7 @@ function calcPreviewVenda() {
   document.getElementById('preview-venda').textContent = formatMoney(qtd * valor);
 }
 
-function addVenda() {
+async function addVenda() {
   const data = document.getElementById('venda-data').value;
   const produto = document.getElementById('venda-produto').value.trim();
   const cliente = document.getElementById('venda-cliente').value.trim();
@@ -942,15 +719,25 @@ function addVenda() {
     unidade,
     qtd,
     valorUnit: valor,
-    total: qtd * valor,
-    timestamp: Date.now()
+    total: qtd * valor
   };
 
-  vendas.unshift(novo);
-  salvarDados();
-  limparFormVenda();
-  atualizarTudo();
-  toast('💰 Venda registrada!');
+  try {
+    const response = await fetch('/api/vendas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      vendas.unshift(novo);
+      limparFormVenda();
+      atualizarTudo();
+      toast('💰 Venda registrada!');
+    }
+  } catch (error) {
+    toast('❌ Erro ao salvar');
+  }
 }
 
 function limparFormVenda() {
@@ -962,12 +749,19 @@ function limparFormVenda() {
   document.getElementById('preview-venda').textContent = formatMoney(0);
 }
 
-function deleteVenda(id) {
-  if (!confirm('Remover esta venda?')) return;
-  vendas = vendas.filter(v => v.id !== id);
-  salvarDados();
-  atualizarTudo();
-  toast('🗑️ Venda removida');
+async function deleteVenda(id) {
+  if (!confirm('Remover?')) return;
+  
+  try {
+    const response = await fetch(`/api/vendas/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      vendas = vendas.filter(v => v.id !== id);
+      atualizarTudo();
+      toast('🗑️ Removido');
+    }
+  } catch (error) {
+    toast('❌ Erro ao remover');
+  }
 }
 
 // ============================================
@@ -978,7 +772,7 @@ function calcPreviewGasto() {
   document.getElementById('preview-gasto').textContent = formatMoney(valor);
 }
 
-function addGasto() {
+async function addGasto() {
   const data = document.getElementById('gasto-data').value;
   const tipo = document.getElementById('gasto-tipo').value.trim();
   const categoria = document.getElementById('gasto-categoria').value;
@@ -986,7 +780,7 @@ function addGasto() {
   const valor = parseFloat(document.getElementById('gasto-valor').value);
 
   if (!data || !tipo || !valor) {
-    toast('⚠️ Preencha tipo e valor do gasto!');
+    toast('⚠️ Preencha tipo e valor!');
     return;
   }
 
@@ -996,15 +790,25 @@ function addGasto() {
     tipo,
     categoria,
     area: area || '',
-    valor,
-    timestamp: Date.now()
+    valor
   };
 
-  gastos.unshift(novo);
-  salvarDados();
-  limparFormGasto();
-  atualizarTudo();
-  toast('💸 Gasto registrado!');
+  try {
+    const response = await fetch('/api/gastos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      gastos.unshift(novo);
+      limparFormGasto();
+      atualizarTudo();
+      toast('💸 Gasto registrado!');
+    }
+  } catch (error) {
+    toast('❌ Erro ao salvar');
+  }
 }
 
 function limparFormGasto() {
@@ -1014,28 +818,31 @@ function limparFormGasto() {
   document.getElementById('preview-gasto').textContent = formatMoney(0);
 }
 
-function deleteGasto(id) {
-  if (!confirm('Remover este gasto?')) return;
-  gastos = gastos.filter(g => g.id !== id);
-  salvarDados();
-  atualizarTudo();
-  toast('🗑️ Gasto removido');
+async function deleteGasto(id) {
+  if (!confirm('Remover?')) return;
+  
+  try {
+    const response = await fetch(`/api/gastos/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      gastos = gastos.filter(g => g.id !== id);
+      atualizarTudo();
+      toast('🗑️ Removido');
+    }
+  } catch (error) {
+    toast('❌ Erro ao remover');
+  }
 }
 
 // ============================================
-// DASHBOARD E GRÁFICOS
+// DASHBOARD
 // ============================================
 function atualizarTudo() {
-  atualizarDashboard();
   atualizarListas();
-  atualizarAreas();
-  atualizarDataLists();
+  atualizarDashboard();
 }
 
 function atualizarListas() {
-  // Produções
-  const tbodyProd = document.getElementById('lista-producoes');
-  tbodyProd.innerHTML = producoes.slice(0, 8).map(p => `
+  document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 8).map(p => `
     <tr>
       <td>${formatDate(p.data)}</td>
       <td><span class="badge badge-prod">${p.produto}</span></td>
@@ -1044,11 +851,9 @@ function atualizarListas() {
       <td>${formatMoney(p.total)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteProducao('${p.id}')">🗑️</button></td>
     </tr>
-  `).join('') || `<tr><td colspan="6" class="empty">📭 Nenhuma produção</td></tr>`;
+  `).join('') || '<tr><td colspan="6" class="empty">📭 Nenhuma produção</td></tr>';
 
-  // Vendas
-  const tbodyVendas = document.getElementById('lista-vendas');
-  tbodyVendas.innerHTML = vendas.slice(0, 8).map(v => `
+  document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 8).map(v => `
     <tr>
       <td>${formatDate(v.data)}</td>
       <td><span class="badge badge-venda">${v.produto}</span></td>
@@ -1058,11 +863,9 @@ function atualizarListas() {
       <td>${formatMoney(v.total)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteVenda('${v.id}')">🗑️</button></td>
     </tr>
-  `).join('') || `<tr><td colspan="7" class="empty">📭 Nenhuma venda</td></tr>`;
+  `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhuma venda</td></tr>';
 
-  // Gastos
-  const tbodyGastos = document.getElementById('lista-gastos');
-  tbodyGastos.innerHTML = gastos.slice(0, 8).map(g => `
+  document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 8).map(g => `
     <tr>
       <td>${formatDate(g.data)}</td>
       <td><span class="badge badge-gasto">${g.tipo}</span></td>
@@ -1071,45 +874,19 @@ function atualizarListas() {
       <td>${formatMoney(g.valor)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteGasto('${g.id}')">🗑️</button></td>
     </tr>
-  `).join('') || `<tr><td colspan="6" class="empty">📭 Nenhum gasto</td></tr>`;
+  `).join('') || '<tr><td colspan="6" class="empty">📭 Nenhum gasto</td></tr>';
 }
 
 function atualizarDashboard() {
-  // Totais
   const totalProd = producoes.reduce((s, p) => s + (p.total || 0), 0);
   const totalVendas = vendas.reduce((s, v) => s + (v.total || 0), 0);
   const totalGastos = gastos.reduce((s, g) => s + (g.valor || 0), 0);
   const lucro = totalVendas - totalGastos;
-  const margem = totalVendas > 0 ? (lucro / totalVendas * 100) : 0;
 
   document.getElementById('kpi-producao').textContent = formatMoney(totalProd);
   document.getElementById('kpi-vendas').textContent = formatMoney(totalVendas);
   document.getElementById('kpi-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-lucro').textContent = formatMoney(lucro);
-  document.getElementById('kpi-margem').innerHTML = `Margem: <strong>${margem.toFixed(1)}%</strong>`;
-
-  // Gráfico 1: Evolução (últimos 6 meses)
-  const evolucao = calcularEvolucao();
-  criarGraficoEvolucao(evolucao);
-
-  // Gráfico 2: Distribuição de Gastos
-  const gastosCat = {};
-  gastos.forEach(g => {
-    const cat = g.categoria || 'Outros';
-    gastosCat[cat] = (gastosCat[cat] || 0) + g.valor;
-  });
-  criarGraficoGastos(gastosCat);
-
-  // Gráfico 3: Top Produtos (vendas)
-  const produtosVenda = {};
-  vendas.forEach(v => {
-    produtosVenda[v.produto] = (produtosVenda[v.produto] || 0) + v.total;
-  });
-  criarGraficoProdutos(produtosVenda);
-
-  // Gráfico 4: Rentabilidade por Área
-  const areas = calcularAreas();
-  criarGraficoAreas(areas);
 
   // Últimos registros
   const todos = [
@@ -1118,206 +895,114 @@ function atualizarDashboard() {
     ...gastos.slice(0, 3).map(g => ({ ...g, tipo: 'gasto', badge: 'badge-gasto', desc: g.tipo, valor: -g.valor }))
   ].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
 
-  const tbody = document.getElementById('dashboard-ultimos');
-  tbody.innerHTML = todos.map(r => `
+  document.getElementById('dashboard-ultimos').innerHTML = todos.map(r => `
     <tr>
       <td>${formatDate(r.data)}</td>
       <td><span class="badge ${r.badge}">${r.tipo}</span></td>
       <td>${r.desc}</td>
       <td>${r.area || '—'}</td>
-      <td><strong style="color: ${r.valor > 0 ? 'var(--verde)' : 'var(--vermelho)'}">${formatMoney(Math.abs(r.valor))}</strong></td>
+      <td>${formatMoney(Math.abs(r.valor))}</td>
     </tr>
-  `).join('') || `<tr><td colspan="5" class="empty">📭 Nenhum registro</td></tr>`;
+  `).join('') || '<tr><td colspan="5" class="empty">📭 Nenhum registro</td></tr>';
+
+  // Gráficos
+  criarGraficos();
 }
 
-function calcularEvolucao() {
-  const meses = {};
-  const hoje = new Date();
+function criarGraficos() {
+  // Gastos por categoria
+  const gastosCat = {};
+  gastos.forEach(g => gastosCat[g.categoria] = (gastosCat[g.categoria] || 0) + g.valor);
   
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    meses[chave] = { vendas: 0, gastos: 0, label: d.toLocaleDateString('pt-BR', { month: 'short' }) };
-  }
-
-  vendas.forEach(v => {
-    const d = new Date(v.data + 'T12:00:00');
-    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    if (meses[chave]) meses[chave].vendas += v.total;
-  });
-
-  gastos.forEach(g => {
-    const d = new Date(g.data + 'T12:00:00');
-    const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    if (meses[chave]) meses[chave].gastos += g.valor;
-  });
-
-  return Object.values(meses);
-}
-
-function calcularAreas() {
-  const areas = {};
-  
-  producoes.forEach(p => {
-    if (!p.area) return;
-    if (!areas[p.area]) areas[p.area] = { producao: 0, vendas: 0, gastos: 0 };
-    areas[p.area].producao += p.total;
-  });
-
-  vendas.forEach(v => {
-    if (!v.area) return;
-    if (!areas[v.area]) areas[v.area] = { producao: 0, vendas: 0, gastos: 0 };
-    areas[v.area].vendas += v.total;
-  });
-
-  gastos.forEach(g => {
-    if (!g.area) return;
-    if (!areas[g.area]) areas[g.area] = { producao: 0, vendas: 0, gastos: 0 };
-    areas[g.area].gastos += g.valor;
-  });
-
-  return Object.entries(areas).map(([nome, d]) => ({
-    nome,
-    ...d,
-    receita: d.vendas,
-    lucro: d.vendas - d.gastos
-  }));
-}
-
-function criarGraficoEvolucao(dados) {
-  const ctx = document.getElementById('chartEvolucao').getContext('2d');
-  if (charts.evolucao) charts.evolucao.destroy();
-  
-  charts.evolucao = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: dados.map(d => d.label),
-      datasets: [
-        { label: 'Vendas', data: dados.map(d => d.vendas), borderColor: '#3b82f6', tension: 0.4 },
-        { label: 'Gastos', data: dados.map(d => d.gastos), borderColor: '#dc2626', tension: 0.4 }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
-}
-
-function criarGraficoGastos(dados) {
-  const ctx = document.getElementById('chartGastos').getContext('2d');
   if (charts.gastos) charts.gastos.destroy();
-  
-  charts.gastos = new Chart(ctx, {
+  charts.gastos = new Chart(document.getElementById('chartGastos'), {
     type: 'doughnut',
     data: {
-      labels: Object.keys(dados),
+      labels: Object.keys(gastosCat),
       datasets: [{
-        data: Object.values(dados),
+        data: Object.values(gastosCat),
         backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280']
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '65%' }
+    options: { responsive: true, maintainAspectRatio: false }
   });
-}
 
-function criarGraficoProdutos(dados) {
-  const ctx = document.getElementById('chartProdutos').getContext('2d');
+  // Top produtos
+  const prodVendas = {};
+  vendas.forEach(v => prodVendas[v.produto] = (prodVendas[v.produto] || 0) + v.total);
+  const topProd = Object.entries(prodVendas).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  
   if (charts.produtos) charts.produtos.destroy();
-  
-  const sorted = Object.entries(dados).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  
-  charts.produtos = new Chart(ctx, {
+  charts.produtos = new Chart(document.getElementById('chartProdutos'), {
     type: 'bar',
     data: {
-      labels: sorted.map(s => s[0]),
+      labels: topProd.map(p => p[0]),
       datasets: [{
-        label: 'Valor (R$)',
-        data: sorted.map(s => s[1]),
+        label: 'Vendas',
+        data: topProd.map(p => p[1]),
         backgroundColor: '#3b82f6'
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
-}
 
-function criarGraficoAreas(dados) {
-  const ctx = document.getElementById('chartAreas').getContext('2d');
-  if (charts.areas) charts.areas.destroy();
-  
-  charts.areas = new Chart(ctx, {
-    type: 'bar',
+  // Evolução (simplificada)
+  const meses = {};
+  const hoje = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
+    meses[chave] = { vendas: 0, gastos: 0 };
+  }
+
+  vendas.forEach(v => {
+    const d = new Date(v.data + 'T12:00:00');
+    const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
+    if (meses[chave]) meses[chave].vendas += v.total;
+  });
+
+  gastos.forEach(g => {
+    const d = new Date(g.data + 'T12:00:00');
+    const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
+    if (meses[chave]) meses[chave].gastos += g.valor;
+  });
+
+  if (charts.evolucao) charts.evolucao.destroy();
+  charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
+    type: 'line',
     data: {
-      labels: dados.map(d => d.nome),
+      labels: Object.keys(meses),
       datasets: [
-        { label: 'Vendas', data: dados.map(d => d.vendas), backgroundColor: '#3b82f6' },
-        { label: 'Gastos', data: dados.map(d => d.gastos), backgroundColor: '#dc2626' }
+        { label: 'Vendas', data: Object.values(meses).map(m => m.vendas), borderColor: '#3b82f6' },
+        { label: 'Gastos', data: Object.values(meses).map(m => m.gastos), borderColor: '#dc2626' }
       ]
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
-}
 
-// ============================================
-// ANÁLISE POR ÁREA
-// ============================================
-function atualizarAreas() {
-  const areasMap = new Map();
-  
-  producoes.forEach(p => {
-    if (!p.area) return;
-    if (!areasMap.has(p.area)) areasMap.set(p.area, { producao: [], vendas: [], gastos: [] });
-    areasMap.get(p.area).producao.push(p);
-  });
-
+  // Áreas
+  const areas = {};
   vendas.forEach(v => {
-    if (!v.area) return;
-    if (!areasMap.has(v.area)) areasMap.set(v.area, { producao: [], vendas: [], gastos: [] });
-    areasMap.get(v.area).vendas.push(v);
+    if (v.area) areas[v.area] = areas[v.area] || { vendas: 0, gastos: 0 };
+    if (v.area) areas[v.area].vendas += v.total;
   });
-
   gastos.forEach(g => {
-    if (!g.area) return;
-    if (!areasMap.has(g.area)) areasMap.set(g.area, { producao: [], vendas: [], gastos: [] });
-    areasMap.get(g.area).gastos.push(g);
+    if (g.area) areas[g.area] = areas[g.area] || { vendas: 0, gastos: 0 };
+    if (g.area) areas[g.area].gastos += g.valor;
   });
 
-  // Resumo por área
-  const areasResumo = document.getElementById('areas-resumo');
-  if (areasMap.size === 0) {
-    areasResumo.innerHTML = `<div class="empty"><div class="empty-icon">🗺️</div><p>Nenhuma área registrada</p></div>`;
-  } else {
-    areasResumo.innerHTML = Array.from(areasMap.entries()).map(([area, dados]) => {
-      const totalProd = dados.producao.reduce((s, p) => s + p.total, 0);
-      const totalVendas = dados.vendas.reduce((s, v) => s + v.total, 0);
-      const totalGastos = dados.gastos.reduce((s, g) => s + g.valor, 0);
-      const lucro = totalVendas - totalGastos;
-      
-      return `
-        <div class="area-tag">
-          <span class="area-nome">🗺️ <strong>${area}</strong></span>
-          <span class="area-valores">
-            <span class="area-prod">🌾 ${formatMoney(totalProd)}</span>
-            <span class="area-venda">💰 ${formatMoney(totalVendas)}</span>
-            <span class="area-gasto">💸 ${formatMoney(totalGastos)}</span>
-            <span class="area-lucro ${lucro >= 0 ? 'badge-prod' : 'badge-gasto'}">
-              ${lucro >= 0 ? '📈' : '📉'} ${formatMoney(Math.abs(lucro))}
-            </span>
-          </span>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // Tabelas detalhadas
-  document.getElementById('areas-producao').innerHTML = producoes.filter(p => p.area).slice(0, 10).map(p => `
-    <tr><td>${p.area}</td><td>${p.produto}</td><td>${p.qtd} ${p.unidade}</td><td>${formatMoney(p.total)}</td></tr>
-  `).join('') || `<tr><td colspan="4" class="empty">📭 Nenhuma produção com área</td></tr>`;
-
-  document.getElementById('areas-vendas').innerHTML = vendas.filter(v => v.area).slice(0, 10).map(v => `
-    <tr><td>${v.area}</td><td>${v.produto}</td><td>${v.cliente || '—'}</td><td>${formatMoney(v.total)}</td></tr>
-  `).join('') || `<tr><td colspan="4" class="empty">📭 Nenhuma venda com área</td></tr>`;
-
-  document.getElementById('areas-gastos').innerHTML = gastos.filter(g => g.area).slice(0, 10).map(g => `
-    <tr><td>${g.area}</td><td>${g.tipo}</td><td>${g.categoria}</td><td>${formatMoney(g.valor)}</td></tr>
-  `).join('') || `<tr><td colspan="4" class="empty">📭 Nenhum gasto com área</td></tr>`;
+  if (charts.areas) charts.areas.destroy();
+  charts.areas = new Chart(document.getElementById('chartAreas'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(areas),
+      datasets: [
+        { label: 'Vendas', data: Object.values(areas).map(a => a.vendas), backgroundColor: '#3b82f6' },
+        { label: 'Gastos', data: Object.values(areas).map(a => a.gastos), backgroundColor: '#dc2626' }
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
 }
 
 // ============================================
@@ -1338,16 +1023,6 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-function atualizarDataLists() {
-  const produtos = new Set([...producoes, ...vendas].map(r => r.produto).filter(Boolean));
-  const areas = new Set([...producoes, ...vendas, ...gastos].map(r => r.area).filter(Boolean));
-  const tiposGasto = new Set(gastos.map(g => g.tipo).filter(Boolean));
-  
-  document.getElementById('lista-produtos').innerHTML = Array.from(produtos).map(p => `<option value="${p}">`).join('');
-  document.getElementById('lista-areas').innerHTML = Array.from(areas).map(a => `<option value="${a}">`).join('');
-  document.getElementById('lista-tipos-gasto').innerHTML = Array.from(tiposGasto).map(t => `<option value="${t}">`).join('');
 }
 </script>
 </body>
