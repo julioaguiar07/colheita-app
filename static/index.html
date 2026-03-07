@@ -1256,17 +1256,10 @@ function atualizarDashboard() {
   // LUCRO = VENDAS - (CUSTOS DE PRODUÇÃO + GASTOS GERAIS)
   const lucro = totalVendas - (totalProd + totalGastos);
 
-  console.log('Dados para gráfico:', {
-    vendas: vendas.map(v => ({ data: v.data, total: v.total })),
-    gastos: gastos.map(g => ({ data: g.data, valor: g.valor })),
-    producoes: producoes.map(p => ({ data: p.data, total: p.total }))
-  });
-
   document.getElementById('kpi-producao').textContent = formatMoney(totalProd);
   document.getElementById('kpi-vendas').textContent = formatMoney(totalVendas);
   document.getElementById('kpi-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-lucro').textContent = formatMoney(lucro);
-
 
   // Últimas Produções
   const ultimasProd = producoes.slice(0, 5).map(p => `
@@ -1340,152 +1333,6 @@ function criarGraficos() {
       });
     }
   }
-
-  // GRÁFICO DE EVOLUÇÃO CORRIGIDO - Últimos 30 dias em barras
-  const ultimos30Dias = [];
-  const hoje = new Date();
-  
-  // Criar array com os últimos 30 dias (do mais antigo para o mais novo)
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(hoje);
-    d.setDate(d.getDate() - i);
-    const dia = d.toISOString().split('T')[0];
-    const diaFormatado = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    ultimos30Dias.push({
-      data: dia,
-      label: diaFormatado,
-      vendas: 0,
-      gastos: 0,
-      custos: 0
-    });
-  }
-
-  // Preencher com dados de vendas
-  vendas.forEach(v => {
-    if (v?.data && v?.total) {
-      const diaEncontrado = ultimos30Dias.find(d => d.data === v.data);
-      if (diaEncontrado) {
-        diaEncontrado.vendas += Number(v.total) || 0;
-      }
-    }
-  });
-
-  // Preencher com dados de gastos
-  gastos.forEach(g => {
-    if (g?.data && g?.valor) {
-      const diaEncontrado = ultimos30Dias.find(d => d.data === g.data);
-      if (diaEncontrado) {
-        diaEncontrado.gastos += Number(g.valor) || 0;
-      }
-    }
-  });
-
-  // Preencher com dados de custos de produção
-  producoes.forEach(p => {
-    if (p?.data && p?.total) {
-      const diaEncontrado = ultimos30Dias.find(d => d.data === p.data);
-      if (diaEncontrado) {
-        diaEncontrado.custos += Number(p.total) || 0;
-      }
-    }
-  });
-
-  // Filtrar apenas dias que têm algum dado (para não mostrar gráfico vazio)
-  const diasComDados = ultimos30Dias.filter(d => d.vendas > 0 || d.gastos > 0 || d.custos > 0);
-  
-  console.log('Dias com dados para o gráfico:', diasComDados); // Debug
-
-  if (charts.evolucao) charts.evolucao.destroy();
-  const ctxEvol = document.getElementById('chartEvolucao')?.getContext('2d');
-  
-  if (ctxEvol) {
-    if (diasComDados.length > 0) {
-      // Se houver dados, mostrar dias específicos
-      charts.evolucao = new Chart(ctxEvol, {
-        type: 'bar',
-        data: {
-          labels: diasComDados.map(d => d.label),
-          datasets: [
-            { 
-              label: 'Vendas', 
-              data: diasComDados.map(d => d.vendas), 
-              backgroundColor: '#3b82f6',
-              borderRadius: 6
-            },
-            { 
-              label: 'Gastos + Custos', 
-              data: diasComDados.map(d => d.gastos + d.custos), 
-              backgroundColor: '#dc2626',
-              borderRadius: 6
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { 
-            legend: { position: 'bottom' },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  let label = context.dataset.label || '';
-                  if (label) {
-                    label += ': ';
-                  }
-                  if (context.parsed.y !== null) {
-                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
-                  }
-                  return label;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return 'R$ ' + value.toLocaleString('pt-BR');
-                }
-              }
-            }
-          }
-        }
-      });
-    } else {
-      // Se não houver dados, mostrar mensagem
-      charts.evolucao = new Chart(ctxEvol, {
-        type: 'bar',
-        data: {
-          labels: ['Sem dados'],
-          datasets: [
-            { label: 'Vendas', data: [0], backgroundColor: '#3b82f6' },
-            { label: 'Gastos + Custos', data: [0], backgroundColor: '#dc2626' }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { 
-            legend: { position: 'bottom' },
-            tooltip: { enabled: false }
-          },
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-      
-      // Adicionar texto centralizado
-      const width = ctxEvol.canvas.width;
-      const height = ctxEvol.canvas.height;
-      ctxEvol.font = '14px Sora';
-      ctxEvol.fillStyle = '#6b7280';
-      ctxEvol.textAlign = 'center';
-      ctxEvol.fillText('Nenhum dado nos últimos 30 dias', width/2, height/2);
-    }
-  }
-}
 
   // Gráfico de Evolução (últimos 30 dias)
   const ultimos30Dias = {};
