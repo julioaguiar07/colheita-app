@@ -767,6 +767,159 @@
 
 <script>
 // ═══════════════════════════════════════════════════
+//  API FUNCTIONS PARA PYTHON/FLASK
+// ═══════════════════════════════════════════════════
+async function carregarDados() {
+    try {
+        // Mostrar loading
+        console.log('Carregando dados...');
+        
+        // Carregar produções
+        const prodRes = await fetch('/api/producoes');
+        if (prodRes.ok) {
+            producoes = await prodRes.json();
+            console.log('Produções carregadas:', producoes.length);
+        }
+        
+        // Carregar diárias
+        const diaRes = await fetch('/api/diarias');
+        if (diaRes.ok) {
+            diarias = await diaRes.json();
+            console.log('Diárias carregadas:', diarias.length);
+        }
+        
+        // Atualizar interface
+        renderProdRecent();
+        renderDiariaRecent();
+        updateDataLists();
+        
+        // Atualizar resumo se estiver na seção
+        if (document.getElementById('resumo').classList.contains('active')) {
+            renderResumo();
+        }
+        
+        // Atualizar folha se estiver na seção
+        if (document.getElementById('folha').classList.contains('active')) {
+            renderFolha();
+        }
+        
+        toast('✅ Dados carregados com sucesso!');
+    } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        toast('⚠️ Erro ao conectar com o servidor. Usando dados locais.');
+        
+        // Fallback para localStorage se API falhar
+        producoes = JSON.parse(localStorage.getItem('colheita_prod') || '[]');
+        diarias = JSON.parse(localStorage.getItem('colheita_diaria') || '[]');
+        renderProdRecent();
+        renderDiariaRecent();
+    }
+}
+
+// Modificar a função addProducao
+async function addProducao() {
+    const data = document.getElementById('p-data').value;
+    const nome = document.getElementById('p-nome').value.trim();
+    const produto = getProduto();
+    const area = document.getElementById('p-area').value.trim();
+    const unidade = document.getElementById('p-unidade').value;
+    const qtd = parseFloat(document.getElementById('p-qtd').value);
+    const valor = parseFloat(document.getElementById('p-valor').value);
+
+    if (!data || !nome || !produto || isNaN(qtd) || isNaN(valor)) {
+        toast('⚠️ Preencha todos os campos obrigatórios!');
+        return;
+    }
+    
+    const novoRegistro = { 
+        id: uid(), 
+        data, 
+        nome, 
+        produto, 
+        area, 
+        unidade, 
+        qtd, 
+        valor, 
+        total: qtd * valor 
+    };
+    
+    try {
+        const response = await fetch('/api/producoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novoRegistro)
+        });
+        
+        if (response.ok) {
+            producoes.push(novoRegistro);
+            // Backup no localStorage
+            localStorage.setItem('colheita_prod', JSON.stringify(producoes));
+            
+            limparFormProd();
+            renderProdRecent();
+            updateDataLists();
+            toast('✅ Produção registrada com sucesso!');
+        } else {
+            throw new Error('Erro no servidor');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar:', error);
+        // Fallback: salvar apenas localmente
+        producoes.push(novoRegistro);
+        localStorage.setItem('colheita_prod', JSON.stringify(producoes));
+        limparFormProd();
+        renderProdRecent();
+        toast('⚠️ Salvo apenas localmente (offline)');
+    }
+}
+
+// Função para sincronizar dados quando voltar online
+window.addEventListener('online', () => {
+    toast('📡 Conexão restabelecida. Sincronizando...');
+    carregarDados();
+});
+
+// Modificar a função deleteProd
+async function deleteProd(id) {
+    if (!confirm('Excluir este registro?')) return;
+    
+    try {
+        const response = await fetch(`/api/producoes/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            producoes = producoes.filter(r => r.id !== id);
+            localStorage.setItem('colheita_prod', JSON.stringify(producoes));
+            renderProdRecent();
+            renderFolha();
+            toast('🗑️ Registro excluído.');
+        }
+    } catch (error) {
+        // Fallback: excluir apenas localmente
+        producoes = producoes.filter(r => r.id !== id);
+        localStorage.setItem('colheita_prod', JSON.stringify(producoes));
+        renderProdRecent();
+        toast('⚠️ Excluído apenas localmente');
+    }
+}
+
+// Modificar a função init
+(function init() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('p-data').value = today;
+    document.getElementById('d-data').value = today;
+    
+    // Tentar carregar da API, se falhar usar localStorage
+    carregarDados();
+    
+    // Configurar listeners para formulários
+    document.getElementById('p-produto').addEventListener('change', checkOutros);
+    document.getElementById('p-qtd').addEventListener('input', calcPreview);
+    document.getElementById('p-valor').addEventListener('input', calcPreview);
+    document.getElementById('d-tipo').addEventListener('change', calcDiariaPreview);
+})();
+// ═══════════════════════════════════════════════════
 //  STORAGE
 // ═══════════════════════════════════════════════════
 let producoes = JSON.parse(localStorage.getItem('colheita_prod') || '[]');
