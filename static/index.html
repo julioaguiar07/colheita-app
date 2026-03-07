@@ -156,7 +156,7 @@
     transition: border-color 0.18s, box-shadow 0.18s;
     width: 100%;
   }
-  input:focus, select:focus {
+  input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--verde-claro);
     box-shadow: 0 0 0 3px rgba(74,170,92,0.15);
@@ -330,20 +330,14 @@
   .badge-venda { background: #dbeafe; color: #1e40af; }
   .badge-gasto { background: #fee2e2; color: #991b1b; }
 
-  .areas-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .area-tag {
-    background: var(--creme);
-    padding: 15px 20px;
-    border-radius: var(--radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-weight: 500;
-    border: 1px solid var(--cinza-claro);
+  .observacao {
+    font-size: 0.8rem;
+    color: var(--cinza);
+    font-style: italic;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   #toast {
@@ -398,15 +392,15 @@
   <!-- DASHBOARD -->
   <section id="dashboard" class="section active">
     <div class="section-title">📊 Dashboard</div>
-    <div class="section-sub">Visão geral da sua operação</div>
+    <div class="section-sub">Visão completa da sua operação</div>
 
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🌾 Produção</div>
+        <div class="kpi-label">🌾 Produção (Custo)</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
       </div>
       <div class="kpi-card azul">
-        <div class="kpi-label">💰 Vendas</div>
+        <div class="kpi-label">💰 Vendas (Receita)</div>
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
       </div>
       <div class="kpi-card vermelho">
@@ -421,20 +415,20 @@
 
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">📈 Evolução</div>
-        <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
+        <div class="chart-title">📈 Produção vs Vendas por Produto</div>
+        <div class="chart-container"><canvas id="chartProdutos"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">🥧 Gastos por Categoria</div>
         <div class="chart-container"><canvas id="chartGastos"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">🌱 Top Produtos</div>
-        <div class="chart-container"><canvas id="chartProdutos"></canvas></div>
+        <div class="chart-title">🌱 Rentabilidade dos Produtos</div>
+        <div class="chart-container"><canvas id="chartRentabilidade"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">💰 Áreas</div>
-        <div class="chart-container"><canvas id="chartAreas"></canvas></div>
+        <div class="chart-title">💰 Evolução Mensal</div>
+        <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
       </div>
     </div>
 
@@ -449,33 +443,33 @@
     </div>
   </section>
 
-  <!-- PRODUÇÃO -->
+  <!-- PRODUÇÃO (Custos de produção) -->
   <section id="producao" class="section">
-    <div class="section-title">🌾 Produção</div>
-    <div class="section-sub">Registre a colheita</div>
+    <div class="section-title">🌾 Custos de Produção</div>
+    <div class="section-sub">Registre os custos por produto (mudas, adubo, mão de obra, etc)</div>
 
     <div class="card">
-      <div class="card-title">📝 Nova Produção</div>
+      <div class="card-title">📝 Novo Custo de Produção</div>
       <div class="form-grid">
         <div class="form-group"><label>Data</label><input type="date" id="prod-data"></div>
-        <div class="form-group"><label>Produto</label><input type="text" id="prod-produto" placeholder="Ex: Acerola"></div>
-        <div class="form-group"><label>Área</label><input type="text" id="prod-area" placeholder="Ex: Talhão A"></div>
-        <div class="form-group"><label>Unidade</label><select id="prod-unidade"><option>Balde</option><option>Caixa</option><option>Kg</option><option>Saco</option></select></div>
-        <div class="form-group"><label>Quantidade</label><input type="number" id="prod-qtd" step="0.5" oninput="calcPreviewProducao()"></div>
-        <div class="form-group"><label>Valor Unit.</label><input type="number" id="prod-valor" step="0.01" oninput="calcPreviewProducao()"></div>
+        <div class="form-group"><label>Produto</label><input type="text" id="prod-produto" placeholder="Ex: Acerola" list="lista-produtos"></div>
+        <div class="form-group"><label>Tipo de Custo</label><input type="text" id="prod-tipo" placeholder="Ex: Mudas, Adubo, Poda" list="lista-tipos-custo"></div>
+        <div class="form-group"><label>Área</label><input type="text" id="prod-area" placeholder="Ex: Talhão A" list="lista-areas"></div>
+        <div class="form-group"><label>Quantidade</label><input type="number" id="prod-qtd" step="0.5" placeholder="Opcional"></div>
+        <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="prod-valor" step="0.01" oninput="calcPreviewProducao()"></div>
       </div>
-      <div class="calc-preview"><span>Total</span><strong id="preview-producao">R$ 0,00</strong></div>
+      <div class="calc-preview"><span>Total do Custo</span><strong id="preview-producao">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="addProducao()">✅ Salvar</button>
+        <button class="btn btn-primary" onclick="addProducao()">✅ Registrar Custo</button>
         <button class="btn btn-secondary" onclick="limparFormProducao()">🔄 Limpar</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">📋 Últimas Produções</div>
+      <div class="card-title">📋 Últimos Custos de Produção</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Data</th><th>Produto</th><th>Área</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
+          <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Área</th><th>Qtd</th><th>Valor</th><th></th></tr></thead>
           <tbody id="lista-producoes"></tbody>
         </table>
       </div>
@@ -485,22 +479,22 @@
   <!-- VENDAS -->
   <section id="vendas" class="section">
     <div class="section-title">💰 Vendas</div>
-    <div class="section-sub">Registre as vendas</div>
+    <div class="section-sub">Registre as vendas realizadas</div>
 
     <div class="card">
       <div class="card-title">📝 Nova Venda</div>
       <div class="form-grid">
         <div class="form-group"><label>Data</label><input type="date" id="venda-data"></div>
-        <div class="form-group"><label>Produto</label><input type="text" id="venda-produto" placeholder="Ex: Acerola"></div>
+        <div class="form-group"><label>Produto</label><input type="text" id="venda-produto" placeholder="Ex: Acerola" list="lista-produtos"></div>
         <div class="form-group"><label>Cliente</label><input type="text" id="venda-cliente" placeholder="Opcional"></div>
-        <div class="form-group"><label>Área</label><input type="text" id="venda-area" placeholder="Opcional"></div>
+        <div class="form-group"><label>Área</label><input type="text" id="venda-area" placeholder="Opcional" list="lista-areas"></div>
         <div class="form-group"><label>Unidade</label><select id="venda-unidade"><option>Balde</option><option>Caixa</option><option>Kg</option><option>Saco</option></select></div>
         <div class="form-group"><label>Quantidade</label><input type="number" id="venda-qtd" step="0.5" oninput="calcPreviewVenda()"></div>
         <div class="form-group"><label>Valor Unit.</label><input type="number" id="venda-valor" step="0.01" oninput="calcPreviewVenda()"></div>
       </div>
-      <div class="calc-preview venda"><span>Total</span><strong id="preview-venda">R$ 0,00</strong></div>
+      <div class="calc-preview venda"><span>Total da Venda</span><strong id="preview-venda">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-venda" onclick="addVenda()">💰 Salvar Venda</button>
+        <button class="btn btn-venda" onclick="addVenda()">💰 Registrar Venda</button>
         <button class="btn btn-secondary" onclick="limparFormVenda()">🔄 Limpar</button>
       </div>
     </div>
@@ -516,16 +510,16 @@
     </div>
   </section>
 
-  <!-- GASTOS -->
+  <!-- GASTOS (com observação) -->
   <section id="gastos" class="section">
-    <div class="section-title">💸 Gastos</div>
-    <div class="section-sub">Registre os custos</div>
+    <div class="section-title">💸 Gastos Gerais</div>
+    <div class="section-sub">Registre todos os gastos (combustível, manutenção, etc)</div>
 
     <div class="card">
       <div class="card-title">📝 Novo Gasto</div>
       <div class="form-grid">
         <div class="form-group"><label>Data</label><input type="date" id="gasto-data"></div>
-        <div class="form-group"><label>Tipo</label><input type="text" id="gasto-tipo" placeholder="Ex: Óleo Diesel"></div>
+        <div class="form-group"><label>Tipo</label><input type="text" id="gasto-tipo" placeholder="Ex: Óleo Diesel" list="lista-tipos-gasto"></div>
         <div class="form-group"><label>Categoria</label>
           <select id="gasto-categoria">
             <option value="Combustível">⛽ Combustível</option>
@@ -536,12 +530,13 @@
             <option value="Outros">📦 Outros</option>
           </select>
         </div>
-        <div class="form-group"><label>Área</label><input type="text" id="gasto-area" placeholder="Opcional"></div>
-        <div class="form-group full"><label>Valor</label><input type="number" id="gasto-valor" step="0.01" oninput="calcPreviewGasto()"></div>
+        <div class="form-group"><label>Área</label><input type="text" id="gasto-area" placeholder="Opcional" list="lista-areas"></div>
+        <div class="form-group full"><label>Observação (detalhe do gasto)</label><textarea id="gasto-obs" rows="2" placeholder="Ex: Mangueira do trator do Bruno, peça X, etc"></textarea></div>
+        <div class="form-group full"><label>Valor (R$)</label><input type="number" id="gasto-valor" step="0.01" oninput="calcPreviewGasto()"></div>
       </div>
-      <div class="calc-preview gasto"><span>Total</span><strong id="preview-gasto">R$ 0,00</strong></div>
+      <div class="calc-preview gasto"><span>Total do Gasto</span><strong id="preview-gasto">R$ 0,00</strong></div>
       <div class="btn-row">
-        <button class="btn btn-gasto" onclick="addGasto()">💸 Salvar Gasto</button>
+        <button class="btn btn-gasto" onclick="addGasto()">💸 Registrar Gasto</button>
         <button class="btn btn-secondary" onclick="limparFormGasto()">🔄 Limpar</button>
       </div>
     </div>
@@ -550,7 +545,7 @@
       <div class="card-title">📋 Últimos Gastos</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Área</th><th>Valor</th><th></th></tr></thead>
+          <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Área</th><th>Obs</th><th>Valor</th><th></th></tr></thead>
           <tbody id="lista-gastos"></tbody>
         </table>
       </div>
@@ -559,6 +554,19 @@
 </main>
 
 <div id="toast"></div>
+
+<datalist id="lista-produtos"></datalist>
+<datalist id="lista-areas"></datalist>
+<datalist id="lista-tipos-gasto"></datalist>
+<datalist id="lista-tipos-custo">
+  <option value="Mudas">
+  <option value="Adubo">
+  <option value="Defensivo">
+  <option value="Poda">
+  <option value="Colheita">
+  <option value="Irrigação">
+  <option value="Mão de obra">
+</datalist>
 
 <script>
 // ============================================
@@ -614,24 +622,23 @@ function showSection(id, btn) {
 }
 
 // ============================================
-// PRODUÇÃO
+// PRODUÇÃO (Custos)
 // ============================================
 function calcPreviewProducao() {
-  const qtd = parseFloat(document.getElementById('prod-qtd').value) || 0;
   const valor = parseFloat(document.getElementById('prod-valor').value) || 0;
-  document.getElementById('preview-producao').textContent = formatMoney(qtd * valor);
+  document.getElementById('preview-producao').textContent = formatMoney(valor);
 }
 
 async function addProducao() {
   const data = document.getElementById('prod-data').value;
   const produto = document.getElementById('prod-produto').value.trim();
+  const tipo = document.getElementById('prod-tipo').value.trim();
   const area = document.getElementById('prod-area').value.trim();
-  const unidade = document.getElementById('prod-unidade').value;
-  const qtd = parseFloat(document.getElementById('prod-qtd').value);
+  const qtd = parseFloat(document.getElementById('prod-qtd').value) || 0;
   const valor = parseFloat(document.getElementById('prod-valor').value);
 
-  if (!data || !produto || !qtd || !valor) {
-    toast('⚠️ Preencha todos os campos!');
+  if (!data || !produto || !tipo || !valor) {
+    toast('⚠️ Preencha produto, tipo de custo e valor!');
     return;
   }
 
@@ -639,11 +646,12 @@ async function addProducao() {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     data,
     produto,
+    tipo,
     area: area || '',
-    unidade,
-    qtd,
-    valorUnit: valor,
-    total: qtd * valor
+    qtd: qtd || 0,
+    unidade: qtd ? 'un' : '',
+    valorUnit: qtd ? valor/qtd : valor,
+    total: valor
   };
 
   try {
@@ -657,7 +665,7 @@ async function addProducao() {
       producoes.unshift(novo);
       limparFormProducao();
       atualizarTudo();
-      toast('✅ Produção registrada!');
+      toast('✅ Custo registrado!');
     }
   } catch (error) {
     toast('❌ Erro ao salvar');
@@ -666,6 +674,7 @@ async function addProducao() {
 
 function limparFormProducao() {
   document.getElementById('prod-produto').value = '';
+  document.getElementById('prod-tipo').value = '';
   document.getElementById('prod-area').value = '';
   document.getElementById('prod-qtd').value = '';
   document.getElementById('prod-valor').value = '';
@@ -673,7 +682,7 @@ function limparFormProducao() {
 }
 
 async function deleteProducao(id) {
-  if (!confirm('Remover?')) return;
+  if (!confirm('Remover este custo?')) return;
   
   try {
     const response = await fetch(`/api/producoes/${id}`, { method: 'DELETE' });
@@ -750,7 +759,7 @@ function limparFormVenda() {
 }
 
 async function deleteVenda(id) {
-  if (!confirm('Remover?')) return;
+  if (!confirm('Remover esta venda?')) return;
   
   try {
     const response = await fetch(`/api/vendas/${id}`, { method: 'DELETE' });
@@ -765,7 +774,7 @@ async function deleteVenda(id) {
 }
 
 // ============================================
-// GASTOS
+// GASTOS (com observação)
 // ============================================
 function calcPreviewGasto() {
   const valor = parseFloat(document.getElementById('gasto-valor').value) || 0;
@@ -777,6 +786,7 @@ async function addGasto() {
   const tipo = document.getElementById('gasto-tipo').value.trim();
   const categoria = document.getElementById('gasto-categoria').value;
   const area = document.getElementById('gasto-area').value.trim();
+  const obs = document.getElementById('gasto-obs').value.trim();
   const valor = parseFloat(document.getElementById('gasto-valor').value);
 
   if (!data || !tipo || !valor) {
@@ -790,6 +800,7 @@ async function addGasto() {
     tipo,
     categoria,
     area: area || '',
+    obs: obs || '',
     valor
   };
 
@@ -814,12 +825,13 @@ async function addGasto() {
 function limparFormGasto() {
   document.getElementById('gasto-tipo').value = '';
   document.getElementById('gasto-area').value = '';
+  document.getElementById('gasto-obs').value = '';
   document.getElementById('gasto-valor').value = '';
   document.getElementById('preview-gasto').textContent = formatMoney(0);
 }
 
 async function deleteGasto(id) {
-  if (!confirm('Remover?')) return;
+  if (!confirm('Remover este gasto?')) return;
   
   try {
     const response = await fetch(`/api/gastos/${id}`, { method: 'DELETE' });
@@ -834,26 +846,30 @@ async function deleteGasto(id) {
 }
 
 // ============================================
-// DASHBOARD
+// DASHBOARD E GRÁFICOS
 // ============================================
 function atualizarTudo() {
   atualizarListas();
   atualizarDashboard();
+  atualizarDataLists();
 }
 
 function atualizarListas() {
-  document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 8).map(p => `
+  // Produções
+  document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 10).map(p => `
     <tr>
       <td>${formatDate(p.data)}</td>
       <td><span class="badge badge-prod">${p.produto}</span></td>
+      <td>${p.tipo || '—'}</td>
       <td>${p.area || '—'}</td>
-      <td>${p.qtd} ${p.unidade}</td>
+      <td>${p.qtd ? p.qtd + ' un' : '—'}</td>
       <td>${formatMoney(p.total)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteProducao('${p.id}')">🗑️</button></td>
     </tr>
-  `).join('') || '<tr><td colspan="6" class="empty">📭 Nenhuma produção</td></tr>';
+  `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhum custo registrado</td></tr>';
 
-  document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 8).map(v => `
+  // Vendas
+  document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 10).map(v => `
     <tr>
       <td>${formatDate(v.data)}</td>
       <td><span class="badge badge-venda">${v.produto}</span></td>
@@ -865,16 +881,18 @@ function atualizarListas() {
     </tr>
   `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhuma venda</td></tr>';
 
-  document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 8).map(g => `
+  // Gastos
+  document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 10).map(g => `
     <tr>
       <td>${formatDate(g.data)}</td>
       <td><span class="badge badge-gasto">${g.tipo}</span></td>
       <td>${g.categoria}</td>
       <td>${g.area || '—'}</td>
+      <td class="observacao" title="${g.obs || ''}">${g.obs ? g.obs.substring(0, 30) + (g.obs.length > 30 ? '...' : '') : '—'}</td>
       <td>${formatMoney(g.valor)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteGasto('${g.id}')">🗑️</button></td>
     </tr>
-  `).join('') || '<tr><td colspan="6" class="empty">📭 Nenhum gasto</td></tr>';
+  `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhum gasto</td></tr>';
 }
 
 function atualizarDashboard() {
@@ -890,7 +908,7 @@ function atualizarDashboard() {
 
   // Últimos registros
   const todos = [
-    ...producoes.slice(0, 3).map(p => ({ ...p, tipo: 'produção', badge: 'badge-prod', desc: p.produto, valor: p.total })),
+    ...producoes.slice(0, 3).map(p => ({ ...p, tipo: 'custo', badge: 'badge-prod', desc: `${p.produto} - ${p.tipo}`, valor: -p.total })),
     ...vendas.slice(0, 3).map(v => ({ ...v, tipo: 'venda', badge: 'badge-venda', desc: v.produto, valor: v.total })),
     ...gastos.slice(0, 3).map(g => ({ ...g, tipo: 'gasto', badge: 'badge-gasto', desc: g.tipo, valor: -g.valor }))
   ].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
@@ -905,15 +923,47 @@ function atualizarDashboard() {
     </tr>
   `).join('') || '<tr><td colspan="5" class="empty">📭 Nenhum registro</td></tr>';
 
-  // Gráficos
   criarGraficos();
 }
 
 function criarGraficos() {
-  // Gastos por categoria
-  const gastosCat = {};
-  gastos.forEach(g => gastosCat[g.categoria] = (gastosCat[g.categoria] || 0) + g.valor);
+  // GRÁFICO 1: Produção vs Vendas por Produto
+  const produtos = new Set();
+  producoes.forEach(p => produtos.add(p.produto));
+  vendas.forEach(v => produtos.add(v.produto));
   
+  const labels = Array.from(produtos).sort();
+  const dadosProducao = labels.map(prod => 
+    producoes.filter(p => p.produto === prod).reduce((s, p) => s + (p.total || 0), 0)
+  );
+  const dadosVendas = labels.map(prod => 
+    vendas.filter(v => v.produto === prod).reduce((s, v) => s + (v.total || 0), 0)
+  );
+
+  if (charts.produtos) charts.produtos.destroy();
+  charts.produtos = new Chart(document.getElementById('chartProdutos'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Custo de Produção', data: dadosProducao, backgroundColor: '#2d7a3a' },
+        { label: 'Vendas', data: dadosVendas, backgroundColor: '#3b82f6' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  // GRÁFICO 2: Gastos por Categoria
+  const gastosCat = {};
+  gastos.forEach(g => {
+    const cat = g.categoria || 'Outros';
+    gastosCat[cat] = (gastosCat[cat] || 0) + g.valor;
+  });
+
   if (charts.gastos) charts.gastos.destroy();
   charts.gastos = new Chart(document.getElementById('chartGastos'), {
     type: 'doughnut',
@@ -924,35 +974,46 @@ function criarGraficos() {
         backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280']
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      cutout: '65%'
+    }
   });
 
-  // Top produtos
-  const prodVendas = {};
-  vendas.forEach(v => prodVendas[v.produto] = (prodVendas[v.produto] || 0) + v.total);
-  const topProd = Object.entries(prodVendas).sort((a,b) => b[1] - a[1]).slice(0, 5);
-  
-  if (charts.produtos) charts.produtos.destroy();
-  charts.produtos = new Chart(document.getElementById('chartProdutos'), {
+  // GRÁFICO 3: Rentabilidade dos Produtos
+  const rentabilidade = labels.map(prod => {
+    const custo = producoes.filter(p => p.produto === prod).reduce((s, p) => s + (p.total || 0), 0);
+    const venda = vendas.filter(v => v.produto === prod).reduce((s, v) => s + (v.total || 0), 0);
+    return venda - custo;
+  });
+
+  if (charts.rentabilidade) charts.rentabilidade.destroy();
+  charts.rentabilidade = new Chart(document.getElementById('chartRentabilidade'), {
     type: 'bar',
     data: {
-      labels: topProd.map(p => p[0]),
+      labels: labels,
       datasets: [{
-        label: 'Vendas',
-        data: topProd.map(p => p[1]),
-        backgroundColor: '#3b82f6'
+        label: 'Lucro/Prejuízo',
+        data: rentabilidade,
+        backgroundColor: rentabilidade.map(r => r >= 0 ? '#10b981' : '#dc2626')
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
   });
 
-  // Evolução (simplificada)
+  // GRÁFICO 4: Evolução Mensal
   const meses = {};
   const hoje = new Date();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
     const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
-    meses[chave] = { vendas: 0, gastos: 0 };
+    meses[chave] = { vendas: 0, gastos: 0, custos: 0 };
   }
 
   vendas.forEach(v => {
@@ -967,42 +1028,39 @@ function criarGraficos() {
     if (meses[chave]) meses[chave].gastos += g.valor;
   });
 
+  producoes.forEach(p => {
+    const d = new Date(p.data + 'T12:00:00');
+    const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
+    if (meses[chave]) meses[chave].custos += p.total;
+  });
+
   if (charts.evolucao) charts.evolucao.destroy();
   charts.evolucao = new Chart(document.getElementById('chartEvolucao'), {
     type: 'line',
     data: {
       labels: Object.keys(meses),
       datasets: [
-        { label: 'Vendas', data: Object.values(meses).map(m => m.vendas), borderColor: '#3b82f6' },
-        { label: 'Gastos', data: Object.values(meses).map(m => m.gastos), borderColor: '#dc2626' }
+        { label: 'Vendas', data: Object.values(meses).map(m => m.vendas), borderColor: '#3b82f6', tension: 0.4 },
+        { label: 'Gastos', data: Object.values(meses).map(m => m.gastos), borderColor: '#dc2626', tension: 0.4 },
+        { label: 'Custos', data: Object.values(meses).map(m => m.custos), borderColor: '#2d7a3a', tension: 0.4 }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
   });
+}
 
-  // Áreas
-  const areas = {};
-  vendas.forEach(v => {
-    if (v.area) areas[v.area] = areas[v.area] || { vendas: 0, gastos: 0 };
-    if (v.area) areas[v.area].vendas += v.total;
-  });
-  gastos.forEach(g => {
-    if (g.area) areas[g.area] = areas[g.area] || { vendas: 0, gastos: 0 };
-    if (g.area) areas[g.area].gastos += g.valor;
-  });
-
-  if (charts.areas) charts.areas.destroy();
-  charts.areas = new Chart(document.getElementById('chartAreas'), {
-    type: 'bar',
-    data: {
-      labels: Object.keys(areas),
-      datasets: [
-        { label: 'Vendas', data: Object.values(areas).map(a => a.vendas), backgroundColor: '#3b82f6' },
-        { label: 'Gastos', data: Object.values(areas).map(a => a.gastos), backgroundColor: '#dc2626' }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
+function atualizarDataLists() {
+  const produtosSet = new Set([...producoes, ...vendas].map(r => r.produto).filter(Boolean));
+  const areasSet = new Set([...producoes, ...vendas, ...gastos].map(r => r.area).filter(Boolean));
+  const tiposGastoSet = new Set(gastos.map(g => g.tipo).filter(Boolean));
+  
+  document.getElementById('lista-produtos').innerHTML = Array.from(produtosSet).map(p => `<option value="${p}">`).join('');
+  document.getElementById('lista-areas').innerHTML = Array.from(areasSet).map(a => `<option value="${a}">`).join('');
+  document.getElementById('lista-tipos-gasto').innerHTML = Array.from(tiposGastoSet).map(t => `<option value="${t}">`).join('');
 }
 
 // ============================================
