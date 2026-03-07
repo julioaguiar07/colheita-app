@@ -403,47 +403,94 @@
     font-weight: 600;
   }
 
-  /* TABELA DE ÁREAS */
-  .areas-tabela {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-  .areas-tabela th {
-    background: var(--verde-escuro);
-    color: white;
-    padding: 12px;
-    text-align: left;
-  }
-  .areas-tabela td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--cinza-claro);
-  }
-  .areas-tabela tr:hover {
-    background: var(--creme);
-  }
-  .area-positivo { color: var(--verde); font-weight: 700; }
-  .area-negativo { color: var(--vermelho); font-weight: 700; }
-
-  .cards-resumo-area {
+  /* CARDS DE ÁREAS */
+  .areas-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 16px;
-    margin-top: 16px;
+    margin-top: 20px;
   }
-  .card-area {
+  
+  .area-card {
     background: var(--branco);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 20px;
     box-shadow: var(--sombra);
     border-left: 4px solid var(--azul);
+    transition: transform 0.2s;
   }
-  .card-area h4 {
+  
+  .area-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-md);
+  }
+  
+  .area-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--cinza-claro);
+  }
+  
+  .area-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
     color: var(--verde-escuro);
+  }
+  
+  .area-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .area-stat {
+    background: var(--creme);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+  }
+  
+  .area-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--cinza);
+    margin-bottom: 4px;
+  }
+  
+  .area-stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .area-lucro {
+    grid-column: span 2;
+    background: linear-gradient(135deg, var(--verde-escuro), var(--verde));
+    color: white;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .area-lucro-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  
+  .area-lucro-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .area-lucro.negativo {
+    background: linear-gradient(135deg, #991b1b, #dc2626);
   }
 
   .table-wrap {
@@ -575,34 +622,20 @@
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
       </div>
       <div class="kpi-card vermelho">
-        <div class="kpi-label">💸 Gastos</div>
+        <div class="kpi-label">💸 Gastos Gerais</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
       </div>
       <div class="kpi-card roxo">
-        <div class="kpi-label">📊 Lucro</div>
+        <div class="kpi-label">📊 Lucro Líquido</div>
         <div class="kpi-value" id="kpi-lucro">R$ 0</div>
       </div>
     </div>
 
-    <!-- VISÃO POR ÁREA -->
+    <!-- CARDS DETALHADOS POR ÁREA -->
     <div class="card">
-      <div class="card-title">🗺️ Resumo por Área</div>
-      <div class="table-wrap">
-        <table class="areas-tabela">
-          <thead>
-            <tr>
-              <th>Área</th>
-              <th>Custos</th>
-              <th>Vendas</th>
-              <th>Gastos</th>
-              <th>Lucro</th>
-              <th>Qtd</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-areas">
-            <tr><td colspan="6" class="empty">Carregando...</td></tr>
-          </tbody>
-        </table>
+      <div class="card-title">🗺️ Análise Detalhada por Área</div>
+      <div class="areas-grid" id="areas-cards">
+        <div class="empty">Carregando áreas...</div>
       </div>
     </div>
 
@@ -613,12 +646,12 @@
         <div class="chart-container"><canvas id="chartGastos"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">📈 Evolução Semanal</div>
+        <div class="chart-title">📈 Evolução (Últimos 30 dias)</div>
         <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
       </div>
     </div>
 
-    <!-- ÚLTIMOS REGISTROS EM CARDS -->
+    <!-- ÚLTIMOS REGISTROS -->
     <div class="ultimos-grid">
       <!-- Últimas Produções -->
       <div class="ultimos-card">
@@ -667,7 +700,7 @@
   <!-- PRODUÇÃO -->
   <section id="producao" class="section">
     <div class="section-title">🌾 Custos de Produção</div>
-    <div class="section-sub">Registre os custos por produto</div>
+    <div class="section-sub">Registre os custos por produto (mudas, adubo, mão de obra)</div>
 
     <div class="card">
       <div class="card-title">📝 Novo Custo de Produção</div>
@@ -684,6 +717,8 @@
             <option>balde</option>
             <option>caixa</option>
             <option>saco</option>
+            <option>hora</option>
+            <option>dia</option>
           </select>
         </div>
         <div class="form-group"><label>Preço Unit. (R$)</label><input type="number" id="prod-valor" step="0.01" oninput="calcPreviewProducao()"></div>
@@ -799,7 +834,7 @@
   <!-- GASTOS -->
   <section id="gastos" class="section">
     <div class="section-title">💸 Gastos Gerais</div>
-    <div class="section-sub">Registre todos os gastos</div>
+    <div class="section-sub">Registre todos os gastos (combustível, manutenção, etc)</div>
 
     <div class="card">
       <div class="card-title">📝 Novo Gasto</div>
@@ -886,6 +921,8 @@
   <option value="Colheita">
   <option value="Irrigação">
   <option value="Mão de obra">
+  <option value="Diária">
+  <option value="Salário">
 </datalist>
 
 <script>
@@ -929,6 +966,7 @@ async function carregarDados() {
     if (vendasRes.ok) vendas = await vendasRes.json();
     if (gastosRes.ok) gastos = await gastosRes.json();
     
+    console.log('Dados carregados:', { producoes, vendas, gastos });
     atualizarTudo();
   } catch (error) {
     console.error('Erro ao carregar:', error);
@@ -1195,7 +1233,7 @@ function atualizarTudo() {
   atualizarListaVendasFiltrada();
   atualizarListaGastosFiltrada();
   atualizarDashboard();
-  atualizarVisaoAreas();
+  atualizarCardsAreas();
   atualizarDataLists();
 }
 
@@ -1210,10 +1248,13 @@ function formatarDataBR(dataStr) {
 }
 
 function atualizarDashboard() {
+  // Calcular totais
   const totalProd = producoes.reduce((s, p) => s + (Number(p?.total) || 0), 0);
   const totalVendas = vendas.reduce((s, v) => s + (Number(v?.total) || 0), 0);
   const totalGastos = gastos.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-  const lucro = totalVendas - totalGastos;
+  
+  // LUCRO = VENDAS - (CUSTOS DE PRODUÇÃO + GASTOS GERAIS)
+  const lucro = totalVendas - (totalProd + totalGastos);
 
   document.getElementById('kpi-producao').textContent = formatMoney(totalProd);
   document.getElementById('kpi-vendas').textContent = formatMoney(totalVendas);
@@ -1293,40 +1334,59 @@ function criarGraficos() {
     }
   }
 
-  // Gráfico de Evolução Semanal (últimas 8 semanas)
-  const semanas = {};
+  // Gráfico de Evolução (últimos 30 dias)
+  const ultimos30Dias = {};
   const hoje = new Date();
   
-  // Criar últimas 8 semanas
-  for (let i = 7; i >= 0; i--) {
+  // Criar últimos 30 dias
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(hoje);
-    d.setDate(d.getDate() - (i * 7));
-    const semana = `Semana ${formatarDataBR(d.toISOString().split('T')[0])}`;
-    semanas[semana] = { vendas: 0, gastos: 0 };
+    d.setDate(d.getDate() - i);
+    const dia = d.toISOString().split('T')[0];
+    ultimos30Dias[dia] = { vendas: 0, gastos: 0, custos: 0 };
   }
 
   // Preencher com dados
   vendas.forEach(v => {
-    if (v?.data && v?.total) {
-      const dataVenda = new Date(v.data + 'T12:00:00');
-      const diffDias = Math.floor((hoje - dataVenda) / (1000 * 60 * 60 * 24));
-      const semanaIndex = Math.floor(diffDias / 7);
-      if (semanaIndex >= 0 && semanaIndex <= 7) {
-        const chave = Object.keys(semanas)[7 - semanaIndex];
-        if (chave) semanas[chave].vendas += Number(v.total) || 0;
-      }
+    if (v?.data && v?.total && ultimos30Dias[v.data]) {
+      ultimos30Dias[v.data].vendas += Number(v.total) || 0;
     }
   });
 
   gastos.forEach(g => {
-    if (g?.data && g?.valor) {
-      const dataGasto = new Date(g.data + 'T12:00:00');
-      const diffDias = Math.floor((hoje - dataGasto) / (1000 * 60 * 60 * 24));
-      const semanaIndex = Math.floor(diffDias / 7);
-      if (semanaIndex >= 0 && semanaIndex <= 7) {
-        const chave = Object.keys(semanas)[7 - semanaIndex];
-        if (chave) semanas[chave].gastos += Number(g.valor) || 0;
-      }
+    if (g?.data && g?.valor && ultimos30Dias[g.data]) {
+      ultimos30Dias[g.data].gastos += Number(g.valor) || 0;
+    }
+  });
+
+  producoes.forEach(p => {
+    if (p?.data && p?.total && ultimos30Dias[p.data]) {
+      ultimos30Dias[p.data].custos += Number(p.total) || 0;
+    }
+  });
+
+  // Preparar dados para o gráfico (agrupar por semana para ficar mais legível)
+  const semanas = [];
+  const vendasSemana = [];
+  const gastosSemana = [];
+  
+  let semanaAtual = [];
+  let count = 0;
+  let somaVendas = 0;
+  let somaGastos = 0;
+
+  Object.keys(ultimos30Dias).sort().forEach((dia, index) => {
+    somaVendas += ultimos30Dias[dia].vendas;
+    somaGastos += ultimos30Dias[dia].gastos + ultimos30Dias[dia].custos;
+    count++;
+    
+    if (count === 7 || index === 29) {
+      semanas.push(`Semana ${semanas.length + 1}`);
+      vendasSemana.push(somaVendas);
+      gastosSemana.push(somaGastos);
+      somaVendas = 0;
+      somaGastos = 0;
+      count = 0;
     }
   });
 
@@ -1334,12 +1394,12 @@ function criarGraficos() {
   const ctxEvol = document.getElementById('chartEvolucao')?.getContext('2d');
   if (ctxEvol) {
     charts.evolucao = new Chart(ctxEvol, {
-      type: 'line',
+      type: 'bar',
       data: {
-        labels: Object.keys(semanas),
+        labels: semanas,
         datasets: [
-          { label: 'Vendas', data: Object.values(semanas).map(s => s.vendas), borderColor: '#3b82f6', tension: 0.4 },
-          { label: 'Gastos', data: Object.values(semanas).map(s => s.gastos), borderColor: '#dc2626', tension: 0.4 }
+          { label: 'Vendas', data: vendasSemana, backgroundColor: '#3b82f6' },
+          { label: 'Gastos + Custos', data: gastosSemana, backgroundColor: '#dc2626' }
         ]
       },
       options: {
@@ -1351,7 +1411,7 @@ function criarGraficos() {
   }
 }
 
-function atualizarVisaoAreas() {
+function atualizarCardsAreas() {
   const areasSet = new Set();
   producoes.forEach(p => { if (p?.area) areasSet.add(p.area); });
   vendas.forEach(v => { if (v?.area) areasSet.add(v.area); });
@@ -1359,33 +1419,55 @@ function atualizarVisaoAreas() {
   
   const areas = Array.from(areasSet).sort();
   
-  const tbody = document.getElementById('tabela-areas');
+  const container = document.getElementById('areas-cards');
   if (areas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">📭 Nenhuma área registrada</td></tr>';
-  } else {
-    tbody.innerHTML = areas.map(area => {
-      const prods = producoes.filter(p => p.area === area);
-      const vend = vendas.filter(v => v.area === area);
-      const gas = gastos.filter(g => g.area === area);
-      
-      const totalProd = prods.reduce((s, p) => s + (Number(p?.total) || 0), 0);
-      const totalVendas = vend.reduce((s, v) => s + (Number(v?.total) || 0), 0);
-      const totalGastos = gas.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-      const lucro = totalVendas - totalGastos;
-      const totalRegistros = prods.length + vend.length + gas.length;
-      
-      return `
-        <tr>
-          <td><strong>${area}</strong></td>
-          <td>${formatMoney(totalProd)}</td>
-          <td>${formatMoney(totalVendas)}</td>
-          <td>${formatMoney(totalGastos)}</td>
-          <td class="${lucro >= 0 ? 'area-positivo' : 'area-negativo'}">${formatMoney(lucro)}</td>
-          <td>${totalRegistros}</td>
-        </tr>
-      `;
-    }).join('');
+    container.innerHTML = '<div class="empty">📭 Nenhuma área registrada</div>';
+    return;
   }
+
+  container.innerHTML = areas.map(area => {
+    const prods = producoes.filter(p => p.area === area);
+    const vend = vendas.filter(v => v.area === area);
+    const gas = gastos.filter(g => g.area === area);
+    
+    const totalProd = prods.reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    const totalVendas = vend.reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    const totalGastos = gas.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    const lucro = totalVendas - (totalProd + totalGastos);
+    
+    const lucroClass = lucro >= 0 ? '' : 'negativo';
+    
+    return `
+      <div class="area-card">
+        <div class="area-header">
+          <span>🗺️</span>
+          <h3>${area}</h3>
+        </div>
+        <div class="area-stats">
+          <div class="area-stat">
+            <div class="area-stat-label">🌾 Custos</div>
+            <div class="area-stat-value" style="color: var(--verde);">${formatMoney(totalProd)}</div>
+          </div>
+          <div class="area-stat">
+            <div class="area-stat-label">💰 Vendas</div>
+            <div class="area-stat-value" style="color: var(--azul);">${formatMoney(totalVendas)}</div>
+          </div>
+          <div class="area-stat">
+            <div class="area-stat-label">💸 Gastos</div>
+            <div class="area-stat-value" style="color: var(--vermelho);">${formatMoney(totalGastos)}</div>
+          </div>
+          <div class="area-stat">
+            <div class="area-stat-label">📦 Registros</div>
+            <div class="area-stat-value">${prods.length + vend.length + gas.length}</div>
+          </div>
+        </div>
+        <div class="area-lucro ${lucroClass}">
+          <span class="area-lucro-label">Lucro/Prejuízo</span>
+          <span class="area-lucro-value">${formatMoney(lucro)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ============================================
