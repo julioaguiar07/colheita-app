@@ -286,6 +286,73 @@
     width: 100%;
   }
 
+  /* Cards de resumo */
+  .resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .resumo-card {
+    background: var(--branco);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--sombra);
+  }
+  
+  .resumo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--cinza-claro);
+  }
+  
+  .resumo-header h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--verde-escuro);
+  }
+  
+  .resumo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--cinza-claro);
+    font-size: 0.85rem;
+  }
+  
+  .resumo-item:last-child {
+    border-bottom: none;
+  }
+  
+  .resumo-desc {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+  
+  .resumo-valor {
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .resumo-valor.prod { color: var(--verde); }
+  .resumo-valor.venda { color: var(--azul); }
+  .resumo-valor.gasto { color: var(--vermelho); }
+  
+  .resumo-ver-mais {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--cinza);
+  }
+
   .table-wrap {
     overflow-x: auto;
     border-radius: var(--radius);
@@ -368,6 +435,7 @@
   @media (max-width: 768px) {
     .header-inner { flex-direction: column; height: auto; padding: 12px 0; }
     .charts-grid { grid-template-columns: 1fr; }
+    .resumo-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -396,7 +464,7 @@
 
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🌾 Produção (Custo)</div>
+        <div class="kpi-label">🌾 Custos de Produção</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
       </div>
       <div class="kpi-card azul">
@@ -404,12 +472,57 @@
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
       </div>
       <div class="kpi-card vermelho">
-        <div class="kpi-label">💸 Gastos</div>
+        <div class="kpi-label">💸 Gastos Gerais</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
       </div>
       <div class="kpi-card roxo">
-        <div class="kpi-label">📊 Lucro</div>
+        <div class="kpi-label">📊 Lucro Líquido</div>
         <div class="kpi-value" id="kpi-lucro">R$ 0</div>
+      </div>
+    </div>
+
+    <!-- CARDS DE ÚLTIMOS REGISTROS -->
+    <div class="resumo-grid">
+      <!-- Últimas Produções -->
+      <div class="resumo-card">
+        <div class="resumo-header">
+          <span>🌾</span>
+          <h3>Últimas Produções</h3>
+        </div>
+        <div id="ultimas-producoes">
+          <div class="empty" style="padding: 20px;">Carregando...</div>
+        </div>
+        <div class="resumo-ver-mais">
+          <a href="#" onclick="showSection('producao', document.querySelector('nav button:nth-child(2)')); return false;">Ver todas →</a>
+        </div>
+      </div>
+
+      <!-- Últimas Vendas -->
+      <div class="resumo-card">
+        <div class="resumo-header">
+          <span>💰</span>
+          <h3>Últimas Vendas</h3>
+        </div>
+        <div id="ultimas-vendas">
+          <div class="empty" style="padding: 20px;">Carregando...</div>
+        </div>
+        <div class="resumo-ver-mais">
+          <a href="#" onclick="showSection('vendas', document.querySelector('nav button:nth-child(3)')); return false;">Ver todas →</a>
+        </div>
+      </div>
+
+      <!-- Últimos Gastos -->
+      <div class="resumo-card">
+        <div class="resumo-header">
+          <span>💸</span>
+          <h3>Últimos Gastos</h3>
+        </div>
+        <div id="ultimos-gastos">
+          <div class="empty" style="padding: 20px;">Carregando...</div>
+        </div>
+        <div class="resumo-ver-mais">
+          <a href="#" onclick="showSection('gastos', document.querySelector('nav button:nth-child(4)')); return false;">Ver todas →</a>
+        </div>
       </div>
     </div>
 
@@ -429,16 +542,6 @@
       <div class="chart-card">
         <div class="chart-title">💰 Evolução Mensal</div>
         <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🕒 Últimos Registros</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Área</th><th>Valor</th></tr></thead>
-          <tbody id="dashboard-ultimos"></tbody>
-        </table>
       </div>
     </div>
   </section>
@@ -466,7 +569,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📋 Últimos Custos de Produção</div>
+      <div class="card-title">📋 Todos os Custos de Produção</div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Área</th><th>Qtd</th><th>Valor</th><th></th></tr></thead>
@@ -500,7 +603,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📋 Últimas Vendas</div>
+      <div class="card-title">📋 Todas as Vendas</div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Data</th><th>Produto</th><th>Cliente</th><th>Área</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
@@ -542,7 +645,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📋 Últimos Gastos</div>
+      <div class="card-title">📋 Todos os Gastos</div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Área</th><th>Obs</th><th>Valor</th><th></th></tr></thead>
@@ -855,8 +958,8 @@ function atualizarTudo() {
 }
 
 function atualizarListas() {
-  // Produções
-  document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 10).map(p => `
+  // Produções - tabela completa
+  document.getElementById('lista-producoes').innerHTML = producoes.slice(0, 20).map(p => `
     <tr>
       <td>${formatDate(p.data)}</td>
       <td><span class="badge badge-prod">${p.produto}</span></td>
@@ -868,8 +971,8 @@ function atualizarListas() {
     </tr>
   `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhum custo registrado</td></tr>';
 
-  // Vendas
-  document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 10).map(v => `
+  // Vendas - tabela completa
+  document.getElementById('lista-vendas').innerHTML = vendas.slice(0, 20).map(v => `
     <tr>
       <td>${formatDate(v.data)}</td>
       <td><span class="badge badge-venda">${v.produto}</span></td>
@@ -881,8 +984,8 @@ function atualizarListas() {
     </tr>
   `).join('') || '<tr><td colspan="7" class="empty">📭 Nenhuma venda</td></tr>';
 
-  // Gastos
-  document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 10).map(g => `
+  // Gastos - tabela completa
+  document.getElementById('lista-gastos').innerHTML = gastos.slice(0, 20).map(g => `
     <tr>
       <td>${formatDate(g.data)}</td>
       <td><span class="badge badge-gasto">${g.tipo}</span></td>
@@ -896,9 +999,10 @@ function atualizarListas() {
 }
 
 function atualizarDashboard() {
-  const totalProd = producoes.reduce((s, p) => s + (p.total || 0), 0);
-  const totalVendas = vendas.reduce((s, v) => s + (v.total || 0), 0);
-  const totalGastos = gastos.reduce((s, g) => s + (g.valor || 0), 0);
+  // Calcular totais (com fallback para 0 se for null/undefined)
+  const totalProd = producoes.reduce((s, p) => s + (parseFloat(p?.total) || 0), 0);
+  const totalVendas = vendas.reduce((s, v) => s + (parseFloat(v?.total) || 0), 0);
+  const totalGastos = gastos.reduce((s, g) => s + (parseFloat(g?.valor) || 0), 0);
   const lucro = totalVendas - totalGastos;
 
   document.getElementById('kpi-producao').textContent = formatMoney(totalProd);
@@ -906,22 +1010,33 @@ function atualizarDashboard() {
   document.getElementById('kpi-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-lucro').textContent = formatMoney(lucro);
 
-  // Últimos registros
-  const todos = [
-    ...producoes.slice(0, 3).map(p => ({ ...p, tipo: 'custo', badge: 'badge-prod', desc: `${p.produto} - ${p.tipo}`, valor: -p.total })),
-    ...vendas.slice(0, 3).map(v => ({ ...v, tipo: 'venda', badge: 'badge-venda', desc: v.produto, valor: v.total })),
-    ...gastos.slice(0, 3).map(g => ({ ...g, tipo: 'gasto', badge: 'badge-gasto', desc: g.tipo, valor: -g.valor }))
-  ].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
+  // Cards de últimas produções (5 itens)
+  const ultimasProd = producoes.slice(0, 5).map(p => `
+    <div class="resumo-item">
+      <span class="resumo-desc" title="${p.data} ${p.produto} - ${p.tipo}">${formatDate(p.data)} ${p.produto} (${p.tipo})</span>
+      <span class="resumo-valor prod">${formatMoney(p.total)}</span>
+    </div>
+  `).join('') || '<div class="empty" style="padding: 20px;">Nenhum custo</div>';
 
-  document.getElementById('dashboard-ultimos').innerHTML = todos.map(r => `
-    <tr>
-      <td>${formatDate(r.data)}</td>
-      <td><span class="badge ${r.badge}">${r.tipo}</span></td>
-      <td>${r.desc}</td>
-      <td>${r.area || '—'}</td>
-      <td>${formatMoney(Math.abs(r.valor))}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="5" class="empty">📭 Nenhum registro</td></tr>';
+  // Cards de últimas vendas (5 itens)
+  const ultimasVendas = vendas.slice(0, 5).map(v => `
+    <div class="resumo-item">
+      <span class="resumo-desc" title="${v.data} ${v.produto} - ${v.cliente || 'sem cliente'}">${formatDate(v.data)} ${v.produto} (${v.qtd} ${v.unidade})</span>
+      <span class="resumo-valor venda">${formatMoney(v.total)}</span>
+    </div>
+  `).join('') || '<div class="empty" style="padding: 20px;">Nenhuma venda</div>';
+
+  // Cards de últimos gastos (5 itens)
+  const ultimosGastos = gastos.slice(0, 5).map(g => `
+    <div class="resumo-item">
+      <span class="resumo-desc" title="${g.data} ${g.tipo} - ${g.obs || ''}">${formatDate(g.data)} ${g.tipo}</span>
+      <span class="resumo-valor gasto">${formatMoney(g.valor)}</span>
+    </div>
+  `).join('') || '<div class="empty" style="padding: 20px;">Nenhum gasto</div>';
+
+  document.getElementById('ultimas-producoes').innerHTML = ultimasProd;
+  document.getElementById('ultimas-vendas').innerHTML = ultimasVendas;
+  document.getElementById('ultimos-gastos').innerHTML = ultimosGastos;
 
   criarGraficos();
 }
@@ -934,10 +1049,10 @@ function criarGraficos() {
   
   const labels = Array.from(produtos).sort();
   const dadosProducao = labels.map(prod => 
-    producoes.filter(p => p.produto === prod).reduce((s, p) => s + (p.total || 0), 0)
+    producoes.filter(p => p.produto === prod).reduce((s, p) => s + (parseFloat(p?.total) || 0), 0)
   );
   const dadosVendas = labels.map(prod => 
-    vendas.filter(v => v.produto === prod).reduce((s, v) => s + (v.total || 0), 0)
+    vendas.filter(v => v.produto === prod).reduce((s, v) => s + (parseFloat(v?.total) || 0), 0)
   );
 
   if (charts.produtos) charts.produtos.destroy();
@@ -961,7 +1076,7 @@ function criarGraficos() {
   const gastosCat = {};
   gastos.forEach(g => {
     const cat = g.categoria || 'Outros';
-    gastosCat[cat] = (gastosCat[cat] || 0) + g.valor;
+    gastosCat[cat] = (gastosCat[cat] || 0) + (parseFloat(g?.valor) || 0);
   });
 
   if (charts.gastos) charts.gastos.destroy();
@@ -984,8 +1099,8 @@ function criarGraficos() {
 
   // GRÁFICO 3: Rentabilidade dos Produtos
   const rentabilidade = labels.map(prod => {
-    const custo = producoes.filter(p => p.produto === prod).reduce((s, p) => s + (p.total || 0), 0);
-    const venda = vendas.filter(v => v.produto === prod).reduce((s, v) => s + (v.total || 0), 0);
+    const custo = producoes.filter(p => p.produto === prod).reduce((s, p) => s + (parseFloat(p?.total) || 0), 0);
+    const venda = vendas.filter(v => v.produto === prod).reduce((s, v) => s + (parseFloat(v?.total) || 0), 0);
     return venda - custo;
   });
 
@@ -1017,21 +1132,24 @@ function criarGraficos() {
   }
 
   vendas.forEach(v => {
+    if (!v?.data) return;
     const d = new Date(v.data + 'T12:00:00');
     const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
-    if (meses[chave]) meses[chave].vendas += v.total;
+    if (meses[chave]) meses[chave].vendas += parseFloat(v?.total) || 0;
   });
 
   gastos.forEach(g => {
+    if (!g?.data) return;
     const d = new Date(g.data + 'T12:00:00');
     const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
-    if (meses[chave]) meses[chave].gastos += g.valor;
+    if (meses[chave]) meses[chave].gastos += parseFloat(g?.valor) || 0;
   });
 
   producoes.forEach(p => {
+    if (!p?.data) return;
     const d = new Date(p.data + 'T12:00:00');
     const chave = d.toLocaleDateString('pt-BR', { month: 'short' });
-    if (meses[chave]) meses[chave].custos += p.total;
+    if (meses[chave]) meses[chave].custos += parseFloat(p?.total) || 0;
   });
 
   if (charts.evolucao) charts.evolucao.destroy();
@@ -1067,7 +1185,8 @@ function atualizarDataLists() {
 // UTILITÁRIOS
 // ============================================
 function formatMoney(valor) {
-  return 'R$ ' + Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  if (valor === null || valor === undefined || isNaN(valor)) return 'R$ 0,00';
+  return 'R$ ' + Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(data) {
