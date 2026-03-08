@@ -186,7 +186,7 @@ def delete_venda(id):
     conn.close()
     return jsonify({'message': 'Venda deletada'})
 
-# ========== API GASTOS (com obs) ==========
+# ========== API GASTOS (COM PRODUTO) ==========
 @app.route('/api/gastos', methods=['GET'])
 def get_gastos():
     conn = get_db_connection()
@@ -203,12 +203,17 @@ def create_gasto():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO gastos (id, data, tipo, categoria, area, obs, valor)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO gastos (id, data, tipo, categoria, produto, area, obs, valor)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
-        data['id'], data['data'], data['tipo'], 
-        data.get('categoria', 'Outros'), data.get('area', ''), 
-        data.get('obs', ''), data['valor']
+        data['id'], 
+        data['data'], 
+        data['tipo'], 
+        data.get('categoria', 'Outros'), 
+        data.get('produto', ''),  # ← NOVO CAMPO
+        data.get('area', ''), 
+        data.get('obs', ''), 
+        data['valor']
     ))
     conn.commit()
     cur.close()
@@ -279,6 +284,47 @@ def add_tipo_column():
         return "✅ Coluna 'tipo' adicionada com sucesso! <a href='/'>Voltar</a>"
     except Exception as e:
         return f"❌ Erro: {str(e)}"
+
+@app.route('/verificar-coluna-produto')
+def verificar_coluna():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='gastos'")
+        colunas = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        colunas_nomes = [c['column_name'] for c in colunas]
+        
+        if 'produto' in colunas_nomes:
+            return f"""
+            <html>
+            <head><title>Sucesso!</title></head>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1 style="color: green;">✅ Coluna 'produto' encontrada!</h1>
+                <p>Colunas na tabela gastos:</p>
+                <ul style="list-style: none; padding: 0;">
+                    {''.join([f'<li style="background: #f0f0f0; margin: 5px; padding: 10px; border-radius: 5px;">📌 {col}</li>' for col in colunas_nomes])}
+                </ul>
+                <p><a href="/" style="background: #2d7a3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar ao sistema</a></p>
+            </body>
+            </html>
+            """
+        else:
+            return f"""
+            <html>
+            <head><title>Atenção!</title></head>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1 style="color: orange;">⚠️ Coluna 'produto' NÃO encontrada!</h1>
+                <p>Execute no terminal do Railway:</p>
+                <pre style="background: #333; color: white; padding: 20px; border-radius: 5px;">ALTER TABLE gastos ADD COLUMN produto VARCHAR(255);</pre>
+                <p><a href="/" style="background: #2d7a3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar</a></p>
+            </body>
+            </html>
+            """
+    except Exception as e:
+        return f"<h1>❌ Erro: {str(e)}</h1>"
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
