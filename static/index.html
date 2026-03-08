@@ -798,21 +798,137 @@
     </div>
   </section>
 
-  <!-- PRODUTOS (NOVA PÁGINA) -->
+  <!-- PRODUTOS - DASHBOARD INDIVIDUAL -->
   <section id="produtos" class="section">
     <div class="section-title">🌱 Análise por Produto</div>
-    <div class="section-sub">Visão detalhada de custos, vendas e lucratividade por produto</div>
-
-    <!-- Cards de Produtos -->
-    <div class="produtos-grid" id="produtos-cards">
-      <div class="empty">Carregando produtos...</div>
+    <div class="section-sub">Selecione um produto para ver todos os detalhes</div>
+  
+    <!-- SELETOR DE PRODUTO -->
+    <div class="card" style="padding: 20px;">
+      <div class="filtros-grid" style="grid-template-columns: 1fr auto;">
+        <div class="filtro-group">
+          <label>🔍 Selecione o produto</label>
+          <select id="seletor-produto" class="input-moderno" style="font-size: 1.1rem; padding: 12px;" onchange="mudarProdutoSelecionado()">
+            <option value="">-- Escolha um produto --</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button class="btn btn-primary" onclick="mudarProdutoSelecionado()" style="height: 46px;">📊 Ver análise</button>
+        </div>
+      </div>
     </div>
-
-    <!-- Gráfico de Produtos -->
-    <div class="card">
-      <div class="card-title">📊 Comparativo de Lucratividade</div>
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="chartProdutos"></canvas>
+  
+    <!-- CONTEÚDO DO PRODUTO SELECIONADO -->
+    <div id="conteudo-produto" style="display: none;">
+      <!-- CABEÇALHO DO PRODUTO -->
+      <div class="card" style="background: linear-gradient(135deg, var(--verde-escuro), var(--verde)); color: white; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="font-size: 2rem; margin-bottom: 5px;" id="produto-nome-titulo">Acerola</h2>
+            <p style="opacity: 0.9;" id="produto-periodo">Análise completa de todos os registros</p>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.9rem; opacity: 0.8;">Lucro/Prejuízo</div>
+            <div style="font-size: 2.5rem; font-weight: 700; font-family: 'JetBrains Mono';" id="produto-lucro-principal">R$ 0</div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- KPIs DO PRODUTO -->
+      <div class="kpi-grid" id="kpis-produto">
+        <div class="kpi-card">
+          <div class="kpi-label">🌾 Custos de Produção</div>
+          <div class="kpi-value" id="kpi-prod-custos">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-custos-qtd">0 registros</div>
+        </div>
+        <div class="kpi-card azul">
+          <div class="kpi-label">💰 Vendas</div>
+          <div class="kpi-value" id="kpi-prod-vendas">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-vendas-qtd">0 vendas</div>
+        </div>
+        <div class="kpi-card vermelho">
+          <div class="kpi-label">💸 Gastos Específicos</div>
+          <div class="kpi-value" id="kpi-prod-gastos">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
+        </div>
+        <div class="kpi-card roxo">
+          <div class="kpi-label">📊 Margem de Lucro</div>
+          <div class="kpi-value" id="kpi-prod-margem">0%</div>
+          <div class="kpi-sub" id="kpi-prod-status"></div>
+        </div>
+      </div>
+  
+      <!-- GRÁFICOS DO PRODUTO -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">📈 Evolução do Produto</div>
+          <div class="chart-container">
+            <canvas id="chartProdutoEvolucao"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🥧 Distribuição dos Gastos</div>
+          <div class="chart-container">
+            <canvas id="chartProdutoGastos"></canvas>
+          </div>
+        </div>
+      </div>
+  
+      <!-- ÁREAS DE CULTIVO -->
+      <div class="card">
+        <div class="card-title">📍 Áreas de Cultivo</div>
+        <div class="areas-grid" id="produto-areas" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+          <!-- Cards de áreas serão inseridos aqui -->
+        </div>
+      </div>
+  
+      <!-- TODOS OS REGISTROS DO PRODUTO -->
+      <div class="card">
+        <div class="card-title">📋 Todos os Registros do Produto</div>
+        
+        <!-- Abas para alternar entre tipos de registro -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <button class="btn btn-sm" style="background: var(--verde); color: white;" onclick="mostrarAbaProduto('todos')">📋 Todos</button>
+          <button class="btn btn-sm btn-secondary" onclick="mostrarAbaProduto('custos')">🌾 Custos</button>
+          <button class="btn btn-sm btn-secondary" onclick="mostrarAbaProduto('vendas')">💰 Vendas</button>
+          <button class="btn btn-sm btn-secondary" onclick="mostrarAbaProduto('gastos')">💸 Gastos</button>
+        </div>
+  
+        <!-- Tabela de registros -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Área</th>
+                <th>Quantidade</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-produto-registros">
+              <tr><td colspan="6" class="empty">Selecione um produto</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  
+      <!-- GRÁFICO COMPARATIVO ENTRE PRODUTOS -->
+      <div class="card">
+        <div class="card-title">📊 Comparativo entre Produtos</div>
+        <div class="chart-container" style="height: 300px;">
+          <canvas id="chartComparativoProdutos"></canvas>
+        </div>
+      </div>
+    </div>
+  
+    <!-- MENSAGEM QUANDO NENHUM PRODUTO FOR SELECIONADO -->
+    <div id="sem-produto" class="card">
+      <div class="empty">
+        <div class="empty-icon">🌱</div>
+        <h3>Nenhum produto selecionado</h3>
+        <p>Escolha um produto acima para ver a análise detalhada</p>
       </div>
     </div>
   </section>
@@ -2035,6 +2151,388 @@ function toast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
+
+
+// ============================================
+// PRODUTOS - DASHBOARD INDIVIDUAL
+// ============================================
+let produtoSelecionado = '';
+let chartsProduto = {};
+
+function atualizarSeletorProdutos() {
+  const produtosSet = new Set();
+  
+  // Coletar todos os produtos de todas as fontes
+  producoes.forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  vendas.forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  gastos.forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
+  
+  const produtos = Array.from(produtosSet).sort();
+  
+  const seletor = document.getElementById('seletor-produto');
+  if (seletor) {
+    seletor.innerHTML = '<option value="">-- Escolha um produto --</option>' + 
+      produtos.map(p => `<option value="${p}" ${p === produtoSelecionado ? 'selected' : ''}>${p}</option>`).join('');
+  }
+}
+
+function mudarProdutoSelecionado() {
+  const seletor = document.getElementById('seletor-produto');
+  produtoSelecionado = seletor.value;
+  
+  if (produtoSelecionado) {
+    document.getElementById('sem-produto').style.display = 'none';
+    document.getElementById('conteudo-produto').style.display = 'block';
+    atualizarDashboardProduto();
+  } else {
+    document.getElementById('sem-produto').style.display = 'block';
+    document.getElementById('conteudo-produto').style.display = 'none';
+  }
+}
+
+function atualizarDashboardProduto() {
+  if (!produtoSelecionado) return;
+  
+  // Filtrar dados do produto
+  const custosProd = producoes.filter(p => p.produto === produtoSelecionado);
+  const vendasProd = vendas.filter(v => v.produto === produtoSelecionado);
+  const gastosProd = gastos.filter(g => g.produto === produtoSelecionado);
+  
+  // Calcular totais
+  const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
+  const totalVendas = vendasProd.reduce((s, v) => s + (Number(v?.total) || 0), 0);
+  const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+  const lucro = totalVendas - (totalCustos + totalGastos);
+  const margem = totalVendas > 0 ? (lucro / totalVendas * 100) : 0;
+  
+  // Atualizar título
+  document.getElementById('produto-nome-titulo').textContent = produtoSelecionado;
+  document.getElementById('produto-lucro-principal').textContent = formatMoney(lucro);
+  document.getElementById('produto-lucro-principal').style.color = lucro >= 0 ? '#4ade80' : '#f87171';
+  
+  // Atualizar KPIs
+  document.getElementById('kpi-prod-custos').textContent = formatMoney(totalCustos);
+  document.getElementById('kpi-prod-custos-qtd').textContent = `${custosProd.length} registro(s)`;
+  
+  document.getElementById('kpi-prod-vendas').textContent = formatMoney(totalVendas);
+  document.getElementById('kpi-prod-vendas-qtd').textContent = `${vendasProd.length} venda(s)`;
+  
+  document.getElementById('kpi-prod-gastos').textContent = formatMoney(totalGastos);
+  document.getElementById('kpi-prod-gastos-qtd').textContent = `${gastosProd.length} gasto(s)`;
+  
+  document.getElementById('kpi-prod-margem').textContent = margem.toFixed(1) + '%';
+  document.getElementById('kpi-prod-margem').style.color = margem >= 0 ? 'var(--verde)' : 'var(--vermelho)';
+  document.getElementById('kpi-prod-status').textContent = lucro >= 0 ? '✅ Lucrativo' : '⚠️ Prejuízo';
+  
+  // Atualizar áreas de cultivo
+  const areasSet = new Set();
+  custosProd.forEach(p => { if (p?.area) areasSet.add(p.area); });
+  vendasProd.forEach(v => { if (v?.area) areasSet.add(v.area); });
+  gastosProd.forEach(g => { if (g?.area) areasSet.add(g.area); });
+  
+  const areasContainer = document.getElementById('produto-areas');
+  if (areasSet.size === 0) {
+    areasContainer.innerHTML = '<div class="empty" style="padding: 20px;">📭 Nenhuma área associada</div>';
+  } else {
+    areasContainer.innerHTML = Array.from(areasSet).map(area => {
+      const areaCustos = custosProd.filter(p => p.area === area).reduce((s, p) => s + (Number(p?.total) || 0), 0);
+      const areaVendas = vendasProd.filter(v => v.area === area).reduce((s, v) => s + (Number(v?.total) || 0), 0);
+      const areaGastos = gastosProd.filter(g => g.area === area).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+      const areaLucro = areaVendas - (areaCustos + areaGastos);
+      
+      return `
+        <div class="area-card" style="border-left-color: ${areaLucro >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">
+          <div class="area-header">
+            <span>🗺️</span>
+            <h3>${area}</h3>
+          </div>
+          <div class="area-stats">
+            <div class="area-stat">
+              <div class="area-stat-label">Custos</div>
+              <div class="area-stat-value" style="color: var(--verde);">${formatMoney(areaCustos)}</div>
+            </div>
+            <div class="area-stat">
+              <div class="area-stat-label">Vendas</div>
+              <div class="area-stat-value" style="color: var(--azul);">${formatMoney(areaVendas)}</div>
+            </div>
+            <div class="area-stat">
+              <div class="area-stat-label">Gastos</div>
+              <div class="area-stat-value" style="color: var(--vermelho);">${formatMoney(areaGastos)}</div>
+            </div>
+          </div>
+          <div class="area-lucro ${areaLucro >= 0 ? '' : 'negativo'}">
+            <span>${areaLucro >= 0 ? '📈' : '📉'} Lucro</span>
+            <span class="area-lucro-value">${formatMoney(areaLucro)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  // Atualizar tabela de registros (aba "todos" por padrão)
+  mostrarAbaProduto('todos');
+  
+  // Atualizar gráficos
+  atualizarGraficosProduto(custosProd, vendasProd, gastosProd);
+  atualizarGraficoComparativo();
+}
+
+function mostrarAbaProduto(tipo) {
+  if (!produtoSelecionado) return;
+  
+  // Atualizar estilo dos botões
+  document.querySelectorAll('#conteudo-produto .btn-sm').forEach(btn => {
+    btn.style.background = 'var(--cinza-claro)';
+    btn.style.color = 'var(--texto)';
+  });
+  event.target.style.background = 'var(--verde)';
+  event.target.style.color = 'white';
+  
+  // Filtrar dados
+  const custosProd = producoes.filter(p => p.produto === produtoSelecionado);
+  const vendasProd = vendas.filter(v => v.produto === produtoSelecionado);
+  const gastosProd = gastos.filter(g => g.produto === produtoSelecionado);
+  
+  let registros = [];
+  
+  if (tipo === 'todos') {
+    registros = [
+      ...custosProd.map(p => ({ 
+        ...p, 
+        tipoReg: 'Custo', 
+        desc: `${p.tipo || ''}`, 
+        badge: 'badge-prod',
+        qtdMostrar: p.qtd ? `${p.qtd} ${p.unidade || 'un'}` : '—',
+        valor: p.total
+      })),
+      ...vendasProd.map(v => ({ 
+        ...v, 
+        tipoReg: 'Venda', 
+        desc: v.cliente ? `Cliente: ${v.cliente}` : 'Venda', 
+        badge: 'badge-venda',
+        qtdMostrar: v.qtd ? `${v.qtd} ${v.unidade || 'un'}` : '—',
+        valor: v.total
+      })),
+      ...gastosProd.map(g => ({ 
+        ...g, 
+        tipoReg: 'Gasto', 
+        desc: g.obs || g.tipo, 
+        badge: 'badge-gasto',
+        qtdMostrar: '—',
+        valor: g.valor
+      }))
+    ].sort((a, b) => b.data.localeCompare(a.data));
+  } else if (tipo === 'custos') {
+    registros = custosProd.map(p => ({ 
+      ...p, 
+      tipoReg: 'Custo', 
+      desc: p.tipo || '', 
+      badge: 'badge-prod',
+      qtdMostrar: p.qtd ? `${p.qtd} ${p.unidade || 'un'}` : '—',
+      valor: p.total
+    })).sort((a, b) => b.data.localeCompare(a.data));
+  } else if (tipo === 'vendas') {
+    registros = vendasProd.map(v => ({ 
+      ...v, 
+      tipoReg: 'Venda', 
+      desc: v.cliente ? `Cliente: ${v.cliente}` : 'Venda', 
+      badge: 'badge-venda',
+      qtdMostrar: v.qtd ? `${v.qtd} ${v.unidade || 'un'}` : '—',
+      valor: v.total
+    })).sort((a, b) => b.data.localeCompare(a.data));
+  } else if (tipo === 'gastos') {
+    registros = gastosProd.map(g => ({ 
+      ...g, 
+      tipoReg: 'Gasto', 
+      desc: g.obs || g.tipo, 
+      badge: 'badge-gasto',
+      qtdMostrar: '—',
+      valor: g.valor
+    })).sort((a, b) => b.data.localeCompare(a.data));
+  }
+  
+  const tbody = document.getElementById('tabela-produto-registros');
+  if (registros.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">📭 Nenhum registro encontrado</td></tr>`;
+  } else {
+    tbody.innerHTML = registros.map(r => `
+      <tr>
+        <td>${formatarDataBR(r.data)}</td>
+        <td><span class="badge ${r.badge}">${r.tipoReg}</span></td>
+        <td>${r.desc}</td>
+        <td>${r.area || '—'}</td>
+        <td>${r.qtdMostrar}</td>
+        <td><strong style="color: ${r.tipoReg === 'Venda' ? 'var(--azul)' : (r.tipoReg === 'Custo' ? 'var(--verde)' : 'var(--vermelho)')}">${formatMoney(r.valor)}</strong></td>
+      </tr>
+    `).join('');
+  }
+}
+
+function atualizarGraficosProduto(custos, vendas, gastos) {
+  // Gráfico de evolução do produto (últimos 30 dias)
+  const ultimos30Dias = {};
+  const hoje = new Date();
+  
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(hoje);
+    d.setDate(d.getDate() - i);
+    const dia = d.toISOString().split('T')[0];
+    ultimos30Dias[dia] = { custos: 0, vendas: 0, gastos: 0 };
+  }
+  
+  custos.forEach(p => {
+    if (p?.data && ultimos30Dias[p.data]) {
+      ultimos30Dias[p.data].custos += Number(p?.total) || 0;
+    }
+  });
+  
+  vendas.forEach(v => {
+    if (v?.data && ultimos30Dias[v.data]) {
+      ultimos30Dias[v.data].vendas += Number(v?.total) || 0;
+    }
+  });
+  
+  gastos.forEach(g => {
+    if (g?.data && ultimos30Dias[g.data]) {
+      ultimos30Dias[g.data].gastos += Number(g?.valor) || 0;
+    }
+  });
+  
+  const labels = [];
+  const dadosVendas = [];
+  const dadosGastos = [];
+  
+  Object.keys(ultimos30Dias).sort().forEach(dia => {
+    const [ano, mes, diaNum] = dia.split('-');
+    labels.push(`${diaNum}/${mes}`);
+    dadosVendas.push(ultimos30Dias[dia].vendas);
+    dadosGastos.push(ultimos30Dias[dia].custos + ultimos30Dias[dia].gastos);
+  });
+  
+  if (chartsProduto.evolucao) chartsProduto.evolucao.destroy();
+  const ctxEvol = document.getElementById('chartProdutoEvolucao')?.getContext('2d');
+  if (ctxEvol) {
+    chartsProduto.evolucao = new Chart(ctxEvol, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Vendas', data: dadosVendas, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, fill: true },
+          { label: 'Gastos + Custos', data: dadosGastos, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', tension: 0.4, fill: true }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+  
+  // Gráfico de distribuição dos gastos do produto
+  const gastosPorTipo = {};
+  gastos.forEach(g => {
+    if (g?.valor) {
+      const tipo = g.tipo || 'Outros';
+      gastosPorTipo[tipo] = (gastosPorTipo[tipo] || 0) + (Number(g.valor) || 0);
+    }
+  });
+  
+  custos.forEach(p => {
+    if (p?.total) {
+      const tipo = `Custo: ${p.tipo || 'Produção'}`;
+      gastosPorTipo[tipo] = (gastosPorTipo[tipo] || 0) + (Number(p.total) || 0);
+    }
+  });
+  
+  if (chartsProduto.gastos) chartsProduto.gastos.destroy();
+  const ctxGastos = document.getElementById('chartProdutoGastos')?.getContext('2d');
+  if (ctxGastos && Object.keys(gastosPorTipo).length > 0) {
+    chartsProduto.gastos = new Chart(ctxGastos, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(gastosPorTipo),
+        datasets: [{
+          data: Object.values(gastosPorTipo),
+          backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280', '#9333ea', '#ec4899']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+}
+
+function atualizarGraficoComparativo() {
+  // Calcular lucro de todos os produtos
+  const produtosSet = new Set();
+  producoes.forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  vendas.forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  gastos.forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
+  
+  const produtos = Array.from(produtosSet).sort();
+  
+  const lucros = produtos.map(prod => {
+    const custos = producoes.filter(p => p.produto === prod).reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    const vendasTotal = vendas.filter(v => v.produto === prod).reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    const gastosTotal = gastos.filter(g => g.produto === prod).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    return vendasTotal - (custos + gastosTotal);
+  });
+  
+  if (chartsProduto.comparativo) chartsProduto.comparativo.destroy();
+  const ctxComp = document.getElementById('chartComparativoProdutos')?.getContext('2d');
+  if (ctxComp) {
+    chartsProduto.comparativo = new Chart(ctxComp, {
+      type: 'bar',
+      data: {
+        labels: produtos,
+        datasets: [{
+          label: 'Lucro/Prejuízo',
+          data: lucros,
+          backgroundColor: lucros.map(l => l >= 0 ? '#10b981' : '#dc2626'),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return formatMoney(context.parsed.y);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return formatMoney(value);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+// Adicionar ao atualizarTudo()
+function atualizarTudo() {
+  // ... código existente ...
+  atualizarSeletorProdutos();
+  if (produtoSelecionado) {
+    atualizarDashboardProduto();
+  }
+}
+  
 </script>
 </body>
 </html>
