@@ -749,7 +749,7 @@
 
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-label">🌾 Custos Produção</div>
+        <div class="kpi-label">🌾 Custos de Colheita</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
       </div>
       <div class="kpi-card azul">
@@ -757,7 +757,7 @@
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
       </div>
       <div class="kpi-card vermelho">
-        <div class="kpi-label">💸 Gastos Gerais</div>
+        <div class="kpi-label">💸 Despesas Gerais</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
       </div>
       <div class="kpi-card roxo">
@@ -989,7 +989,7 @@
 
   <!-- PRODUÇÃO -->
   <section id="producao" class="section">
-    <div class="section-title">🌾 Custos de Produção</div>
+    <div class="section-title">🌾 Custos de Colheita</div>
     <div class="section-sub">Registre os custos por produto</div>
 
     <div class="card">
@@ -1123,7 +1123,7 @@
 
   <!-- GASTOS (com campo PRODUTO opcional) -->
   <section id="gastos" class="section">
-    <div class="section-title">💸 Gastos Gerais</div>
+    <div class="section-title">💸 Despesas Gerais</div>
     <div class="section-sub">Registre todos os gastos (combustível, manutenção, etc)</div>
 
     <div class="card">
@@ -1949,7 +1949,7 @@ function atualizarCardsAreas() {
         </div>
         <div class="area-stats">
           <div class="area-stat">
-            <div class="area-stat-label">🌾 Custos</div>
+            <div class="area-stat-label">🌾 Custo Colheita</div>
             <div class="area-stat-value" style="color: var(--verde);">${formatMoney(totalProd)}</div>
           </div>
           <div class="area-stat">
@@ -1957,7 +1957,7 @@ function atualizarCardsAreas() {
             <div class="area-stat-value" style="color: var(--azul);">${formatMoney(totalVendas)}</div>
           </div>
           <div class="area-stat">
-            <div class="area-stat-label">💸 Gastos</div>
+            <div class="area-stat-label">💸 Despesas</div>
             <div class="area-stat-value" style="color: var(--vermelho);">${formatMoney(totalGastos)}</div>
           </div>
           <div class="area-stat">
