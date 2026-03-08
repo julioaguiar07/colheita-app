@@ -1541,8 +1541,17 @@ function atualizarTudo() {
   atualizarListaGastosFiltrada();
   atualizarDashboard();
   atualizarCardsAreas();
-  atualizarCardsProdutos();
   atualizarDataLists();
+  inicializarSeletorProdutos();
+  if (produtoSelecionado) {
+    atualizarDashboardProduto();
+  } else {
+    // Resetar para o estado inicial
+    const semProduto = document.getElementById('sem-produto');
+    const conteudo = document.getElementById('conteudo-produto');
+    if (semProduto) semProduto.style.display = 'block';
+    if (conteudo) conteudo.style.display = 'none';
+  }
 }
 
 function formatarDataBR(dataStr) {
@@ -2189,11 +2198,484 @@ function formatMoney(valor) {
   return 'R$ ' + Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatarDataBR(dataStr) {
+  if (!dataStr) return '';
+  try {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+  } catch (e) {
+    return dataStr;
+  }
+}
+
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+// ============================================
+// PRODUTOS - DASHBOARD INDIVIDUAL COMPLETO
+// ============================================
+let produtoSelecionado = '';
+let chartsProduto = {};
+
+// Inicializar seletor de produtos
+function inicializarSeletorProdutos() {
+  const seletor = document.getElementById('seletor-produto');
+  if (!seletor) return;
+  
+  // Coletar todos os produtos únicos
+  const produtosSet = new Set();
+  
+  if (Array.isArray(producoes)) {
+    producoes.forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  }
+  if (Array.isArray(vendas)) {
+    vendas.forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  }
+  if (Array.isArray(gastos)) {
+    gastos.forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
+  }
+  
+  const produtos = Array.from(produtosSet).sort();
+  
+  // Atualizar contador
+  const totalIndicator = document.getElementById('total-produtos-indicator');
+  if (totalIndicator) totalIndicator.textContent = produtos.length;
+  
+  // Montar options
+  let options = '<option value="">— Escolha um produto —</option>';
+  produtos.forEach(prod => {
+    options += `<option value="${prod}" ${prod === produtoSelecionado ? 'selected' : ''}>${prod}</option>`;
+  });
+  
+  seletor.innerHTML = options;
+}
+
+// Mudar produto selecionado
+function mudarProdutoSelecionado() {
+  const seletor = document.getElementById('seletor-produto');
+  if (!seletor) return;
+  
+  produtoSelecionado = seletor.value;
+  
+  const semProduto = document.getElementById('sem-produto');
+  const conteudo = document.getElementById('conteudo-produto');
+  
+  if (produtoSelecionado) {
+    if (semProduto) semProduto.style.display = 'none';
+    if (conteudo) conteudo.style.display = 'block';
+    atualizarDashboardProduto();
+  } else {
+    if (semProduto) semProduto.style.display = 'block';
+    if (conteudo) conteudo.style.display = 'none';
+  }
+}
+
+// Atualizar todo o dashboard do produto
+function atualizarDashboardProduto() {
+  if (!produtoSelecionado) return;
+  
+  // Filtrar dados
+  const custosProd = (producoes || []).filter(p => p?.produto === produtoSelecionado);
+  const vendasProd = (vendas || []).filter(v => v?.produto === produtoSelecionado);
+  const gastosProd = (gastos || []).filter(g => g?.produto === produtoSelecionado);
+  
+  // Calcular totais
+  const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
+  const totalVendas = vendasProd.reduce((s, v) => s + (Number(v?.total) || 0), 0);
+  const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+  const lucro = totalVendas - (totalCustos + totalGastos);
+  const margem = totalVendas > 0 ? (lucro / totalVendas * 100) : 0;
+  
+  // Coletar áreas únicas
+  const areasSet = new Set();
+  custosProd.forEach(p => { if (p?.area) areasSet.add(p.area); });
+  vendasProd.forEach(v => { if (v?.area) areasSet.add(v.area); });
+  gastosProd.forEach(g => { if (g?.area) areasSet.add(g.area); });
+  
+  // Atualizar cabeçalho
+  document.getElementById('produto-nome-titulo').textContent = produtoSelecionado;
+  document.getElementById('produto-total-registros').textContent = custosProd.length + vendasProd.length + gastosProd.length;
+  document.getElementById('produto-total-areas').textContent = areasSet.size;
+  
+  const lucroPrincipal = document.getElementById('produto-lucro-principal');
+  lucroPrincipal.textContent = formatMoney(lucro);
+  lucroPrincipal.style.color = lucro >= 0 ? '#4ade80' : '#f87171';
+  
+  document.getElementById('produto-margem-principal').textContent = `Margem: ${margem.toFixed(1)}%`;
+  
+  // KPIs
+  document.getElementById('kpi-prod-custos').textContent = formatMoney(totalCustos);
+  document.getElementById('kpi-prod-custos-qtd').textContent = `${custosProd.length} registro(s)`;
+  
+  document.getElementById('kpi-prod-vendas').textContent = formatMoney(totalVendas);
+  document.getElementById('kpi-prod-vendas-qtd').textContent = `${vendasProd.length} venda(s)`;
+  
+  document.getElementById('kpi-prod-gastos').textContent = formatMoney(totalGastos);
+  document.getElementById('kpi-prod-gastos-qtd').textContent = `${gastosProd.length} gasto(s)`;
+  
+  const margemEl = document.getElementById('kpi-prod-margem');
+  margemEl.textContent = `${margem.toFixed(1)}%`;
+  margemEl.style.color = margem >= 0 ? 'var(--verde)' : 'var(--vermelho)';
+  
+  document.getElementById('kpi-prod-status').textContent = lucro >= 0 ? '✅ Lucrativo' : '⚠️ Prejuízo';
+  
+  // Áreas de cultivo
+  atualizarAreasProduto(areasSet, custosProd, vendasProd, gastosProd);
+  
+  // Tabela de registros (aba todos)
+  atualizarTabelaProduto('todos', custosProd, vendasProd, gastosProd);
+  
+  // Gráficos
+  criarGraficosProduto(custosProd, vendasProd, gastosProd);
+  criarGraficoComparativo();
+}
+
+// Atualizar áreas do produto
+function atualizarAreasProduto(areasSet, custos, vendas, gastos) {
+  const container = document.getElementById('produto-areas-container');
+  if (!container) return;
+  
+  if (areasSet.size === 0) {
+    container.innerHTML = '<div class="empty" style="padding: 30px;">📍 Nenhuma área associada a este produto</div>';
+    return;
+  }
+  
+  let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">';
+  
+  Array.from(areasSet).forEach(area => {
+    const areaCustos = custos.filter(p => p.area === area).reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    const areaVendas = vendas.filter(v => v.area === area).reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    const areaGastos = gastos.filter(g => g.area === area).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    const areaLucro = areaVendas - (areaCustos + areaGastos);
+    
+    html += `
+      <div style="background: var(--creme); border-radius: 12px; padding: 15px; border-left: 4px solid ${areaLucro >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+          <span style="font-size: 1.5rem;">🗺️</span>
+          <span style="font-weight: 700; font-size: 1.1rem;">${area}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <div style="font-size: 0.7rem; color: var(--cinza);">CUSTOS</div>
+            <div style="font-weight: 700; color: var(--verde);">${formatMoney(areaCustos)}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; color: var(--cinza);">VENDAS</div>
+            <div style="font-weight: 700; color: var(--azul);">${formatMoney(areaVendas)}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; color: var(--cinza);">GASTOS</div>
+            <div style="font-weight: 700; color: var(--vermelho);">${formatMoney(areaGastos)}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.7rem; color: var(--cinza);">LUCRO</div>
+            <div style="font-weight: 700; ${areaLucro >= 0 ? 'color: var(--verde);' : 'color: var(--vermelho);'}">${formatMoney(areaLucro)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Mudar aba da tabela
+function mudarAbaProduto(tipo, botao) {
+  // Atualizar estilo dos botões
+  document.querySelectorAll('.btn-aba').forEach(btn => {
+    btn.style.background = 'var(--cinza-claro)';
+    btn.style.color = 'var(--texto)';
+  });
+  botao.style.background = 'var(--verde)';
+  botao.style.color = 'white';
+  
+  if (!produtoSelecionado) return;
+  
+  const custosProd = (producoes || []).filter(p => p?.produto === produtoSelecionado);
+  const vendasProd = (vendas || []).filter(v => v?.produto === produtoSelecionado);
+  const gastosProd = (gastos || []).filter(g => g?.produto === produtoSelecionado);
+  
+  atualizarTabelaProduto(tipo, custosProd, vendasProd, gastosProd);
+}
+
+// Atualizar tabela de registros
+function atualizarTabelaProduto(tipo, custos, vendas, gastos) {
+  let registros = [];
+  
+  if (tipo === 'todos') {
+    registros = [
+      ...custos.map(p => ({ 
+        data: p.data,
+        tipoReg: 'Custo', 
+        desc: p.tipo || 'Custo de produção',
+        area: p.area,
+        qtd: p.qtd ? `${p.qtd} ${p.unidade || 'un'}` : '—',
+        valor: p.total,
+        badge: 'badge-prod',
+        cor: 'var(--verde)'
+      })),
+      ...vendas.map(v => ({ 
+        data: v.data,
+        tipoReg: 'Venda', 
+        desc: v.cliente ? `Venda para ${v.cliente}` : 'Venda',
+        area: v.area,
+        qtd: v.qtd ? `${v.qtd} ${v.unidade || 'un'}` : '—',
+        valor: v.total,
+        badge: 'badge-venda',
+        cor: 'var(--azul)'
+      })),
+      ...gastos.map(g => ({ 
+        data: g.data,
+        tipoReg: 'Gasto', 
+        desc: g.obs || g.tipo,
+        area: g.area,
+        qtd: '—',
+        valor: g.valor,
+        badge: 'badge-gasto',
+        cor: 'var(--vermelho)'
+      }))
+    ];
+  } else if (tipo === 'custos') {
+    registros = custos.map(p => ({ 
+      data: p.data,
+      tipoReg: 'Custo', 
+      desc: p.tipo || 'Custo de produção',
+      area: p.area,
+      qtd: p.qtd ? `${p.qtd} ${p.unidade || 'un'}` : '—',
+      valor: p.total,
+      badge: 'badge-prod',
+      cor: 'var(--verde)'
+    }));
+  } else if (tipo === 'vendas') {
+    registros = vendas.map(v => ({ 
+      data: v.data,
+      tipoReg: 'Venda', 
+      desc: v.cliente ? `Venda para ${v.cliente}` : 'Venda',
+      area: v.area,
+      qtd: v.qtd ? `${v.qtd} ${v.unidade || 'un'}` : '—',
+      valor: v.total,
+      badge: 'badge-venda',
+      cor: 'var(--azul)'
+    }));
+  } else if (tipo === 'gastos') {
+    registros = gastos.map(g => ({ 
+      data: g.data,
+      tipoReg: 'Gasto', 
+      desc: g.obs || g.tipo,
+      area: g.area,
+      qtd: '—',
+      valor: g.valor,
+      badge: 'badge-gasto',
+      cor: 'var(--vermelho)'
+    }));
+  }
+  
+  // Ordenar por data (mais recente primeiro)
+  registros.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  
+  const tbody = document.getElementById('tabela-produto-registros');
+  if (!tbody) return;
+  
+  if (registros.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">📭 Nenhum registro encontrado</td></tr>`;
+  } else {
+    tbody.innerHTML = registros.map(r => `
+      <tr>
+        <td>${formatarDataBR(r.data)}</td>
+        <td><span class="badge ${r.badge}">${r.tipoReg}</span></td>
+        <td>${r.desc}</td>
+        <td>${r.area || '—'}</td>
+        <td>${r.qtd}</td>
+        <td><strong style="color: ${r.cor}">${formatMoney(r.valor)}</strong></td>
+      </tr>
+    `).join('');
+  }
+}
+
+// Criar gráficos do produto
+function criarGraficosProduto(custos, vendas, gastos) {
+  // Gráfico de evolução
+  const dadosEvolucao = {};
+  const ultimos15Dias = [];
+  
+  // Pegar últimas 15 datas com dados
+  const todasDatas = [];
+  [...custos, ...vendas, ...gastos].forEach(item => {
+    if (item?.data) todasDatas.push(item.data);
+  });
+  
+  const datasUnicas = [...new Set(todasDatas)].sort().slice(-15);
+  
+  datasUnicas.forEach(data => {
+    dadosEvolucao[data] = {
+      vendas: vendas.filter(v => v.data === data).reduce((s, v) => s + (Number(v?.total) || 0), 0),
+      gastos: [
+        ...custos.filter(c => c.data === data).map(c => Number(c?.total) || 0),
+        ...gastos.filter(g => g.data === data).map(g => Number(g?.valor) || 0)
+      ].reduce((s, v) => s + v, 0)
+    };
+  });
+  
+  const ctxEvol = document.getElementById('chartProdutoEvolucao')?.getContext('2d');
+  if (ctxEvol) {
+    if (chartsProduto.evolucao) chartsProduto.evolucao.destroy();
+    
+    chartsProduto.evolucao = new Chart(ctxEvol, {
+      type: 'line',
+      data: {
+        labels: datasUnicas.map(d => formatarDataBR(d)),
+        datasets: [
+          { 
+            label: 'Vendas', 
+            data: datasUnicas.map(d => dadosEvolucao[d]?.vendas || 0), 
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 3
+          },
+          { 
+            label: 'Gastos + Custos', 
+            data: datasUnicas.map(d => dadosEvolucao[d]?.gastos || 0), 
+            borderColor: '#dc2626',
+            backgroundColor: 'rgba(220,38,38,0.1)',
+            tension: 0.4,
+            fill: true,
+            borderWidth: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { 
+            position: 'bottom',
+            labels: { font: { size: 12 } }
+          }
+        }
+      }
+    });
+  }
+  
+  // Gráfico de distribuição dos gastos
+  const tiposGastos = {};
+  
+  custos.forEach(p => {
+    if (p?.total) {
+      const tipo = p.tipo || 'Custos de Produção';
+      tiposGastos[tipo] = (tiposGastos[tipo] || 0) + (Number(p.total) || 0);
+    }
+  });
+  
+  gastos.forEach(g => {
+    if (g?.valor) {
+      const tipo = g.tipo || 'Outros Gastos';
+      tiposGastos[tipo] = (tiposGastos[tipo] || 0) + (Number(g.valor) || 0);
+    }
+  });
+  
+  const ctxGastos = document.getElementById('chartProdutoGastos')?.getContext('2d');
+  if (ctxGastos && Object.keys(tiposGastos).length > 0) {
+    if (chartsProduto.gastos) chartsProduto.gastos.destroy();
+    
+    const cores = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280', '#9333ea', '#ec4899'];
+    
+    chartsProduto.gastos = new Chart(ctxGastos, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(tiposGastos),
+        datasets: [{
+          data: Object.values(tiposGastos),
+          backgroundColor: cores.slice(0, Object.keys(tiposGastos).length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { 
+            position: 'bottom',
+            labels: { font: { size: 11 } }
+          }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+}
+
+// Criar gráfico comparativo
+function criarGraficoComparativo() {
+  const produtosSet = new Set();
+  
+  (producoes || []).forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  (vendas || []).forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  (gastos || []).forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
+  
+  const produtos = Array.from(produtosSet).sort();
+  
+  const lucros = produtos.map(prod => {
+    const custos = (producoes || []).filter(p => p.produto === prod).reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    const vendasTotal = (vendas || []).filter(v => v.produto === prod).reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    const gastosTotal = (gastos || []).filter(g => g.produto === prod).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    return vendasTotal - (custos + gastosTotal);
+  });
+  
+  const ctxComp = document.getElementById('chartComparativoProdutos')?.getContext('2d');
+  if (ctxComp) {
+    if (chartsProduto.comparativo) chartsProduto.comparativo.destroy();
+    
+    chartsProduto.comparativo = new Chart(ctxComp, {
+      type: 'bar',
+      data: {
+        labels: produtos,
+        datasets: [{
+          label: 'Lucro/Prejuízo',
+          data: lucros,
+          backgroundColor: lucros.map(l => l >= 0 ? '#10b981' : '#dc2626'),
+          borderRadius: 8,
+          barPercentage: 0.7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return formatMoney(context.parsed.y);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return formatMoney(value);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
 }
 </script>
 </body>
