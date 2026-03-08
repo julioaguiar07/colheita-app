@@ -1499,6 +1499,11 @@ function atualizarTudo() {
   atualizarCardsAreas();
   atualizarCardsProdutos();
   atualizarDataLists();
+  atualizarSeletorProdutos(); // ← ADICIONE ESTA LINHA
+  if (produtoSelecionado) {
+    atualizarDashboardProduto();
+  }
+  atualizarDataLists();
 }
 
 function formatarDataBR(dataStr) {
