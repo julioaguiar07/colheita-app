@@ -799,20 +799,180 @@
   </section>
 
   <!-- PRODUTOS (NOVA PÁGINA) -->
+  <!-- PRODUTOS - DASHBOARD INDIVIDUAL COMPLETO -->
   <section id="produtos" class="section">
-    <div class="section-title">🌱 Análise por Produto</div>
-    <div class="section-sub">Visão detalhada de custos, vendas e lucratividade por produto</div>
-
-    <!-- Cards de Produtos -->
-    <div class="produtos-grid" id="produtos-cards">
-      <div class="empty">Carregando produtos...</div>
+    <div class="section-title">🌱 Análise Detalhada por Produto</div>
+    <div class="section-sub">Selecione um produto para mergulhar nos dados</div>
+  
+    <!-- SELETOR DE PRODUTO ESTILIZADO -->
+    <div class="card" style="padding: 25px; background: linear-gradient(145deg, var(--branco), var(--creme)); border: none;">
+      <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
+        <div style="flex: 2; min-width: 300px;">
+          <label style="font-size: 0.9rem; color: var(--verde-escuro); font-weight: 600; margin-bottom: 8px; display: block;">
+            🔍 SELECIONE O PRODUTO PARA ANÁLISE
+          </label>
+          <div style="display: flex; gap: 10px;">
+            <select id="seletor-produto" style="flex: 1; padding: 15px 20px; font-size: 1.1rem; border: 2px solid var(--cinza-claro); border-radius: 12px; background: var(--branco; font-weight: 500;">
+              <option value="">— Escolha um produto —</option>
+            </select>
+            <button class="btn btn-primary" onclick="mudarProdutoSelecionado()" style="padding: 15px 30px; font-size: 1rem;">
+              <span>🔍</span> Analisar
+            </button>
+          </div>
+        </div>
+        <div style="flex: 1; min-width: 200px; background: var(--creme); padding: 15px; border-radius: 12px;">
+          <div style="font-size: 0.8rem; color: var(--cinza); margin-bottom: 5px;">📊 TOTAL DE PRODUTOS</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: var(--verde-escuro);" id="total-produtos-indicator">0</div>
+        </div>
+      </div>
     </div>
-
-    <!-- Gráfico de Produtos -->
-    <div class="card">
-      <div class="card-title">📊 Comparativo de Lucratividade</div>
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="chartProdutos"></canvas>
+  
+    <!-- CONTEÚDO DO PRODUTO SELECIONADO -->
+    <div id="conteudo-produto" style="display: none;">
+      
+      <!-- HERO SECTION DO PRODUTO -->
+      <div class="card" style="background: linear-gradient(135deg, var(--verde-escuro), var(--verde)); color: white; padding: 30px; margin-bottom: 25px; border: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+              <span style="font-size: 3rem;">🌱</span>
+              <div>
+                <span style="font-size: 1rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 2px;">Análise Completa</span>
+                <h2 style="font-size: 2.8rem; font-weight: 800; line-height: 1.2;" id="produto-nome-titulo">-</h2>
+              </div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-top: 10px;">
+              <div style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 40px; font-size: 0.9rem;">
+                <span id="produto-total-registros">0</span> registros
+              </div>
+              <div style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 40px; font-size: 0.9rem;">
+                <span id="produto-total-areas">0</span> áreas
+              </div>
+            </div>
+          </div>
+          <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; min-width: 250px;">
+            <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">📈 RESULTADO LÍQUIDO</div>
+            <div style="font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono'; line-height: 1;" id="produto-lucro-principal">R$ 0</div>
+            <div style="font-size: 0.9rem; margin-top: 5px;" id="produto-margem-principal">Margem: 0%</div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- KPIs PRINCIPAIS -->
+      <div class="kpi-grid" style="margin-bottom: 25px;">
+        <div class="kpi-card" style="border-left-color: var(--verde);">
+          <div class="kpi-label">🌾 CUSTOS DE PRODUÇÃO</div>
+          <div class="kpi-value" id="kpi-prod-custos">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-custos-qtd">0 registros</div>
+        </div>
+        <div class="kpi-card" style="border-left-color: var(--azul);">
+          <div class="kpi-label">💰 VENDAS</div>
+          <div class="kpi-value" id="kpi-prod-vendas">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-vendas-qtd">0 vendas</div>
+        </div>
+        <div class="kpi-card" style="border-left-color: var(--vermelho);">
+          <div class="kpi-label">💸 GASTOS ESPECÍFICOS</div>
+          <div class="kpi-value" id="kpi-prod-gastos">R$ 0</div>
+          <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
+        </div>
+        <div class="kpi-card" style="border-left-color: var(--roxo);">
+          <div class="kpi-label">📊 MARGEM DE LUCRO</div>
+          <div class="kpi-value" id="kpi-prod-margem">0%</div>
+          <div class="kpi-sub" id="kpi-prod-status">Aguardando dados</div>
+        </div>
+      </div>
+  
+      <!-- GRÁFICOS PRINCIPAIS -->
+      <div class="charts-grid" style="margin-bottom: 25px;">
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>📈</span>
+            <span>EVOLUÇÃO DIÁRIA (ÚLTIMOS 15 DIAS)</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartProdutoEvolucao"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            <span>🥧</span>
+            <span>DISTRIBUIÇÃO DOS GASTOS</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartProdutoGastos"></canvas>
+          </div>
+        </div>
+      </div>
+  
+      <!-- ÁREAS DE CULTIVO -->
+      <div class="card" style="margin-bottom: 25px;">
+        <div class="card-title">
+          <span>📍</span>
+          <span>ÁREAS DE CULTIVO</span>
+        </div>
+        <div id="produto-areas-container">
+          <div class="empty" style="padding: 30px;">Nenhuma área associada</div>
+        </div>
+      </div>
+  
+      <!-- TODOS OS REGISTROS COM ABAS -->
+      <div class="card" style="margin-bottom: 25px;">
+        <div class="card-title">
+          <span>📋</span>
+          <span>TODOS OS REGISTROS</span>
+        </div>
+        
+        <!-- ABAS -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 2px solid var(--cinza-claro); padding-bottom: 10px;">
+          <button class="btn-aba ativo" onclick="mudarAbaProduto('todos', this)" style="background: var(--verde); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">📋 TODOS</button>
+          <button class="btn-aba" onclick="mudarAbaProduto('custos', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">🌾 CUSTOS</button>
+          <button class="btn-aba" onclick="mudarAbaProduto('vendas', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💰 VENDAS</button>
+          <button class="btn-aba" onclick="mudarAbaProduto('gastos', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💸 GASTOS</button>
+        </div>
+  
+        <!-- TABELA -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Área</th>
+                <th>Quantidade</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-produto-registros">
+              <tr><td colspan="6" class="empty">Selecione um produto</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  
+      <!-- GRÁFICO COMPARATIVO ENTRE PRODUTOS -->
+      <div class="card">
+        <div class="card-title">
+          <span>📊</span>
+          <span>COMPARATIVO DE LUCRATIVIDADE</span>
+        </div>
+        <div style="margin-bottom: 15px; font-size: 0.9rem; color: var(--cinza);">
+          Compare o desempenho de todos os produtos lado a lado
+        </div>
+        <div class="chart-container" style="height: 350px;">
+          <canvas id="chartComparativoProdutos"></canvas>
+        </div>
+      </div>
+    </div>
+  
+    <!-- ESTADO INICIAL (SEM PRODUTO) -->
+    <div id="sem-produto" class="card">
+      <div class="empty" style="padding: 60px 20px;">
+        <div class="empty-icon" style="font-size: 5rem; margin-bottom: 20px;">🌱</div>
+        <h3 style="font-size: 1.8rem; margin-bottom: 10px;">Nenhum produto selecionado</h3>
+        <p style="font-size: 1.1rem; color: var(--cinza); max-width: 500px; margin: 0 auto;">
+          Escolha um produto acima para mergulhar em uma análise completa com KPIs, gráficos e todos os detalhes.
+        </p>
       </div>
     </div>
   </section>
