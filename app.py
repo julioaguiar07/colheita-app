@@ -284,6 +284,30 @@ def add_tipo_column():
         return "✅ Coluna 'tipo' adicionada com sucesso! <a href='/'>Voltar</a>"
     except Exception as e:
         return f"❌ Erro: {str(e)}"
+        
+@app.route('/add-produto-column')
+def add_produto_column():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('ALTER TABLE gastos ADD COLUMN produto VARCHAR(255)')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return """
+        <html>
+        <head><title>Sucesso!</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Coluna 'produto' adicionada com sucesso!</h1>
+            <p><a href="/" style="background: #2d7a3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar ao sistema</a></p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        if 'already exists' in str(e):
+            return "<h1 style='color: orange;'>⚠️ Coluna 'produto' já existe!</h1>"
+        return f"<h1 style='color: red;'>❌ Erro: {str(e)}</h1>"
+
 
 @app.route('/verificar-coluna-produto')
 def verificar_coluna():
