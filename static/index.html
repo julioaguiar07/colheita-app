@@ -37,7 +37,7 @@
       height: calc(100vh - 64px); /* Altura total menos o header */
       overflow: hidden;
     }
-    
+
     /* Garantir que as outras páginas não sejam afetadas */
     .section:not(#inicio) {
       /* mantém o comportamento normal */
@@ -282,7 +282,7 @@
   .kpi-card.azul { border-left-color: var(--azul); }
   .kpi-card.vermelho { border-left-color: var(--vermelho); }
   .kpi-card.roxo { border-left-color: var(--roxo); }
-  
+
   .kpi-label {
     font-size: 0.75rem;
     font-weight: 600;
@@ -337,7 +337,7 @@
     gap: 20px;
     margin-top: 20px;
   }
-  
+
   .produto-card {
     background: var(--branco);
     border-radius: var(--radius);
@@ -347,12 +347,12 @@
     transition: transform 0.2s, box-shadow 0.2s;
     border: 1px solid rgba(0,0,0,0.05);
   }
-  
+
   .produto-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--sombra-md);
   }
-  
+
   .produto-header {
     background: linear-gradient(135deg, var(--verde-escuro), var(--verde));
     color: white;
@@ -361,7 +361,7 @@
     align-items: center;
     justify-content: space-between;
   }
-  
+
   .produto-nome {
     font-size: 1.3rem;
     font-weight: 700;
@@ -369,11 +369,11 @@
     align-items: center;
     gap: 8px;
   }
-  
+
   .produto-icon {
     font-size: 1.8rem;
   }
-  
+
   .produto-badge {
     background: rgba(255,255,255,0.2);
     padding: 4px 12px;
@@ -381,42 +381,42 @@
     font-size: 0.8rem;
     font-weight: 600;
   }
-  
+
   .produto-body {
     padding: 20px;
   }
-  
+
   .produto-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-bottom: 16px;
   }
-  
+
   .produto-stat {
     background: var(--creme);
     padding: 12px;
     border-radius: var(--radius-sm);
     text-align: center;
   }
-  
+
   .produto-stat-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     color: var(--cinza);
     margin-bottom: 4px;
   }
-  
+
   .produto-stat-value {
     font-size: 1.2rem;
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
   }
-  
+
   .produto-custos { color: var(--verde); }
   .produto-vendas { color: var(--azul); }
   .produto-gastos { color: var(--vermelho); }
-  
+
   .produto-lucro {
     background: linear-gradient(135deg, var(--roxo), #6d28d9);
     color: white;
@@ -427,29 +427,29 @@
     align-items: center;
     margin-top: 16px;
   }
-  
+
   .produto-lucro-label {
     font-size: 0.9rem;
     text-transform: uppercase;
     opacity: 0.9;
   }
-  
+
   .produto-lucro-value {
     font-size: 1.5rem;
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
   }
-  
+
   .produto-lucro.negativo {
     background: linear-gradient(135deg, #991b1b, #dc2626);
   }
-  
+
   .produto-areas {
     margin-top: 16px;
     border-top: 1px dashed var(--cinza-claro);
     padding-top: 16px;
   }
-  
+
   .produto-areas-title {
     font-size: 0.8rem;
     font-weight: 600;
@@ -457,7 +457,7 @@
     margin-bottom: 8px;
     text-transform: uppercase;
   }
-  
+
   .produto-area-tag {
     display: inline-block;
     background: var(--creme);
@@ -468,7 +468,7 @@
     margin-bottom: 8px;
     border: 1px solid var(--cinza-claro);
   }
-  
+
   .produto-area-tag strong {
     color: var(--verde-escuro);
     margin-right: 4px;
@@ -481,7 +481,7 @@
     gap: 16px;
     margin-top: 20px;
   }
-  
+
   .area-card {
     background: var(--branco);
     border-radius: var(--radius);
@@ -490,12 +490,12 @@
     border-left: 4px solid var(--azul);
     transition: transform 0.2s;
   }
-  
+
   .area-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--sombra-md);
   }
-  
+
   .area-header {
     display: flex;
     align-items: center;
@@ -504,38 +504,38 @@
     padding-bottom: 12px;
     border-bottom: 2px solid var(--cinza-claro);
   }
-  
+
   .area-header h3 {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--verde-escuro);
   }
-  
+
   .area-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
-  
+
   .area-stat {
     background: var(--creme);
     padding: 10px;
     border-radius: var(--radius-sm);
   }
-  
+
   .area-stat-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     color: var(--cinza);
     margin-bottom: 4px;
   }
-  
+
   .area-stat-value {
     font-size: 1.1rem;
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
   }
-  
+
   .area-lucro {
     grid-column: span 2;
     background: linear-gradient(135deg, var(--verde-escuro), var(--verde));
@@ -547,7 +547,7 @@
     justify-content: space-between;
     align-items: center;
   }
-  
+
   .area-lucro.negativo {
     background: linear-gradient(135deg, #991b1b, #dc2626);
   }
@@ -559,14 +559,14 @@
     gap: 20px;
     margin-top: 20px;
   }
-  
+
   .ultimos-card {
     background: var(--branco);
     border-radius: var(--radius);
     padding: 20px;
     box-shadow: var(--sombra);
   }
-  
+
   .ultimos-header {
     display: flex;
     align-items: center;
@@ -575,20 +575,20 @@
     padding-bottom: 12px;
     border-bottom: 2px solid var(--cinza-claro);
   }
-  
+
   .ultimos-header h3 {
     font-size: 1rem;
     font-weight: 600;
     color: var(--verde-escuro);
   }
-  
+
   .ultimos-lista {
     display: flex;
     flex-direction: column;
     gap: 12px;
     min-height: 200px;
   }
-  
+
   .ultimo-item {
     display: flex;
     justify-content: space-between;
@@ -596,41 +596,41 @@
     padding: 8px 0;
     border-bottom: 1px dashed var(--cinza-claro);
   }
-  
+
   .ultimo-info {
     flex: 1;
   }
-  
+
   .ultimo-desc {
     font-weight: 500;
     font-size: 0.9rem;
     color: var(--texto);
   }
-  
+
   .ultimo-detalhe {
     font-size: 0.75rem;
     color: var(--cinza);
     margin-top: 2px;
   }
-  
+
   .ultimo-valor {
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.95rem;
     margin-left: 12px;
   }
-  
+
   .ultimo-valor.prod { color: var(--verde); }
   .ultimo-valor.venda { color: var(--azul); }
   .ultimo-valor.gasto { color: var(--vermelho); }
-  
+
   .ultimos-ver-mais {
     text-align: center;
     margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid var(--cinza-claro);
   }
-  
+
   .ultimos-ver-mais a {
     color: var(--verde);
     text-decoration: none;
@@ -761,7 +761,7 @@
       <img src="/static/capa.png" alt="Capa" style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
     </div>
   </section>
-  
+
   <!-- DASHBOARD -->
   <section id="dashboard" class="section">
     <div class="section-title">📊 Resumo AGM</div>
@@ -823,7 +823,7 @@
   <section id="produtos" class="section">
     <div class="section-title">🌱 Análise Detalhada por Produto</div>
     <div class="section-sub">Selecione um produto para mergulhar nos dados</div>
-  
+
     <!-- SELETOR DE PRODUTO ESTILIZADO -->
     <div class="card" style="padding: 25px; background: linear-gradient(145deg, var(--branco), var(--creme)); border: none;">
       <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
@@ -846,10 +846,10 @@
         </div>
       </div>
     </div>
-  
+
     <!-- CONTEÚDO DO PRODUTO SELECIONADO -->
     <div id="conteudo-produto" style="display: none;">
-      
+
       <!-- HERO SECTION DO PRODUTO -->
       <div class="card" style="background: linear-gradient(135deg, var(--verde-escuro), var(--verde)); color: white; padding: 30px; margin-bottom: 25px; border: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
@@ -877,7 +877,7 @@
           </div>
         </div>
       </div>
-  
+
       <!-- KPIs PRINCIPAIS -->
       <div class="kpi-grid" style="margin-bottom: 25px;">
         <div class="kpi-card" style="border-left-color: var(--verde);">
@@ -896,11 +896,12 @@
           <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
         </div>
         <div class="kpi-card" style="border-left-color: var(--roxo);">
-          <div class="kpi-label">💰 CUSTO MÉDIO POR KG</div>
-          <div class="kpi-value" id="kpi-prod-custo-kg">R$ 0,00</div>
-          <div class="kpi-sub" id="kpi-prod-kg-vendidos">0 kg vendidos</div>
+          <div class="kpi-label">📊 MARGEM DE LUCRO</div>
+          <div class="kpi-value" id="kpi-prod-margem">0%</div>
+          <div class="kpi-sub" id="kpi-prod-status">Aguardando dados</div>
         </div>
-  
+      </div>
+
       <!-- GRÁFICOS PRINCIPAIS -->
       <div class="charts-grid" style="margin-bottom: 25px;">
         <div class="chart-card">
@@ -922,7 +923,7 @@
           </div>
         </div>
       </div>
-  
+
       <!-- ÁREAS DE CULTIVO -->
       <div class="card" style="margin-bottom: 25px;">
         <div class="card-title">
@@ -933,14 +934,14 @@
           <div class="empty" style="padding: 30px;">Nenhuma área associada</div>
         </div>
       </div>
-  
+
       <!-- TODOS OS REGISTROS COM ABAS -->
       <div class="card" style="margin-bottom: 25px;">
         <div class="card-title">
           <span>📋</span>
           <span>TODOS OS REGISTROS</span>
         </div>
-        
+
         <!-- ABAS -->
         <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; border-bottom: 2px solid var(--cinza-claro); padding-bottom: 10px;">
           <button class="btn-aba ativo" onclick="mudarAbaProduto('todos', this)" style="background: var(--verde); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">📋 TODOS</button>
@@ -948,7 +949,7 @@
           <button class="btn-aba" onclick="mudarAbaProduto('vendas', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💰 VENDAS</button>
           <button class="btn-aba" onclick="mudarAbaProduto('gastos', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💸 GASTOS</button>
         </div>
-  
+
         <!-- TABELA -->
         <div class="table-wrap">
           <table>
@@ -968,7 +969,7 @@
           </table>
         </div>
       </div>
-  
+
       <!-- GRÁFICO COMPARATIVO ENTRE PRODUTOS -->
       <div class="card">
         <div class="card-title">
@@ -983,7 +984,7 @@
         </div>
       </div>
     </div>
-  
+
     <!-- ESTADO INICIAL (SEM PRODUTO) -->
     <div id="sem-produto" class="card">
       <div class="empty" style="padding: 60px 20px;">
@@ -1000,10 +1001,10 @@
   <section id="areas" class="section">
     <div class="section-title">🗺️ Áreas de Cultivo</div>
     <div class="section-sub">Informações sobre as áreas da fazenda</div>
-  
+
     <!-- Cards de Áreas -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
-      
+
       <!-- Area 1 -->
       <div style="background: linear-gradient(135deg, var(--verde-escuro), var(--verde)); border-radius: var(--radius); padding: 25px; box-shadow: var(--sombra-md); color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.1;">🌱</div>
@@ -1011,7 +1012,7 @@
           <span style="font-size: 2.5rem;">🗺️</span>
           <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0;">Area 1</h3>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
           <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 12px; text-align: center;">
             <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">🌾 HECTARES</div>
@@ -1024,12 +1025,12 @@
             <div style="font-size: 0.8rem; opacity: 0.7;">unidades</div>
           </div>
         </div>
-        
+
         <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; font-size: 0.9rem;">
           <span style="font-weight: 600;">🌱 Cultivo:</span> Acerola, Caju
         </div>
       </div>
-  
+
       <!-- Area 3 -->
       <div style="background: linear-gradient(135deg, #2c5282, #4299e1); border-radius: var(--radius); padding: 25px; box-shadow: var(--sombra-md); color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.1;">🌱</div>
@@ -1037,7 +1038,7 @@
           <span style="font-size: 2.5rem;">🗺️</span>
           <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0;">Area 3</h3>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
           <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 12px; text-align: center;">
             <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">🌾 HECTARES</div>
@@ -1050,12 +1051,12 @@
             <div style="font-size: 0.8rem; opacity: 0.7;">unidades</div>
           </div>
         </div>
-        
+
         <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; font-size: 0.9rem;">
           <span style="font-weight: 600;">🌱 Cultivo:</span> Castanha, Manga
         </div>
       </div>
-  
+
       <!-- Ca -->
       <div style="background: linear-gradient(135deg, #b45309, #d97706); border-radius: var(--radius); padding: 25px; box-shadow: var(--sombra-md); color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.1;">🌱</div>
@@ -1063,7 +1064,7 @@
           <span style="font-size: 2.5rem;">🗺️</span>
           <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0;">Ca</h3>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
           <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 12px; text-align: center;">
             <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">🌾 HECTARES</div>
@@ -1076,12 +1077,12 @@
             <div style="font-size: 0.8rem; opacity: 0.7;">unidades</div>
           </div>
         </div>
-        
+
         <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; font-size: 0.9rem;">
           <span style="font-weight: 600;">🌱 Cultivo:</span> Caju, Banana
         </div>
       </div>
-  
+
       <!-- Área Quatin -->
       <div style="background: linear-gradient(135deg, #6b21a5, #9333ea); border-radius: var(--radius); padding: 25px; box-shadow: var(--sombra-md); color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.1;">🌱</div>
@@ -1089,7 +1090,7 @@
           <span style="font-size: 2.5rem;">🗺️</span>
           <h3 style="font-size: 1.8rem; font-weight: 700; margin: 0;">Área Quatin</h3>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
           <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 12px; text-align: center;">
             <div style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 5px;">🌾 HECTARES</div>
@@ -1102,13 +1103,13 @@
             <div style="font-size: 0.8rem; opacity: 0.7;">unidades</div>
           </div>
         </div>
-        
+
         <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 10px; font-size: 0.9rem;">
           <span style="font-weight: 600;">🌱 Cultivo:</span> Acerola, Castanha, Manga
         </div>
       </div>
     </div>
-  
+
     <!-- Resumo Geral -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
       <div style="background: var(--branco); border-radius: var(--radius); padding: 20px; box-shadow: var(--sombra); text-align: center; border-left: 4px solid var(--verde);">
@@ -1117,14 +1118,14 @@
         <div style="font-size: 2.2rem; font-weight: 700; font-family: 'JetBrains Mono'; color: var(--verde-escuro);">78,6</div>
         <div style="font-size: 0.8rem; color: var(--cinza);">hectares</div>
       </div>
-      
+
       <div style="background: var(--branco); border-radius: var(--radius); padding: 20px; box-shadow: var(--sombra); text-align: center; border-left: 4px solid var(--azul);">
         <div style="font-size: 2rem; margin-bottom: 10px;">🌳</div>
         <div style="font-size: 0.9rem; color: var(--cinza); text-transform: uppercase;">Total de Pés</div>
         <div style="font-size: 2.2rem; font-weight: 700; font-family: 'JetBrains Mono'; color: var(--verde-escuro);">5.000</div>
         <div style="font-size: 0.8rem; color: var(--cinza);">unidades</div>
       </div>
-      
+
       <div style="background: var(--branco); border-radius: var(--radius); padding: 20px; box-shadow: var(--sombra); text-align: center; border-left: 4px solid var(--amarelo);">
         <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
         <div style="font-size: 0.9rem; color: var(--cinza); text-transform: uppercase;">Densidade Média</div>
@@ -1132,7 +1133,7 @@
         <div style="font-size: 0.8rem; color: var(--cinza);">pés/ha</div>
       </div>
     </div>
-  
+
     <!-- Nota informativa -->
     <div style="margin-top: 30px; text-align: center; color: var(--cinza); font-size: 0.9rem; background: var(--creme); padding: 15px; border-radius: var(--radius-sm);">
       <span>🌱 Informações cadastrais das áreas • Atualizado em 08/03/2026</span>
@@ -1400,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prod-data').value = hoje;
   document.getElementById('venda-data').value = hoje;
   document.getElementById('gasto-data').value = hoje;
-  
+
   carregarDados();
 });
 
@@ -1414,11 +1415,11 @@ async function carregarDados() {
       fetch('/api/vendas'),
       fetch('/api/gastos')
     ]);
-    
+
     if (prodRes.ok) producoes = await prodRes.json();
     if (vendasRes.ok) vendas = await vendasRes.json();
     if (gastosRes.ok) gastos = await gastosRes.json();
-    
+
     atualizarTudo();
   } catch (error) {
     console.error('Erro ao carregar:', error);
@@ -1434,7 +1435,7 @@ function showSection(id, btn) {
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
-  
+
   // Atualizar seção específica quando acessada
   if (id === 'produtos') atualizarCardsProdutos();
 }
@@ -1463,7 +1464,7 @@ async function addProducao() {
   }
 
   const total = qtd * valorUnit;
-  
+
   const novo = {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     data,
@@ -1482,7 +1483,7 @@ async function addProducao() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novo)
     });
-    
+
     if (response.ok) {
       producoes.unshift(novo);
       limparFormProducao();
@@ -1510,7 +1511,7 @@ function limparFormProducao() {
 
 async function deleteProducao(id) {
   if (!confirm('Remover este custo?')) return;
-  
+
   try {
     const response = await fetch(`/api/producoes/${id}`, { method: 'DELETE' });
     if (response.ok) {
@@ -1547,7 +1548,7 @@ async function addVenda() {
   }
 
   const total = qtd * valorUnit;
-  
+
   const novo = {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     data,
@@ -1566,7 +1567,7 @@ async function addVenda() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novo)
     });
-    
+
     if (response.ok) {
       vendas.unshift(novo);
       limparFormVenda();
@@ -1589,7 +1590,7 @@ function limparFormVenda() {
 
 async function deleteVenda(id) {
   if (!confirm('Remover esta venda?')) return;
-  
+
   try {
     const response = await fetch(`/api/vendas/${id}`, { method: 'DELETE' });
     if (response.ok) {
@@ -1641,7 +1642,7 @@ async function addGasto() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(novo)
     });
-    
+
     if (response.ok) {
       gastos.unshift(novo);
       limparFormGasto();
@@ -1669,7 +1670,7 @@ function limparFormGasto() {
 
 async function deleteGasto(id) {
   if (!confirm('Remover este gasto?')) return;
-  
+
   try {
     const response = await fetch(`/api/gastos/${id}`, { method: 'DELETE' });
     if (response.ok) {
@@ -1719,7 +1720,7 @@ function atualizarDashboard() {
   const totalProd = producoes.reduce((s, p) => s + (Number(p?.total) || 0), 0);
   const totalVendas = vendas.reduce((s, v) => s + (Number(v?.total) || 0), 0);
   const totalGastos = gastos.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-  
+
   // LUCRO = VENDAS - (CUSTOS DE PRODUÇÃO + GASTOS GERAIS)
   const lucro = totalVendas - (totalProd + totalGastos);
 
@@ -1804,7 +1805,7 @@ function criarGraficos() {
   // Gráfico de Evolução (últimos 30 dias)
   const ultimos30Dias = {};
   const hoje = new Date();
-  
+
   // Inicializar últimos 30 dias com zero
   for (let i = 29; i >= 0; i--) {
     const d = new Date(hoje);
@@ -1836,7 +1837,7 @@ function criarGraficos() {
   const labels = [];
   const vendasData = [];
   const gastosData = [];
-  
+
   Object.keys(ultimos30Dias).sort().forEach(dia => {
     const [ano, mes, diaNum] = dia.split('-');
     labels.push(`${diaNum}/${mes}`);
@@ -1910,14 +1911,14 @@ function criarGraficos() {
 // ============================================
 function atualizarCardsProdutos() {
   const produtosSet = new Set();
-  
+
   // Coletar todos os produtos de produções e vendas
   producoes.forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
   vendas.forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
   gastos.forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
-  
+
   const produtos = Array.from(produtosSet).sort();
-  
+
   const container = document.getElementById('produtos-cards');
   if (produtos.length === 0) {
     container.innerHTML = '<div class="empty">📭 Nenhum produto registrado</div>';
@@ -1930,26 +1931,26 @@ function atualizarCardsProdutos() {
     const custos = producoes
       .filter(p => p.produto === produto)
       .reduce((s, p) => s + (Number(p?.total) || 0), 0);
-    
+
     // Vendas
     const vendasTotal = vendas
       .filter(v => v.produto === produto)
       .reduce((s, v) => s + (Number(v?.total) || 0), 0);
-    
+
     // Gastos específicos do produto
     const gastosProduto = gastos
       .filter(g => g.produto === produto)
       .reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-    
+
     // Lucro = Vendas - (Custos + Gastos específicos)
     const lucro = vendasTotal - (custos + gastosProduto);
-    
+
     // Áreas onde o produto aparece
     const areas = new Set();
     producoes.forEach(p => { if (p.produto === produto && p.area) areas.add(p.area); });
     vendas.forEach(v => { if (v.produto === produto && v.area) areas.add(v.area); });
     gastos.forEach(g => { if (g.produto === produto && g.area) areas.add(g.area); });
-    
+
     return {
       nome: produto,
       custos,
@@ -1966,7 +1967,7 @@ function atualizarCardsProdutos() {
   container.innerHTML = stats.map(p => {
     const lucroClass = p.lucro >= 0 ? '' : 'negativo';
     const lucroIcon = p.lucro >= 0 ? '📈' : '📉';
-    
+
     return `
       <div class="produto-card">
         <div class="produto-header">
@@ -2020,7 +2021,7 @@ function atualizarCardsProdutos() {
   const ctxProd = document.getElementById('chartProdutos')?.getContext('2d');
   if (ctxProd) {
     if (charts.produtos) charts.produtos.destroy();
-    
+
     charts.produtos = new Chart(ctxProd, {
       type: 'bar',
       data: {
@@ -2070,9 +2071,9 @@ function atualizarCardsAreas() {
   producoes.forEach(p => { if (p?.area) areasSet.add(p.area); });
   vendas.forEach(v => { if (v?.area) areasSet.add(v.area); });
   gastos.forEach(g => { if (g?.area) areasSet.add(g.area); });
-  
+
   const areas = Array.from(areasSet).sort();
-  
+
   const container = document.getElementById('areas-cards');
   if (areas.length === 0) {
     container.innerHTML = '<div class="empty">📭 Nenhuma área registrada</div>';
@@ -2083,14 +2084,14 @@ function atualizarCardsAreas() {
     const prods = producoes.filter(p => p.area === area);
     const vend = vendas.filter(v => v.area === area);
     const gas = gastos.filter(g => g.area === area);
-    
+
     const totalProd = prods.reduce((s, p) => s + (Number(p?.total) || 0), 0);
     const totalVendas = vend.reduce((s, v) => s + (Number(v?.total) || 0), 0);
     const totalGastos = gas.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
     const lucro = totalVendas - (totalProd + totalGastos);
-    
+
     const lucroClass = lucro >= 0 ? '' : 'negativo';
-    
+
     return `
       <div class="area-card">
         <div class="area-header">
@@ -2132,11 +2133,11 @@ function atualizarFiltrosOptions() {
   const produtosProd = new Set(producoes.map(p => p?.produto).filter(Boolean));
   const tiposProd = new Set(producoes.map(p => p?.tipo).filter(Boolean));
   const areasProd = new Set(producoes.map(p => p?.area).filter(Boolean));
-  
+
   const selectProdProduto = document.getElementById('filtro-prod-produto');
   const selectProdTipo = document.getElementById('filtro-prod-tipo');
   const selectProdArea = document.getElementById('filtro-prod-area');
-  
+
   if (selectProdProduto) {
     selectProdProduto.innerHTML = '<option value="">Todos</option>' + 
       Array.from(produtosProd).map(p => `<option value="${p}">${p}</option>`).join('');
@@ -2149,16 +2150,16 @@ function atualizarFiltrosOptions() {
     selectProdArea.innerHTML = '<option value="">Todas</option>' + 
       Array.from(areasProd).map(a => `<option value="${a}">${a}</option>`).join('');
   }
-  
+
   // Vendas
   const produtosVenda = new Set(vendas.map(v => v?.produto).filter(Boolean));
   const clientesVenda = new Set(vendas.map(v => v?.cliente).filter(Boolean));
   const areasVenda = new Set(vendas.map(v => v?.area).filter(Boolean));
-  
+
   const selectVendaProduto = document.getElementById('filtro-venda-produto');
   const selectVendaCliente = document.getElementById('filtro-venda-cliente');
   const selectVendaArea = document.getElementById('filtro-venda-area');
-  
+
   if (selectVendaProduto) {
     selectVendaProduto.innerHTML = '<option value="">Todos</option>' + 
       Array.from(produtosVenda).map(p => `<option value="${p}">${p}</option>`).join('');
@@ -2171,16 +2172,16 @@ function atualizarFiltrosOptions() {
     selectVendaArea.innerHTML = '<option value="">Todas</option>' + 
       Array.from(areasVenda).map(a => `<option value="${a}">${a}</option>`).join('');
   }
-  
+
   // Gastos
   const tiposGasto = new Set(gastos.map(g => g?.tipo).filter(Boolean));
   const produtosGasto = new Set(gastos.map(g => g?.produto).filter(Boolean));
   const areasGasto = new Set(gastos.map(g => g?.area).filter(Boolean));
-  
+
   const selectGastoTipo = document.getElementById('filtro-gasto-tipo');
   const selectGastoProduto = document.getElementById('filtro-gasto-produto');
   const selectGastoArea = document.getElementById('filtro-gasto-area');
-  
+
   if (selectGastoTipo) {
     selectGastoTipo.innerHTML = '<option value="">Todos</option>' + 
       Array.from(tiposGasto).map(t => `<option value="${t}">${t}</option>`).join('');
@@ -2250,14 +2251,14 @@ function limparFiltrosGastos() {
 
 function atualizarListaProducoesFiltrada() {
   let filtradas = [...producoes];
-  
+
   if (filtrosProd.produto) filtradas = filtradas.filter(p => p.produto === filtrosProd.produto);
   if (filtrosProd.tipo) filtradas = filtradas.filter(p => p.tipo === filtrosProd.tipo);
   if (filtrosProd.area) filtradas = filtradas.filter(p => p.area === filtrosProd.area);
-  
+
   const total = filtradas.reduce((s, p) => s + (Number(p?.total) || 0), 0);
   document.getElementById('total-producoes').textContent = `Total: ${formatMoney(total)}`;
-  
+
   document.getElementById('lista-producoes').innerHTML = filtradas.map(p => `
     <tr>
       <td>${formatarDataBR(p.data)}</td>
@@ -2273,14 +2274,14 @@ function atualizarListaProducoesFiltrada() {
 
 function atualizarListaVendasFiltrada() {
   let filtradas = [...vendas];
-  
+
   if (filtrosVenda.produto) filtradas = filtradas.filter(v => v.produto === filtrosVenda.produto);
   if (filtrosVenda.cliente) filtradas = filtradas.filter(v => v.cliente === filtrosVenda.cliente);
   if (filtrosVenda.area) filtradas = filtradas.filter(v => v.area === filtrosVenda.area);
-  
+
   const total = filtradas.reduce((s, v) => s + (Number(v?.total) || 0), 0);
   document.getElementById('total-vendas').textContent = `Total: ${formatMoney(total)}`;
-  
+
   document.getElementById('lista-vendas').innerHTML = filtradas.map(v => `
     <tr>
       <td>${formatarDataBR(v.data)}</td>
@@ -2296,15 +2297,15 @@ function atualizarListaVendasFiltrada() {
 
 function atualizarListaGastosFiltrada() {
   let filtradas = [...gastos];
-  
+
   if (filtrosGasto.tipo) filtradas = filtradas.filter(g => g.tipo === filtrosGasto.tipo);
   if (filtrosGasto.categoria) filtradas = filtradas.filter(g => g.categoria === filtrosGasto.categoria);
   if (filtrosGasto.produto) filtradas = filtradas.filter(g => g.produto === filtrosGasto.produto);
   if (filtrosGasto.area) filtradas = filtradas.filter(g => g.area === filtrosGasto.area);
-  
+
   const total = filtradas.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
   document.getElementById('total-gastos').textContent = `Total: ${formatMoney(total)}`;
-  
+
   document.getElementById('lista-gastos').innerHTML = filtradas.map(g => `
     <tr>
       <td>${formatarDataBR(g.data)}</td>
@@ -2323,17 +2324,17 @@ function atualizarDataLists() {
   const produtosSet = new Set([...producoes, ...vendas, ...gastos].map(r => r?.produto).filter(Boolean));
   const areasSet = new Set([...producoes, ...vendas, ...gastos].map(r => r?.area).filter(Boolean));
   const tiposGastoSet = new Set(gastos.map(g => g?.tipo).filter(Boolean));
-  
+
   const listaProdutos = document.getElementById('lista-produtos');
   if (listaProdutos) {
     listaProdutos.innerHTML = Array.from(produtosSet).map(p => `<option value="${p}">`).join('');
   }
-  
+
   const listaAreas = document.getElementById('lista-areas');
   if (listaAreas) {
     listaAreas.innerHTML = Array.from(areasSet).map(a => `<option value="${a}">`).join('');
   }
-  
+
   const listaTiposGasto = document.getElementById('lista-tipos-gasto');
   if (listaTiposGasto) {
     listaTiposGasto.innerHTML = Array.from(tiposGastoSet).map(t => `<option value="${t}">`).join('');
@@ -2381,10 +2382,10 @@ let chartsProduto = {};
 function inicializarSeletorProdutos() {
   const seletor = document.getElementById('seletor-produto');
   if (!seletor) return;
-  
+
   // Coletar todos os produtos únicos
   const produtosSet = new Set();
-  
+
   if (Array.isArray(producoes)) {
     producoes.forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
   }
@@ -2394,19 +2395,19 @@ function inicializarSeletorProdutos() {
   if (Array.isArray(gastos)) {
     gastos.forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
   }
-  
+
   const produtos = Array.from(produtosSet).sort();
-  
+
   // Atualizar contador
   const totalIndicator = document.getElementById('total-produtos-indicator');
   if (totalIndicator) totalIndicator.textContent = produtos.length;
-  
+
   // Montar options
   let options = '<option value="">— Escolha um produto —</option>';
   produtos.forEach(prod => {
     options += `<option value="${prod}" ${prod === produtoSelecionado ? 'selected' : ''}>${prod}</option>`;
   });
-  
+
   seletor.innerHTML = options;
 }
 
@@ -2414,12 +2415,12 @@ function inicializarSeletorProdutos() {
 function mudarProdutoSelecionado() {
   const seletor = document.getElementById('seletor-produto');
   if (!seletor) return;
-  
+
   produtoSelecionado = seletor.value;
-  
+
   const semProduto = document.getElementById('sem-produto');
   const conteudo = document.getElementById('conteudo-produto');
-  
+
   if (produtoSelecionado) {
     if (semProduto) semProduto.style.display = 'none';
     if (conteudo) conteudo.style.display = 'block';
@@ -2433,96 +2434,82 @@ function mudarProdutoSelecionado() {
 // Atualizar todo o dashboard do produto
 function atualizarDashboardProduto() {
   if (!produtoSelecionado) return;
-  
+
   // Filtrar dados
   const custosProd = (producoes || []).filter(p => p?.produto === produtoSelecionado);
   const vendasProd = (vendas || []).filter(v => v?.produto === produtoSelecionado);
   const gastosProd = (gastos || []).filter(g => g?.produto === produtoSelecionado);
-  
+
   // Calcular totais
   const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
   const totalVendas = vendasProd.reduce((s, v) => s + (Number(v?.total) || 0), 0);
   const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
   const lucro = totalVendas - (totalCustos + totalGastos);
   const margem = totalVendas > 0 ? (lucro / totalVendas * 100) : 0;
-  
+
   // Coletar áreas únicas
   const areasSet = new Set();
   custosProd.forEach(p => { if (p?.area) areasSet.add(p.area); });
   vendasProd.forEach(v => { if (v?.area) areasSet.add(v.area); });
   gastosProd.forEach(g => { if (g?.area) areasSet.add(g.area); });
-  
+
   // Atualizar cabeçalho
   document.getElementById('produto-nome-titulo').textContent = produtoSelecionado;
   document.getElementById('produto-total-registros').textContent = custosProd.length + vendasProd.length + gastosProd.length;
   document.getElementById('produto-total-areas').textContent = areasSet.size;
-  
+
   const lucroPrincipal = document.getElementById('produto-lucro-principal');
   lucroPrincipal.textContent = formatMoney(lucro);
   lucroPrincipal.style.color = lucro >= 0 ? '#4ade80' : '#f87171';
-  
+
   document.getElementById('produto-margem-principal').textContent = `Margem: ${margem.toFixed(1)}%`;
-  
+
   // KPIs
   document.getElementById('kpi-prod-custos').textContent = formatMoney(totalCustos);
   document.getElementById('kpi-prod-custos-qtd').textContent = `${custosProd.length} registro(s)`;
-  
+
   document.getElementById('kpi-prod-vendas').textContent = formatMoney(totalVendas);
   document.getElementById('kpi-prod-vendas-qtd').textContent = `${vendasProd.length} venda(s)`;
-  
+
   document.getElementById('kpi-prod-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-prod-gastos-qtd').textContent = `${gastosProd.length} gasto(s)`;
-  
+
   const margemEl = document.getElementById('kpi-prod-margem');
   margemEl.textContent = `${margem.toFixed(1)}%`;
   margemEl.style.color = margem >= 0 ? 'var(--verde)' : 'var(--vermelho)';
-  
+
   document.getElementById('kpi-prod-status').textContent = lucro >= 0 ? '✅ Lucrativo' : '⚠️ Prejuízo';
-  
+
   // Áreas de cultivo
   atualizarAreasProduto(areasSet, custosProd, vendasProd, gastosProd);
-  
+
   // Tabela de registros (aba todos)
   atualizarTabelaProduto('todos', custosProd, vendasProd, gastosProd);
-  
+
   // Gráficos
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
 
-  // Calcular custo por kg
-  const kgInfo = calcularCustoPorKg(produtoSelecionado);
-  
-  // Atualizar o novo card de custo por kg
-  const kpiCustoKg = document.getElementById('kpi-prod-custo-kg');
-  if (kpiCustoKg) {
-    kpiCustoKg.textContent = kgInfo.formatado;
-  }
-  
-  const kpiKgVendidos = document.getElementById('kpi-prod-kg-vendidos');
-  if (kpiKgVendidos) {
-    kpiKgVendidos.textContent = `${kgInfo.totalQuilos.toFixed(1)} kg vendidos`;
-  }
-  
 }
 
 // Atualizar áreas do produto
 function atualizarAreasProduto(areasSet, custos, vendas, gastos) {
   const container = document.getElementById('produto-areas-container');
   if (!container) return;
-  
+
   if (areasSet.size === 0) {
     container.innerHTML = '<div class="empty" style="padding: 30px;">📍 Nenhuma área associada a este produto</div>';
     return;
   }
-  
+
   let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">';
-  
+
   Array.from(areasSet).forEach(area => {
     const areaCustos = custos.filter(p => p.area === area).reduce((s, p) => s + (Number(p?.total) || 0), 0);
     const areaVendas = vendas.filter(v => v.area === area).reduce((s, v) => s + (Number(v?.total) || 0), 0);
     const areaGastos = gastos.filter(g => g.area === area).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
     const areaLucro = areaVendas - (areaCustos + areaGastos);
-    
+
     html += `
       <div style="background: var(--creme); border-radius: 12px; padding: 15px; border-left: 4px solid ${areaLucro >= 0 ? 'var(--verde)' : 'var(--vermelho)'};">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
@@ -2550,7 +2537,7 @@ function atualizarAreasProduto(areasSet, custos, vendas, gastos) {
       </div>
     `;
   });
-  
+
   html += '</div>';
   container.innerHTML = html;
 }
@@ -2564,20 +2551,20 @@ function mudarAbaProduto(tipo, botao) {
   });
   botao.style.background = 'var(--verde)';
   botao.style.color = 'white';
-  
+
   if (!produtoSelecionado) return;
-  
+
   const custosProd = (producoes || []).filter(p => p?.produto === produtoSelecionado);
   const vendasProd = (vendas || []).filter(v => v?.produto === produtoSelecionado);
   const gastosProd = (gastos || []).filter(g => g?.produto === produtoSelecionado);
-  
+
   atualizarTabelaProduto(tipo, custosProd, vendasProd, gastosProd);
 }
 
 // Atualizar tabela de registros
 function atualizarTabelaProduto(tipo, custos, vendas, gastos) {
   let registros = [];
-  
+
   if (tipo === 'todos') {
     registros = [
       ...custos.map(p => ({ 
@@ -2645,13 +2632,13 @@ function atualizarTabelaProduto(tipo, custos, vendas, gastos) {
       cor: 'var(--vermelho)'
     }));
   }
-  
+
   // Ordenar por data (mais recente primeiro)
   registros.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
-  
+
   const tbody = document.getElementById('tabela-produto-registros');
   if (!tbody) return;
-  
+
   if (registros.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty">📭 Nenhum registro encontrado</td></tr>`;
   } else {
@@ -2673,15 +2660,15 @@ function criarGraficosProduto(custos, vendas, gastos) {
   // Gráfico de evolução
   const dadosEvolucao = {};
   const ultimos15Dias = [];
-  
+
   // Pegar últimas 15 datas com dados
   const todasDatas = [];
   [...custos, ...vendas, ...gastos].forEach(item => {
     if (item?.data) todasDatas.push(item.data);
   });
-  
+
   const datasUnicas = [...new Set(todasDatas)].sort().slice(-15);
-  
+
   datasUnicas.forEach(data => {
     dadosEvolucao[data] = {
       vendas: vendas.filter(v => v.data === data).reduce((s, v) => s + (Number(v?.total) || 0), 0),
@@ -2691,11 +2678,11 @@ function criarGraficosProduto(custos, vendas, gastos) {
       ].reduce((s, v) => s + v, 0)
     };
   });
-  
+
   const ctxEvol = document.getElementById('chartProdutoEvolucao')?.getContext('2d');
   if (ctxEvol) {
     if (chartsProduto.evolucao) chartsProduto.evolucao.destroy();
-    
+
     chartsProduto.evolucao = new Chart(ctxEvol, {
       type: 'line',
       data: {
@@ -2733,30 +2720,30 @@ function criarGraficosProduto(custos, vendas, gastos) {
       }
     });
   }
-  
+
   // Gráfico de distribuição dos gastos
   const tiposGastos = {};
-  
+
   custos.forEach(p => {
     if (p?.total) {
       const tipo = p.tipo || 'Custos de Produção';
       tiposGastos[tipo] = (tiposGastos[tipo] || 0) + (Number(p.total) || 0);
     }
   });
-  
+
   gastos.forEach(g => {
     if (g?.valor) {
       const tipo = g.tipo || 'Outros Gastos';
       tiposGastos[tipo] = (tiposGastos[tipo] || 0) + (Number(g.valor) || 0);
     }
   });
-  
+
   const ctxGastos = document.getElementById('chartProdutoGastos')?.getContext('2d');
   if (ctxGastos && Object.keys(tiposGastos).length > 0) {
     if (chartsProduto.gastos) chartsProduto.gastos.destroy();
-    
+
     const cores = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280', '#9333ea', '#ec4899'];
-    
+
     chartsProduto.gastos = new Chart(ctxGastos, {
       type: 'doughnut',
       data: {
@@ -2785,24 +2772,24 @@ function criarGraficosProduto(custos, vendas, gastos) {
 // Criar gráfico comparativo
 function criarGraficoComparativo() {
   const produtosSet = new Set();
-  
+
   (producoes || []).forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
   (vendas || []).forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
   (gastos || []).forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
-  
+
   const produtos = Array.from(produtosSet).sort();
-  
+
   const lucros = produtos.map(prod => {
     const custos = (producoes || []).filter(p => p.produto === prod).reduce((s, p) => s + (Number(p?.total) || 0), 0);
     const vendasTotal = (vendas || []).filter(v => v.produto === prod).reduce((s, v) => s + (Number(v?.total) || 0), 0);
     const gastosTotal = (gastos || []).filter(g => g.produto === prod).reduce((s, g) => s + (Number(g?.valor) || 0), 0);
     return vendasTotal - (custos + gastosTotal);
   });
-  
+
   const ctxComp = document.getElementById('chartComparativoProdutos')?.getContext('2d');
   if (ctxComp) {
     if (chartsProduto.comparativo) chartsProduto.comparativo.destroy();
-    
+
     chartsProduto.comparativo = new Chart(ctxComp, {
       type: 'bar',
       data: {
@@ -2841,48 +2828,6 @@ function criarGraficoComparativo() {
       }
     });
   }
-
-// ============================================
-// CALCULAR CUSTO POR KG 
-// ============================================
-function calcularCustoPorKg(produto) {
-  // Filtrar dados do produto
-  const custosProd = (producoes || []).filter(p => p?.produto === produto);
-  const gastosProd = (gastos || []).filter(g => g?.produto === produto);
-  const vendasProd = (vendas || []).filter(v => v?.produto === produto);
-  
-  // Calcular total de gastos (custos + gastos específicos)
-  const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
-  const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-  const totalGastosGeral = totalCustos + totalGastos;
-  
-  // Calcular total de quilos vendidos
-  let totalQuilos = 0;
-  vendasProd.forEach(v => {
-    const qtd = Number(v?.qtd) || 0;
-    if (v?.unidade?.toLowerCase() === 'kg' || v?.unidade?.toLowerCase() === 'quilo') {
-      totalQuilos += qtd;
-    } else if (v?.unidade?.toLowerCase() === 'balde') {
-      totalQuilos += qtd * 20; // 1 balde = 20kg
-    } else if (v?.unidade?.toLowerCase() === 'caixa') {
-      totalQuilos += qtd * 15; // 1 caixa = 15kg
-    } else if (v?.unidade?.toLowerCase() === 'saco') {
-      totalQuilos += qtd * 30; // 1 saco = 30kg
-    } else {
-      totalQuilos += qtd * 1; // padrão 1kg por unidade
-    }
-  });
-  
-  // Calcular custo por kg
-  const custoPorKg = totalQuilos > 0 ? totalGastosGeral / totalQuilos : 0;
-  
-  return {
-    custoPorKg,
-    totalGastos: totalGastosGeral,
-    totalQuilos,
-    formatado: formatMoney(custoPorKg) + '/kg'
-  };
-}  
 }
 </script>
 </body>
