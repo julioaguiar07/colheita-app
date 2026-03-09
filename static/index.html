@@ -29,6 +29,19 @@
     --sombra-md: 0 4px 24px rgba(0,0,0,0.12);
     --radius: 14px;
     --radius-sm: 8px;
+    /* Ajuste para a página de capa */
+    #inicio {
+      margin: 0;
+      padding: 0;
+      position: relative;
+      height: calc(100vh - 64px); /* Altura total menos o header */
+      overflow: hidden;
+    }
+    
+    /* Garantir que as outras páginas não sejam afetadas */
+    .section:not(#inicio) {
+      /* mantém o comportamento normal */
+    }
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -730,6 +743,7 @@
       Gestão Agrícola AGM
     </div>
     <nav>
+      <button class="active" onclick="showSection('inicio', this)">🏠 Início</button>
       <button class="active" onclick="showSection('dashboard', this)">📊 Resumo</button>
       <button onclick="showSection('produtos', this)">🌱 Produtos</button>
       <button onclick="showSection('areas', this)">🗺️ Áreas</button>
@@ -741,6 +755,13 @@
 </header>
 
 <main>
+  <!-- PÁGINA INICIAL - CAPA (APENAS IMAGEM) -->
+  <section id="inicio" class="section active">
+    <div style="position: fixed; top: 64px; left: 0; right: 0; bottom: 0; overflow: hidden; margin: 0; padding: 0;">
+      <img src="/static/capa.png" alt="Capa" style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+    </div>
+  </section>
+  
   <!-- DASHBOARD -->
   <section id="dashboard" class="section active">
     <div class="section-title">📊 Resumo AGM</div>
