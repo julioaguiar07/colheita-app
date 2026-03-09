@@ -733,6 +733,76 @@
     .filtros-grid { grid-template-columns: 1fr; }
     .produtos-grid { grid-template-columns: 1fr; }
   }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .kpi-card {
+    background: var(--branco);
+    border-radius: var(--radius);
+    padding: 20px 15px;
+    box-shadow: var(--sombra);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-left: 4px solid var(--verde);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cinza);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  
+  .kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--verde-escuro);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  
+  .kpi-sub {
+    font-size: 0.75rem;
+    color: var(--cinza);
+    white-space: nowrap;
+  }
+  
+  /* Cores das bordas */
+  .kpi-card.azul { border-left-color: var(--azul); }
+  .kpi-card.vermelho { border-left-color: var(--vermelho); }
+  .kpi-card.roxo { border-left-color: var(--roxo); }
+  
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .kpi-label {
+      white-space: normal;
+      font-size: 0.65rem;
+    }
+    
+    .kpi-value {
+      font-size: 1.2rem;
+    }
+  }
 </style>
 </head>
 <body>
