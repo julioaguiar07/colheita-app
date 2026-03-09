@@ -896,11 +896,10 @@
           <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
         </div>
         <div class="kpi-card" style="border-left-color: var(--roxo);">
-          <div class="kpi-label">📊 MARGEM DE LUCRO</div>
-          <div class="kpi-value" id="kpi-prod-margem">0%</div>
-          <div class="kpi-sub" id="kpi-prod-status">Aguardando dados</div>
+          <div class="kpi-label">💰 CUSTO MÉDIO POR KG</div>
+          <div class="kpi-value" id="kpi-prod-custo-kg">R$ 0,00</div>
+          <div class="kpi-sub" id="kpi-prod-kg-vendidos">0 kg vendidos</div>
         </div>
-      </div>
   
       <!-- GRÁFICOS PRINCIPAIS -->
       <div class="charts-grid" style="margin-bottom: 25px;">
@@ -2489,6 +2488,21 @@ function atualizarDashboardProduto() {
   // Gráficos
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
+
+  // Calcular custo por kg
+  const kgInfo = calcularCustoPorKg(produtoSelecionado);
+  
+  // Atualizar o novo card de custo por kg
+  const kpiCustoKg = document.getElementById('kpi-prod-custo-kg');
+  if (kpiCustoKg) {
+    kpiCustoKg.textContent = kgInfo.formatado;
+  }
+  
+  const kpiKgVendidos = document.getElementById('kpi-prod-kg-vendidos');
+  if (kpiKgVendidos) {
+    kpiKgVendidos.textContent = `${kgInfo.totalQuilos.toFixed(1)} kg vendidos`;
+  }
+  
 }
 
 // Atualizar áreas do produto
@@ -2827,6 +2841,48 @@ function criarGraficoComparativo() {
       }
     });
   }
+
+// ============================================
+// CALCULAR CUSTO POR KG 
+// ============================================
+function calcularCustoPorKg(produto) {
+  // Filtrar dados do produto
+  const custosProd = (producoes || []).filter(p => p?.produto === produto);
+  const gastosProd = (gastos || []).filter(g => g?.produto === produto);
+  const vendasProd = (vendas || []).filter(v => v?.produto === produto);
+  
+  // Calcular total de gastos (custos + gastos específicos)
+  const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
+  const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+  const totalGastosGeral = totalCustos + totalGastos;
+  
+  // Calcular total de quilos vendidos
+  let totalQuilos = 0;
+  vendasProd.forEach(v => {
+    const qtd = Number(v?.qtd) || 0;
+    if (v?.unidade?.toLowerCase() === 'kg' || v?.unidade?.toLowerCase() === 'quilo') {
+      totalQuilos += qtd;
+    } else if (v?.unidade?.toLowerCase() === 'balde') {
+      totalQuilos += qtd * 20; // 1 balde = 20kg
+    } else if (v?.unidade?.toLowerCase() === 'caixa') {
+      totalQuilos += qtd * 15; // 1 caixa = 15kg
+    } else if (v?.unidade?.toLowerCase() === 'saco') {
+      totalQuilos += qtd * 30; // 1 saco = 30kg
+    } else {
+      totalQuilos += qtd * 1; // padrão 1kg por unidade
+    }
+  });
+  
+  // Calcular custo por kg
+  const custoPorKg = totalQuilos > 0 ? totalGastosGeral / totalQuilos : 0;
+  
+  return {
+    custoPorKg,
+    totalGastos: totalGastosGeral,
+    totalQuilos,
+    formatado: formatMoney(custoPorKg) + '/kg'
+  };
+}  
 }
 </script>
 </body>
