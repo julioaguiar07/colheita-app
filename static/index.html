@@ -896,10 +896,11 @@
           <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
         </div>
         <div class="kpi-card" style="border-left-color: var(--roxo);">
-          <div class="kpi-label">💰 CUSTO MÉDIO POR KG</div>
-          <div class="kpi-value" id="kpi-prod-custo-kg">R$ 0,00</div>
-          <div class="kpi-sub" id="kpi-prod-kg-vendidos">0 kg vendidos</div>
+          <div class="kpi-label">📊 MARGEM DE LUCRO</div>
+          <div class="kpi-value" id="kpi-prod-margem">0%</div>
+          <div class="kpi-sub" id="kpi-prod-status">Aguardando dados</div>
         </div>
+      </div>
 
       <!-- GRÁFICOS PRINCIPAIS -->
       <div class="charts-grid" style="margin-bottom: 25px;">
@@ -2430,7 +2431,7 @@ function mudarProdutoSelecionado() {
   }
 }
 
-
+// Atualizar todo o dashboard do produto
 function atualizarDashboardProduto() {
   if (!produtoSelecionado) return;
 
@@ -2451,9 +2452,6 @@ function atualizarDashboardProduto() {
   custosProd.forEach(p => { if (p?.area) areasSet.add(p.area); });
   vendasProd.forEach(v => { if (v?.area) areasSet.add(v.area); });
   gastosProd.forEach(g => { if (g?.area) areasSet.add(g.area); });
-
-  // Calcular custo por kg
-  const kgInfo = calcularCustoPorKg(produtoSelecionado);
 
   // Atualizar cabeçalho
   document.getElementById('produto-nome-titulo').textContent = produtoSelecionado;
@@ -2476,16 +2474,11 @@ function atualizarDashboardProduto() {
   document.getElementById('kpi-prod-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-prod-gastos-qtd').textContent = `${gastosProd.length} gasto(s)`;
 
-  // NOVO: Custo por kg
-  const kpiCustoKg = document.getElementById('kpi-prod-custo-kg');
-  if (kpiCustoKg) {
-    kpiCustoKg.textContent = kgInfo.formatado;
-  }
+  const margemEl = document.getElementById('kpi-prod-margem');
+  margemEl.textContent = `${margem.toFixed(1)}%`;
+  margemEl.style.color = margem >= 0 ? 'var(--verde)' : 'var(--vermelho)';
 
-  const kpiKgVendidos = document.getElementById('kpi-prod-kg-vendidos');
-  if (kpiKgVendidos) {
-    kpiKgVendidos.textContent = `${kgInfo.totalQuilos.toFixed(1)} kg vendidos`;
-  }
+  document.getElementById('kpi-prod-status').textContent = lucro >= 0 ? '✅ Lucrativo' : '⚠️ Prejuízo';
 
   // Áreas de cultivo
   atualizarAreasProduto(areasSet, custosProd, vendasProd, gastosProd);
@@ -2496,6 +2489,7 @@ function atualizarDashboardProduto() {
   // Gráficos
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
+
 }
 
 // Atualizar áreas do produto
@@ -2834,54 +2828,6 @@ function criarGraficoComparativo() {
       }
     });
   }
-  
-// ============================================
-// CALCULAR CUSTO POR KG
-// ============================================
-function calcularCustoPorKg(produto) {
-  if (!produto) return { custoPorKg: 0, totalQuilos: 0, formatado: 'R$ 0,00/kg' };
-  
-  // Filtrar dados do produto
-  const custosProd = (producoes || []).filter(p => p?.produto === produto);
-  const gastosProd = (gastos || []).filter(g => g?.produto === produto);
-  const vendasProd = (vendas || []).filter(v => v?.produto === produto);
-  
-  // Calcular total de gastos (custos + gastos específicos)
-  const totalCustos = custosProd.reduce((s, p) => s + (Number(p?.total) || 0), 0);
-  const totalGastos = gastosProd.reduce((s, g) => s + (Number(g?.valor) || 0), 0);
-  const totalGastosGeral = totalCustos + totalGastos;
-  
-  // Calcular total de quilos vendidos
-  let totalQuilos = 0;
-  vendasProd.forEach(v => {
-    const qtd = Number(v?.qtd) || 0;
-    const unidade = (v?.unidade || '').toLowerCase();
-    
-    if (unidade === 'kg' || unidade === 'quilo' || unidade === 'quilograma') {
-      totalQuilos += qtd;
-    } else if (unidade === 'balde') {
-      totalQuilos += qtd * 20; // 1 balde = 20kg
-    } else if (unidade === 'caixa') {
-      totalQuilos += qtd * 15; // 1 caixa = 15kg
-    } else if (unidade === 'saco') {
-      totalQuilos += qtd * 30; // 1 saco = 30kg
-    } else if (unidade === 'un' || unidade === 'unidade') {
-      totalQuilos += qtd * 0.5; // 1 unidade = 0.5kg
-    } else {
-      totalQuilos += qtd * 1; // padrão 1kg
-    }
-  });
-  
-  // Calcular custo por kg
-  const custoPorKg = totalQuilos > 0 ? totalGastosGeral / totalQuilos : 0;
-  
-  return {
-    custoPorKg,
-    totalGastos: totalGastosGeral,
-    totalQuilos,
-    formatado: formatMoney(custoPorKg) + '/kg'
-  };
-}
 }
 </script>
 </body>
