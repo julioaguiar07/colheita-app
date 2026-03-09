@@ -267,17 +267,24 @@
 
   .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 24px;
+  }
+  
+  @media (max-width: 768px) {
+    .kpi-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
   .kpi-card {
     background: var(--branco);
     border-radius: var(--radius);
-    padding: 20px 22px;
+    padding: 20px 15px;
     box-shadow: var(--sombra);
     border: 1px solid rgba(0,0,0,0.05);
     border-left: 4px solid var(--verde);
+    min-width: 0; /* Permite que o card encolha se necessário */
   }
   .kpi-card.azul { border-left-color: var(--azul); }
   .kpi-card.vermelho { border-left-color: var(--vermelho); }
@@ -970,6 +977,7 @@
           <div class="kpi-value" id="kpi-prod-custo-kg">R$ 0,00</div>
           <div class="kpi-sub" id="kpi-prod-kg-vendidos">0 kg vendidos</div>
         </div>
+      </div>
 
       <!-- GRÁFICOS PRINCIPAIS -->
       <div class="charts-grid" style="margin-bottom: 25px;">
@@ -2542,6 +2550,7 @@ function mudarProdutoSelecionado() {
 }
 
 // Atualizar todo o dashboard do produto
+// Atualizar todo o dashboard do produto
 function atualizarDashboardProduto() {
   if (!produtoSelecionado) return;
 
@@ -2562,6 +2571,9 @@ function atualizarDashboardProduto() {
   custosProd.forEach(p => { if (p?.area) areasSet.add(p.area); });
   vendasProd.forEach(v => { if (v?.area) areasSet.add(v.area); });
   gastosProd.forEach(g => { if (g?.area) areasSet.add(g.area); });
+
+  // Calcular custo por kg
+  const kgInfo = calcularCustoPorKg(produtoSelecionado);
 
   // Atualizar cabeçalho
   document.getElementById('produto-nome-titulo').textContent = produtoSelecionado;
@@ -2584,9 +2596,7 @@ function atualizarDashboardProduto() {
   document.getElementById('kpi-prod-gastos').textContent = formatMoney(totalGastos);
   document.getElementById('kpi-prod-gastos-qtd').textContent = `${gastosProd.length} gasto(s)`;
 
-  // NOVO: Custo por kg
-  const kgInfo = calcularCustoPorKg(produtoSelecionado);
-  
+  // Custo por kg
   const kpiCustoKg = document.getElementById('kpi-prod-custo-kg');
   if (kpiCustoKg) {
     kpiCustoKg.textContent = kgInfo.formatado;
@@ -2606,7 +2616,6 @@ function atualizarDashboardProduto() {
   // Gráficos
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
-
 }
 
 // Atualizar áreas do produto
