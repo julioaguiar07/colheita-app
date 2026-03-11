@@ -6,6 +6,8 @@
 <title>Controle Agrícola AGM</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <style>
   :root {
     --verde: #2d7a3a;
@@ -1518,6 +1520,13 @@ let filtrosVenda = { produto: '', cliente: '', area: '' };
 let filtrosGasto = { tipo: '', categoria: '', produto: '', area: '' };
 
 // ============================================
+// REGISTRAR PLUGIN DE RÓTULOS
+// ============================================
+// Registrar o plugin de datalabels para gráficos
+Chart.register(ChartDataLabels);
+
+  
+// ============================================
 // INICIALIZAÇÃO
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1957,7 +1966,7 @@ function atualizarPrecosProdutos() {
 }
   
 function criarGraficos() {
-  // Gráfico de Gastos por Categoria
+  // GRÁFICO DE BARRAS - Gastos por Categoria
   const gastosCat = {};
   gastos.forEach(g => {
     if (g?.valor) {
@@ -1966,29 +1975,64 @@ function criarGraficos() {
     }
   });
 
-  if (Object.keys(gastosCat).length > 0) {
+  // Ordenar do maior para o menor
+  const sortedCats = Object.entries(gastosCat)
+    .sort((a, b) => b[1] - a[1])
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+
+  if (Object.keys(sortedCats).length > 0) {
     if (charts.gastos) charts.gastos.destroy();
     const ctxGastos = document.getElementById('chartGastos')?.getContext('2d');
     if (ctxGastos) {
       charts.gastos = new Chart(ctxGastos, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
-          labels: Object.keys(gastosCat),
+          labels: Object.keys(sortedCats),
           datasets: [{
-            data: Object.values(gastosCat),
-            backgroundColor: ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280']
+            label: 'Valor (R$)',
+            data: Object.values(sortedCats),
+            backgroundColor: [
+              '#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280'
+            ],
+            borderRadius: 8,
+            barPercentage: 0.7
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom' } }
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) => `R$ ${context.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              }
+            },
+            datalabels: {
+              display: true,
+              color: 'white',
+              font: { weight: 'bold', size: 11 },
+              formatter: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+              align: 'top',
+              offset: 2
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
+              }
+            }
+          }
         }
       });
     }
   }
   
-  // Atualizar os cards de preço dos produtos
   atualizarPrecosProdutos();
 }
 
@@ -2856,7 +2900,7 @@ function criarGraficosProduto(custos, vendas, gastos) {
     });
   }
 
-  // Gráfico de distribuição dos gastos
+  // GRÁFICO DE BARRAS - Distribuição dos Gastos
   const tiposGastos = {};
 
   custos.forEach(p => {
@@ -2873,32 +2917,59 @@ function criarGraficosProduto(custos, vendas, gastos) {
     }
   });
 
+  // Ordenar do maior para o menor
+  const sortedTipos = Object.entries(tiposGastos)
+    .sort((a, b) => b[1] - a[1])
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+
   const ctxGastos = document.getElementById('chartProdutoGastos')?.getContext('2d');
-  if (ctxGastos && Object.keys(tiposGastos).length > 0) {
+  if (ctxGastos && Object.keys(sortedTipos).length > 0) {
     if (chartsProduto.gastos) chartsProduto.gastos.destroy();
 
     const cores = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280', '#9333ea', '#ec4899'];
 
     chartsProduto.gastos = new Chart(ctxGastos, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
-        labels: Object.keys(tiposGastos),
+        labels: Object.keys(sortedTipos),
         datasets: [{
-          data: Object.values(tiposGastos),
-          backgroundColor: cores.slice(0, Object.keys(tiposGastos).length),
-          borderWidth: 0
+          label: 'Valor (R$)',
+          data: Object.values(sortedTipos),
+          backgroundColor: cores.slice(0, Object.keys(sortedTipos).length),
+          borderRadius: 8,
+          barPercentage: 0.7
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { 
-          legend: { 
-            position: 'bottom',
-            labels: { font: { size: 11 } }
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `R$ ${context.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+            }
+          },
+          datalabels: {
+            display: true,
+            color: 'white',
+            font: { weight: 'bold', size: 10 },
+            formatter: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+            align: 'top',
+            offset: 2
           }
         },
-        cutout: '65%'
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
+            }
+          }
+        }
       }
     });
   }
