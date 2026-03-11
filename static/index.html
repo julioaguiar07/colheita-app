@@ -855,6 +855,100 @@
   background: var(--verde-claro);
   border-radius: 10px;
 }
+
+/* Cards de visão de produtos */
+.produto-visao-card {
+  background: var(--branco);
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  box-shadow: var(--sombra);
+  border-left: 4px solid var(--verde);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.produto-visao-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-md);
+}
+
+.produto-visao-card.prejuizo {
+  border-left-color: var(--vermelho);
+}
+
+.produto-visao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.produto-visao-nome {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--verde-escuro);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.produto-visao-badge {
+  background: var(--creme);
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--cinza);
+}
+
+.produto-visao-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.produto-visao-label {
+  font-size: 0.7rem;
+  color: var(--cinza);
+  text-transform: uppercase;
+}
+
+.produto-visao-valor {
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.produto-visao-lucro {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 5px 10px;
+  border-radius: 20px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.produto-visao-lucro.positivo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.produto-visao-lucro.negativo {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.produto-visao-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--cinza);
+  margin-top: 8px;
+}
+
 </style>
 </head>
 <body>
@@ -923,6 +1017,34 @@
         </div>
       </div>
     </div> <!-- FIM DO CHARTS-GRID -->
+
+    <!-- VISÃO GERAL DOS PRODUTOS - LUCRO LÍQUIDO -->
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-title">
+        <span>📊</span>
+        <span>VISÃO GERAL DOS PRODUTOS - LUCRO LÍQUIDO</span>
+      </div>
+      
+      <!-- Cards compactos em grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;" id="container-visao-produtos">
+        <div class="empty" style="padding: 30px;">Carregando produtos...</div>
+      </div>
+      
+      <!-- Rodapé com resumo -->
+      <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid var(--cinza-claro);">
+        <div>
+          <span style="font-weight: 600;">Total de produtos: </span>
+          <span id="total-produtos-visao">0</span>
+        </div>
+        <div>
+          <span style="font-weight: 600;">Produtos lucrativos: </span>
+          <span id="produtos-lucrativos" style="color: var(--verde);">0</span>
+          <span style="margin: 0 8px;">|</span>
+          <span style="font-weight: 600;">Com prejuízo: </span>
+          <span id="produtos-prejuizo" style="color: var(--vermelho);">0</span>
+        </div>
+      </div>
+    </div>
 
     <!-- ÚLTIMOS REGISTROS (AGORA FORA DO GRID) -->
     <div class="ultimos-grid">
@@ -2056,6 +2178,7 @@ function criarGraficos() {
   }
   
   atualizarPrecosProdutos();
+  atualizarVisaoGeralProdutos();
 }
 
 // ============================================
@@ -3053,6 +3176,129 @@ function atualizarTabelaGenerica(registros) {
 }
 
 
+// ============================================
+// VISÃO GERAL DOS PRODUTOS - LUCRO LÍQUIDO
+// ============================================
+function atualizarVisaoGeralProdutos() {
+  const container = document.getElementById('container-visao-produtos');
+  if (!container) return;
+  
+  // Coletar todos os produtos únicos
+  const produtosSet = new Set();
+  
+  (producoes || []).forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  (vendas || []).forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  (gastos || []).forEach(g => { if (g?.produto) produtosSet.add(g.produto); });
+  
+  const produtos = Array.from(produtosSet).sort();
+  
+  // Atualizar contadores
+  document.getElementById('total-produtos-visao').textContent = produtos.length;
+  
+  if (produtos.length === 0) {
+    container.innerHTML = '<div class="empty" style="padding: 30px;">📭 Nenhum produto cadastrado</div>';
+    return;
+  }
+  
+  // Calcular dados por produto
+  const dadosProdutos = produtos.map(produto => {
+    // Custos de produção
+    const custos = (producoes || [])
+      .filter(p => p?.produto === produto)
+      .reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    
+    // Vendas
+    const vendasTotal = (vendas || [])
+      .filter(v => v?.produto === produto)
+      .reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    
+    // Gastos específicos
+    const gastosTotal = (gastos || [])
+      .filter(g => g?.produto === produto)
+      .reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    
+    // Lucro líquido
+    const lucro = vendasTotal - (custos + gastosTotal);
+    
+    // Contagem de registros
+    const numCustos = (producoes || []).filter(p => p?.produto === produto).length;
+    const numVendas = (vendas || []).filter(v => v?.produto === produto).length;
+    const numGastos = (gastos || []).filter(g => g?.produto === produto).length;
+    
+    return {
+      nome: produto,
+      custos,
+      vendas: vendasTotal,
+      gastos: gastosTotal,
+      lucro,
+      numCustos,
+      numVendas,
+      numGastos,
+      totalRegistros: numCustos + numVendas + numGastos
+    };
+  });
+  
+  // Ordenar por lucro (do maior para o menor)
+  dadosProdutos.sort((a, b) => b.lucro - a.lucro);
+  
+  // Contar produtos lucrativos e com prejuízo
+  const lucrativos = dadosProdutos.filter(p => p.lucro > 0).length;
+  const prejuizo = dadosProdutos.filter(p => p.lucro < 0).length;
+  
+  document.getElementById('produtos-lucrativos').textContent = lucrativos;
+  document.getElementById('produtos-prejuizo').textContent = prejuizo;
+  
+  // Gerar HTML dos cards
+  container.innerHTML = dadosProdutos.map(p => {
+    const lucroClass = p.lucro >= 0 ? 'positivo' : 'negativo';
+    const lucroIcon = p.lucro >= 0 ? '📈' : '📉';
+    
+    return `
+      <div class="produto-visao-card ${p.lucro < 0 ? 'prejuizo' : ''}">
+        <div class="produto-visao-header">
+          <span class="produto-visao-nome">
+            <span>🌱</span>
+            ${p.nome}
+          </span>
+          <span class="produto-visao-badge">${p.totalRegistros} registros</span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div>
+            <div class="produto-visao-label">Vendas</div>
+            <div class="produto-visao-valor" style="color: var(--azul);">${formatMoney(p.vendas)}</div>
+          </div>
+          <div>
+            <div class="produto-visao-label">Custos</div>
+            <div class="produto-visao-valor" style="color: var(--verde);">${formatMoney(p.custos)}</div>
+          </div>
+          <div>
+            <div class="produto-visao-label">Gastos</div>
+            <div class="produto-visao-valor" style="color: var(--vermelho);">${formatMoney(p.gastos)}</div>
+          </div>
+          <div>
+            <div class="produto-visao-label">Margem</div>
+            <div class="produto-visao-valor" style="color: ${p.vendas > 0 ? (p.lucro/p.vendas*100 >= 0 ? 'var(--verde)' : 'var(--vermelho)') : 'var(--cinza)'};">
+              ${p.vendas > 0 ? (p.lucro/p.vendas*100).toFixed(1) + '%' : '0%'}
+            </div>
+          </div>
+        </div>
+        
+        <div class="produto-visao-lucro ${lucroClass}">
+          <span>${lucroIcon} ${p.lucro >= 0 ? 'Lucro' : 'Prejuízo'}</span>
+          <span>${formatMoney(Math.abs(p.lucro))}</span>
+        </div>
+        
+        <div class="produto-visao-footer">
+          <span>📊 ${p.numVendas} vendas</span>
+          <span>🌾 ${p.numCustos} custos</span>
+          <span>💸 ${p.numGastos} gastos</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+  
 // Criar gráfico comparativo
 function criarGraficoComparativo() {
   const produtosSet = new Set();
