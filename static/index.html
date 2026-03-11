@@ -1074,6 +1074,28 @@
           <button class="btn-aba" onclick="mudarAbaProduto('custos', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">🌾 CUSTOS</button>
           <button class="btn-aba" onclick="mudarAbaProduto('vendas', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💰 VENDAS</button>
           <button class="btn-aba" onclick="mudarAbaProduto('gastos', this)" style="background: var(--cinza-claro); color: var(--texto); border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">💸 GASTOS</button>
+          <!-- NOVA ABA -->
+          <button class="btn-aba" onclick="abrirFiltroCategoria()" style="background: var(--roxo); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: 600; cursor: pointer;">🔍 FILTRAR CATEGORIA</button>
+        </div>
+        
+        <!-- MODAL DE FILTRO POR CATEGORIA -->
+        <div id="modal-filtro-categoria" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+          <div style="background: white; border-radius: var(--radius); padding: 30px; max-width: 400px; width: 90%;">
+            <h3 style="margin-bottom: 20px;">🔍 Filtrar por Categoria</h3>
+            <select id="filtro-categoria-select" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--cinza-claro);">
+              <option value="">Todas as categorias</option>
+              <option value="Combustível">⛽ Combustível</option>
+              <option value="Manutenção">🔧 Manutenção</option>
+              <option value="Insumos">🌱 Insumos</option>
+              <option value="Mão de obra">👷 Mão de obra</option>
+              <option value="Transporte">🚜 Transporte</option>
+              <option value="Outros">📦 Outros</option>
+            </select>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <button class="btn btn-secondary" onclick="fecharModalCategoria()">Cancelar</button>
+              <button class="btn btn-primary" onclick="aplicarFiltroCategoria()">Aplicar</button>
+            </div>
+          </div>
         </div>
 
         <!-- TABELA -->
@@ -2974,6 +2996,62 @@ function criarGraficosProduto(custos, vendas, gastos) {
     });
   }
 }
+
+
+function abrirFiltroCategoria() {
+  document.getElementById('modal-filtro-categoria').style.display = 'flex';
+}
+
+function fecharModalCategoria() {
+  document.getElementById('modal-filtro-categoria').style.display = 'none';
+}
+
+function aplicarFiltroCategoria() {
+  const categoria = document.getElementById('filtro-categoria-select').value;
+  fecharModalCategoria();
+  
+  if (!produtoSelecionado) return;
+  
+  const custosProd = (producoes || []).filter(p => p?.produto === produtoSelecionado);
+  const vendasProd = (vendas || []).filter(v => v?.produto === produtoSelecionado);
+  const gastosProd = (gastos || []).filter(g => g?.produto === produtoSelecionado);
+  
+  // Filtrar gastos por categoria
+  let gastosFiltrados = gastosProd;
+  if (categoria) {
+    gastosFiltrados = gastosProd.filter(g => g.categoria === categoria);
+  }
+  
+  // Mostrar apenas gastos (ou pode mostrar tudo com destaque)
+  const todosRegistros = [
+    ...custosProd.map(p => ({ ...p, tipoReg: 'Custo', badge: 'badge-prod', cor: 'var(--verde)' })),
+    ...vendasProd.map(v => ({ ...v, tipoReg: 'Venda', badge: 'badge-venda', cor: 'var(--azul)' })),
+    ...gastosFiltrados.map(g => ({ ...g, tipoReg: 'Gasto', badge: 'badge-gasto', cor: 'var(--vermelho)' }))
+  ].sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+  
+  atualizarTabelaGenerica(todosRegistros);
+}
+
+function atualizarTabelaGenerica(registros) {
+  const tbody = document.getElementById('tabela-produto-registros');
+  
+  if (registros.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">📭 Nenhum registro encontrado</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = registros.map(r => `
+    <tr>
+      <td>${formatarDataBR(r.data)}</td>
+      <td><span class="badge ${r.badge}">${r.tipoReg}</span></td>
+      <td>${r.desc || r.tipo || r.produto || ''}</td>
+      <td>${r.area || '—'}</td>
+      <td>${r.qtd ? r.qtd + ' ' + (r.unidade || '') : '—'}</td>
+      <td><strong style="color: ${r.cor}">${formatMoney(r.valor || r.total)}</strong></td>
+    </tr>
+  `).join('');
+}
+
 
 // Criar gráfico comparativo
 function criarGraficoComparativo() {
