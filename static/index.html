@@ -1155,20 +1155,20 @@
       <div class="charts-grid" style="margin-bottom: 25px;">
         <div class="chart-card">
           <div class="chart-title">
-            <span>📈</span>
-            <span>EVOLUÇÃO DIÁRIA (ÚLTIMOS 15 DIAS)</span>
+            <span>🥧</span>
+            <span>DISTRIBUIÇÃO POR TIPO DE GASTO</span>
           </div>
           <div class="chart-container">
-            <canvas id="chartProdutoEvolucao"></canvas>
+            <canvas id="chartProdutoGastos"></canvas>
           </div>
         </div>
         <div class="chart-card">
           <div class="chart-title">
-            <span>🥧</span>
-            <span>DISTRIBUIÇÃO DOS GASTOS</span>
+            <span>📊</span>
+            <span>DISTRIBUIÇÃO POR CATEGORIA</span>
           </div>
           <div class="chart-container">
-            <canvas id="chartProdutoGastos"></canvas>
+            <canvas id="chartProdutoCategorias"></canvas>
           </div>
         </div>
       </div>
@@ -2693,8 +2693,12 @@ function calcularCustoPorKg(produto) {
 // PRODUTOS - DASHBOARD INDIVIDUAL COMPLETO
 // ============================================
 let produtoSelecionado = '';
-let chartsProduto = {};
-
+let chartsProduto = {
+  evolucao: null,
+  gastos: null,
+  categorias: null,
+  comparativo: null
+};
 // Inicializar seletor de produtos
 function inicializarSeletorProdutos() {
   const seletor = document.getElementById('seletor-produto');
@@ -2981,72 +2985,9 @@ function atualizarTabelaProduto(tipo, custos, vendas, gastos) {
 }
 
 // Criar gráficos do produto
+// Criar gráficos do produto
 function criarGraficosProduto(custos, vendas, gastos) {
-  // Gráfico de evolução
-  const dadosEvolucao = {};
-  const ultimos15Dias = [];
-
-  // Pegar últimas 15 datas com dados
-  const todasDatas = [];
-  [...custos, ...vendas, ...gastos].forEach(item => {
-    if (item?.data) todasDatas.push(item.data);
-  });
-
-  const datasUnicas = [...new Set(todasDatas)].sort().slice(-15);
-
-  datasUnicas.forEach(data => {
-    dadosEvolucao[data] = {
-      vendas: vendas.filter(v => v.data === data).reduce((s, v) => s + (Number(v?.total) || 0), 0),
-      gastos: [
-        ...custos.filter(c => c.data === data).map(c => Number(c?.total) || 0),
-        ...gastos.filter(g => g.data === data).map(g => Number(g?.valor) || 0)
-      ].reduce((s, v) => s + v, 0)
-    };
-  });
-
-  const ctxEvol = document.getElementById('chartProdutoEvolucao')?.getContext('2d');
-  if (ctxEvol) {
-    if (chartsProduto.evolucao) chartsProduto.evolucao.destroy();
-
-    chartsProduto.evolucao = new Chart(ctxEvol, {
-      type: 'line',
-      data: {
-        labels: datasUnicas.map(d => formatarDataBR(d)),
-        datasets: [
-          { 
-            label: 'Vendas', 
-            data: datasUnicas.map(d => dadosEvolucao[d]?.vendas || 0), 
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59,130,246,0.1)',
-            tension: 0.4,
-            fill: true,
-            borderWidth: 3
-          },
-          { 
-            label: 'Gastos + Custos', 
-            data: datasUnicas.map(d => dadosEvolucao[d]?.gastos || 0), 
-            borderColor: '#dc2626',
-            backgroundColor: 'rgba(220,38,38,0.1)',
-            tension: 0.4,
-            fill: true,
-            borderWidth: 3
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { 
-          legend: { 
-            position: 'bottom',
-            labels: { font: { size: 12 } }
-          }
-        }
-      }
-    });
-  }
-
-  // GRÁFICO DE BARRAS - Distribuição dos Gastos
+  // GRÁFICO 1: Distribuição por Tipo (existente)
   const tiposGastos = {};
 
   custos.forEach(p => {
@@ -3078,47 +3019,42 @@ function criarGraficosProduto(custos, vendas, gastos) {
     const cores = ['#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#6b7280', '#9333ea', '#ec4899'];
 
     chartsProduto.gastos = new Chart(ctxGastos, {
-      type: 'bar',
+      type: 'doughnut',
       data: {
         labels: Object.keys(sortedTipos),
         datasets: [{
-          label: 'Valor (R$)',
           data: Object.values(sortedTipos),
           backgroundColor: cores.slice(0, Object.keys(sortedTipos).length),
-          borderRadius: 8,
-          barPercentage: 0.7
+          borderWidth: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 11 } }
+          },
           tooltip: {
             callbacks: {
-              label: (context) => `R$ ${context.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              label: (context) => {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: ${formatMoney(value)} (${percentage}%)`;
+              }
             }
-          },
-          datalabels: {
-            display: true,
-            color: 'white',
-            font: { weight: 'bold', size: 10 },
-            formatter: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-            align: 'top',
-            offset: 2
           }
         },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-            }
-          }
-        }
+        cutout: '65%'
       }
     });
   }
+
+  // GRÁFICO 2: Distribuição por Categoria (NOVO)
+  criarGraficoProdutoCategorias(custos, vendas, gastos);
 }
 
 
@@ -3299,7 +3235,80 @@ function atualizarVisaoGeralProdutos() {
     `;
   }).join('');
 }
+
+// Criar gráfico de distribuição por categoria
+function criarGraficoProdutoCategorias(custos, vendas, gastos) {
+  const categoriasGastos = {};
   
+  // Gastos por categoria
+  gastos.forEach(g => {
+    if (g?.valor) {
+      const categoria = g.categoria || 'Outros';
+      categoriasGastos[categoria] = (categoriasGastos[categoria] || 0) + (Number(g.valor) || 0);
+    }
+  });
+  
+  // Custos de produção (agrupados como "Custos de Produção")
+  if (custos.length > 0) {
+    const totalCustos = custos.reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    if (totalCustos > 0) {
+      categoriasGastos['Custos de Produção'] = (categoriasGastos['Custos de Produção'] || 0) + totalCustos;
+    }
+  }
+
+  // Ordenar do maior para o menor
+  const sortedCategorias = Object.entries(categoriasGastos)
+    .sort((a, b) => b[1] - a[1])
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+
+  const ctxCategorias = document.getElementById('chartProdutoCategorias')?.getContext('2d');
+  if (ctxCategorias && Object.keys(sortedCategorias).length > 0) {
+    if (chartsProduto.categorias) chartsProduto.categorias.destroy();
+
+    const cores = [
+      '#dc2626', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
+      '#6b7280', '#9333ea', '#ec4899', '#14b8a6', '#f97316'
+    ];
+
+    chartsProduto.categorias = new Chart(ctxCategorias, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(sortedCategorias),
+        datasets: [{
+          data: Object.values(sortedCategorias),
+          backgroundColor: cores.slice(0, Object.keys(sortedCategorias).length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: ${formatMoney(value)} (${percentage}%)`;
+              }
+            }
+          }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+}
+
 // Criar gráfico comparativo
 function criarGraficoComparativo() {
   const produtosSet = new Set();
