@@ -391,16 +391,10 @@ def config_email():
         print(f"📧 Configuração recebida: {data}")
         
         # Salvar em memória (simples)
-        # TESTE - enviar no próximo minuto
-        from datetime import datetime, timedelta
-        
-        # Pega o horário atual + 2 minutos
-        hora_teste = (datetime.now() + timedelta(minutes=2)).strftime("%H:%M")
-        
         configuracoes_email[usuario_id] = {
             'email': data['email'],
             'frequencias': data['frequencias'],
-            'horario': hora_teste,  # ← AGORA USA HORÁRIO DINÂMICO
+            'horario': data['horario'],  # ← LINHA DO HORÁRIO
             'ativo': True
         }
         
