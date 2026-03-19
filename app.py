@@ -664,6 +664,25 @@ def enviar_email_sendgrid(destinatario, assunto, html_content):
 # NOVAS ROTAS DE E-MAIL (SUBSTITUA AS ATUAIS)
 # ============================================
 
+@app.route('/api/diagnostico-email', methods=['GET'])
+def diagnostico_email():
+    """Diagnostica problemas com o SendGrid"""
+    resultado = {
+        'sendgrid_key_configurada': bool(os.environ.get('SENDGRID_API_KEY')),
+        'sendgrid_key_prefix': os.environ.get('SENDGRID_API_KEY', '')[:10] + '...' if os.environ.get('SENDGRID_API_KEY') else None,
+        'status': 'Verificando...'
+    }
+    
+    # Testar se a chave tem o formato correto
+    if resultado['sendgrid_key_configurada']:
+        key = os.environ.get('SENDGRID_API_KEY')
+        if key.startswith('SG.'):
+            resultado['formato_chave'] = 'OK (começa com SG.)'
+        else:
+            resultado['formato_chave'] = 'ERRO: API Key deve começar com SG.'
+    
+    return jsonify(resultado)
+
 @app.route('/api/testar-email', methods=['POST'])
 def testar_email():
     """Envia e-mail de teste usando SendGrid"""
@@ -680,6 +699,9 @@ def testar_email():
                 'success': False, 
                 'erro': 'SendGrid não configurado. Adicione SENDGRID_API_KEY no Railway.'
             }), 500
+        
+        # Use SEU PRÓPRIO E-MAIL VERIFICADO como remetente
+        from_email = 'julioaguiar05@gmail.com'  # ← USE SEU E-MAIL AQUI
         
         # Criar conteúdo HTML do e-mail
         html_content = """
@@ -713,8 +735,11 @@ def testar_email():
         """
         
         # Enviar e-mail
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        
         message = Mail(
-            from_email='noreply@agrocore.com',
+            from_email=from_email,  # ← AGORA USA SEU E-MAIL VERIFICADO
             to_emails=email,
             subject='🌱 AGROcore - Teste de Configuração',
             html_content=html_content
@@ -722,6 +747,9 @@ def testar_email():
         
         sg = SendGridAPIClient(sendgrid_key)
         response = sg.send(message)
+        
+        print(f"📧 Status Code: {response.status_code}")
+        print(f"📧 Headers: {response.headers}")
         
         if response.status_code in [200, 201, 202]:
             print(f"✅ E-mail de teste enviado para {email}")
@@ -737,7 +765,9 @@ def testar_email():
             }), 500
             
     except Exception as e:
-        print(f"❌ Erro ao enviar e-mail: {str(e)}")
+        print(f"❌ Erro detalhado: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 @app.route('/api/verificar-email', methods=['GET'])
