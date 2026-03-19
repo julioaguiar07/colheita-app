@@ -1401,6 +1401,7 @@ input::placeholder, textarea::placeholder {
       <button onclick="showSection('producao', this)">🌾 Produção</button>
       <button onclick="showSection('vendas', this)">💰 Vendas</button>
       <button onclick="showSection('gastos', this)">💸 Gastos</button>
+      <button onclick="showSection('configuracoes', this)">⚙️ Configurações</button>
     </nav>
   </div>
 </header>
@@ -1907,7 +1908,7 @@ input::placeholder, textarea::placeholder {
       <div class="total-geral" id="total-producoes">Total: R$ 0,00</div>
     </div>
   </section>
-
+  
   <!-- ========== VENDAS ========== -->
   <section id="vendas" class="section">
     <div class="page-header">
@@ -2052,7 +2053,112 @@ input::placeholder, textarea::placeholder {
       <div class="total-geral" id="total-gastos">Total: R$ 0,00</div>
     </div>
   </section>
+  
+  <!-- ========== CONFIGURAÇÕES ========== -->
+  <section id="configuracoes" class="section">
+    <div class="page-header">
+      <div>
+        <h1 class="section-title"><span class="title-icon">⚙️</span> Configurações</h1>
+        <p class="section-sub">Personalize suas preferências e relatórios automáticos</p>
+      </div>
+    </div>
 
+    <!-- CARD DE CONFIGURAÇÃO DE E-MAIL -->
+    <div class="card">
+      <div class="card-title">
+        <div class="dot" style="background: #4285F4;"></div>
+        📧 Relatórios Automáticos por E-mail
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+        <!-- LADO ESQUERDO: FORMULÁRIO -->
+        <div>
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>📧 Seu e-mail</label>
+            <input type="email" id="email-relatorios" class="input-moderno" 
+                   placeholder="seu@email.com" value="">
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>⏰ Frequência</label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+              <label style="display: flex; align-items: center; gap: 5px; background: var(--surface-2); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); cursor: pointer;">
+                <input type="checkbox" id="freq-diario" value="diario"> Diário
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; background: var(--surface-2); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); cursor: pointer;">
+                <input type="checkbox" id="freq-semanal" value="semanal"> Semanal
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; background: var(--surface-2); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); cursor: pointer;">
+                <input type="checkbox" id="freq-mensal" value="mensal"> Mensal
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>🕐 Horário de envio</label>
+            <select id="horario-envio" class="input-moderno">
+              <option value="07:00">07:00 - Manhã</option>
+              <option value="12:00">12:00 - Meio-dia</option>
+              <option value="18:00" selected>18:00 - Final do dia</option>
+              <option value="22:00">22:00 - Noite</option>
+            </select>
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="salvarConfigEmail()" style="flex: 1;">
+              💾 Salvar configurações
+            </button>
+            <button class="btn btn-secondary" onclick="testarEnvioEmail()" style="flex: 1;">
+              📤 Testar envio
+            </button>
+          </div>
+          
+          <div id="status-email" style="margin-top: 20px; padding: 12px; border-radius: 8px; display: none;"></div>
+        </div>
+        
+        <!-- LADO DIREITO: INFORMAÇÕES -->
+        <div>
+          <div style="background: var(--surface-2); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border);">
+            <h4 style="margin-bottom: 15px;">📋 Como funciona</h4>
+            
+            <ul style="list-style: none; padding: 0;">
+              <li style="margin-bottom: 15px; display: flex; gap: 10px;">
+                <span style="background: var(--green-100); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">📅</span>
+                <div>
+                  <strong>Diário</strong>
+                  <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0;">Resumo do dia com comparação vs ontem e média</p>
+                </div>
+              </li>
+              <li style="margin-bottom: 15px; display: flex; gap: 10px;">
+                <span style="background: var(--green-100); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">📆</span>
+                <div>
+                  <strong>Semanal</strong>
+                  <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0;">Comparação com a semana anterior</p>
+                </div>
+              </li>
+              <li style="margin-bottom: 15px; display: flex; gap: 10px;">
+                <span style="background: var(--green-100); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">📊</span>
+                <div>
+                  <strong>Mensal</strong>
+                  <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0;">Análise completa do mês com top produtos</p>
+                </div>
+              </li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding: 15px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
+              <p style="margin: 0; font-size: 13px;">
+                <strong>📌 Exemplo de relatório:</strong><br>
+                • Vendas hoje: R$ 3.240 (↑15% vs ontem)<br>
+                • Gastos hoje: R$ 1.150 (↓8% vs média)<br>
+                • Destaque: Soja com 42% de margem
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
 </main>
 
 <div id="toast"></div>
@@ -3040,6 +3146,135 @@ function atualizarUltimosRegistrosNovo() {
       `).join('');
     }
   }
+}
+
+// ============================================
+// CONFIGURAÇÕES DE E-MAIL
+// ============================================
+
+// Carregar configurações salvas ao iniciar
+document.addEventListener('DOMContentLoaded', function() {
+  carregarConfiguracoesEmail();
+});
+
+function carregarConfiguracoesEmail() {
+  const email = localStorage.getItem('email_relatorios');
+  if (email) {
+    document.getElementById('email-relatorios').value = email;
+  }
+  
+  const frequencias = JSON.parse(localStorage.getItem('email_frequencias') || '[]');
+  frequencias.forEach(freq => {
+    const el = document.getElementById(`freq-${freq}`);
+    if (el) el.checked = true;
+  });
+  
+  const horario = localStorage.getItem('email_horario');
+  if (horario) {
+    document.getElementById('horario-envio').value = horario;
+  }
+}
+
+function mostrarStatusEmail(mensagem, tipo) {
+  const statusEl = document.getElementById('status-email');
+  statusEl.textContent = mensagem;
+  statusEl.style.display = 'block';
+  statusEl.style.background = tipo === 'erro' ? '#fee2e2' : '#dcfce7';
+  statusEl.style.color = tipo === 'erro' ? '#b91c1c' : '#166534';
+  statusEl.style.border = tipo === 'erro' ? '1px solid #fecaca' : '1px solid #bbf7d0';
+  
+  setTimeout(() => {
+    statusEl.style.display = 'none';
+  }, 5000);
+}
+
+function salvarConfigEmail() {
+  const statusEl = document.getElementById('status-email');
+  statusEl.style.display = 'none';
+  
+  // Coletar dados
+  const email = document.getElementById('email-relatorios').value.trim();
+  const diario = document.getElementById('freq-diario').checked;
+  const semanal = document.getElementById('freq-semanal').checked;
+  const mensal = document.getElementById('freq-mensal').checked;
+  const horario = document.getElementById('horario-envio').value;
+  
+  // Validar e-mail
+  if (!email) {
+    mostrarStatusEmail('⚠️ Informe seu e-mail', 'erro');
+    return;
+  }
+  
+  if (!email.includes('@') || !email.includes('.')) {
+    mostrarStatusEmail('⚠️ E-mail inválido', 'erro');
+    return;
+  }
+  
+  if (!diario && !semanal && !mensal) {
+    mostrarStatusEmail('⚠️ Selecione pelo menos uma frequência', 'erro');
+    return;
+  }
+  
+  // Montar frequências
+  const frequencias = [];
+  if (diario) frequencias.push('diario');
+  if (semanal) frequencias.push('semanal');
+  if (mensal) frequencias.push('mensal');
+  
+  // Salvar no localStorage
+  localStorage.setItem('email_relatorios', email);
+  localStorage.setItem('email_frequencias', JSON.stringify(frequencias));
+  localStorage.setItem('email_horario', horario);
+  
+  // Enviar para o backend
+  mostrarStatusEmail('📤 Salvando configurações...', '');
+  
+  fetch('/api/config-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, frequencias, horario })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      mostrarStatusEmail('✅ Configurações salvas! Você receberá relatórios em ' + email, 'sucesso');
+    } else {
+      mostrarStatusEmail('❌ Erro: ' + (data.erro || 'Erro desconhecido'), 'erro');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarStatusEmail('✅ Configurações salvas localmente! (offline)', 'sucesso');
+  });
+}
+
+function testarEnvioEmail() {
+  const email = document.getElementById('email-relatorios').value.trim();
+  
+  if (!email) {
+    mostrarStatusEmail('⚠️ Informe seu e-mail primeiro', 'erro');
+    return;
+  }
+  
+  mostrarStatusEmail('📤 Enviando e-mail de teste...', '');
+  
+  fetch('/api/testar-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      mostrarStatusEmail('✅ E-mail de teste enviado! Verifique sua caixa de entrada', 'sucesso');
+    } else {
+      mostrarStatusEmail('❌ Erro ao enviar: ' + (data.erro || 'Erro desconhecido'), 'erro');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarStatusEmail('❌ Erro ao conectar com o servidor', 'erro');
+  });
 }
 
 // ============================================
