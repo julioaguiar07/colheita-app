@@ -587,10 +587,8 @@ def gerar_relatorio_diario_html(dados):
 scheduler = BackgroundScheduler()
 
 def verificar_e_enviar_relatorios():
-    """Verifica se há relatórios para enviar com dados REAIS"""
+    """Verifica se há relatórios para enviar - buscando dados do banco"""
     with app.app_context():
-        global vendas, gastos, producoes  # ← IMPORTANTE!
-        
         agora = datetime.now()
         hora_atual = agora.strftime("%H:%M")
         
@@ -603,55 +601,80 @@ def verificar_e_enviar_relatorios():
             if config['horario'] != hora_atual:
                 continue
             
-            # Buscar dados REAIS
+            print(f"✅ Vai enviar para {config['email']}")
+            
+            # Buscar dados REAIS do banco de dados
             hoje = agora.strftime('%Y-%m-%d')
             ontem = (agora - timedelta(days=1)).strftime('%Y-%m-%d')
+            trinta_dias_atras = (agora - timedelta(days=30)).strftime('%Y-%m-%d')
             
-            # Vendas
-            vendas_hoje = sum([v['total'] for v in vendas if v['data'] == hoje])
-            vendas_ontem = sum([v['total'] for v in vendas if v['data'] == ontem])
+            conn = get_db_connection()
+            cur = conn.cursor()
             
-            # Gastos (gastos + produções)
-            gastos_hoje = sum([g['valor'] for g in gastos if g['data'] == hoje]) + \
-                          sum([p['total'] for p in producoes if p['data'] == hoje])
-            
-            # Média 30 dias
-            ultimos_30_dias = [(agora - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, 31)]
-            media_gastos_30 = sum([
-                sum([g['valor'] for g in gastos if g['data'] == dia]) + 
-                sum([p['total'] for p in producoes if p['data'] == dia]) 
-                for dia in ultimos_30_dias
-            ]) / 30 if ultimos_30_dias else 0
-            
-            # Variações
-            variacao_vendas = ((vendas_hoje - vendas_ontem) / vendas_ontem * 100) if vendas_ontem > 0 else 0
-            variacao_gastos = ((gastos_hoje - media_gastos_30) / media_gastos_30 * 100) if media_gastos_30 > 0 else 0
-            
-            # Destaque do dia
-            vendas_por_produto = {}
-            for v in vendas:
-                if v['data'] == hoje:
-                    vendas_por_produto[v['produto']] = vendas_por_produto.get(v['produto'], 0) + v['total']
-            
-            if vendas_por_produto:
-                destaque = max(vendas_por_produto, key=vendas_por_produto.get)
-                valor_destaque = vendas_por_produto[destaque]
-                destaque_texto = f'{destaque} (R$ {valor_destaque:,.2f})'
-            else:
-                destaque_texto = 'Nenhuma venda hoje'
-            
-            dados = {
-                'data': agora.strftime('%d/%m/%Y'),
-                'vendas_hoje': vendas_hoje,
-                'gastos_hoje': gastos_hoje,
-                'variacao_vendas': variacao_vendas,
-                'variacao_gastos': variacao_gastos,
-                'destaque': destaque_texto
-            }
-            
-            # Enviar relatório
-            if 'diario' in config['frequencias']:
-                try:
+            try:
+                # 1. Vendas de hoje
+                cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE data = %s', (hoje,))
+                vendas_hoje = cur.fetchone()['total']
+                
+                # 2. Vendas de ontem
+                cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE data = %s', (ontem,))
+                vendas_ontem = cur.fetchone()['total']
+                
+                # 3. Gastos de hoje (gastos + produções)
+                cur.execute('SELECT COALESCE(SUM(valor), 0) as total FROM gastos WHERE data = %s', (hoje,))
+                gastos_hoje = cur.fetchone()['total']
+                
+                cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM producoes WHERE data = %s', (hoje,))
+                producoes_hoje = cur.fetchone()['total']
+                
+                gastos_hoje_total = gastos_hoje + producoes_hoje
+                
+                # 4. Média de gastos dos últimos 30 dias
+                cur.execute('''
+                    SELECT COALESCE(SUM(valor), 0) as total FROM gastos 
+                    WHERE data BETWEEN %s AND %s
+                ''', (trinta_dias_atras, ontem))
+                gastos_30 = cur.fetchone()['total']
+                
+                cur.execute('''
+                    SELECT COALESCE(SUM(total), 0) as total FROM producoes 
+                    WHERE data BETWEEN %s AND %s
+                ''', (trinta_dias_atras, ontem))
+                producoes_30 = cur.fetchone()['total']
+                
+                media_gastos_30 = (gastos_30 + producoes_30) / 30 if (gastos_30 + producoes_30) > 0 else 0
+                
+                # 5. Destaque do dia (produto com maior venda)
+                cur.execute('''
+                    SELECT produto, SUM(total) as total 
+                    FROM vendas 
+                    WHERE data = %s 
+                    GROUP BY produto 
+                    ORDER BY total DESC 
+                    LIMIT 1
+                ''', (hoje,))
+                destaque_row = cur.fetchone()
+                
+                if destaque_row:
+                    destaque_texto = f"{destaque_row['produto']} (R$ {destaque_row['total']:,.2f})"
+                else:
+                    destaque_texto = "Nenhuma venda hoje"
+                
+                # Calcular variações
+                variacao_vendas = ((vendas_hoje - vendas_ontem) / vendas_ontem * 100) if vendas_ontem > 0 else 0
+                variacao_gastos = ((gastos_hoje_total - media_gastos_30) / media_gastos_30 * 100) if media_gastos_30 > 0 else 0
+                
+                dados = {
+                    'data': agora.strftime('%d/%m/%Y'),
+                    'vendas_hoje': vendas_hoje,
+                    'gastos_hoje': gastos_hoje_total,
+                    'variacao_vendas': variacao_vendas,
+                    'variacao_gastos': variacao_gastos,
+                    'destaque': destaque_texto
+                }
+                
+                # Enviar relatório
+                if 'diario' in config['frequencias']:
                     html = gerar_relatorio_diario_html(dados)
                     resend.api_key = os.environ.get('RESEND_API_KEY')
                     r = resend.Emails.send({
@@ -661,9 +684,14 @@ def verificar_e_enviar_relatorios():
                         "html": html
                     })
                     print(f"✅ [EMAIL] Relatório enviado para {config['email']}")
-                except Exception as e:
-                    print(f"❌ [EMAIL] Erro: {e}")
-
+                    
+            except Exception as e:
+                print(f"❌ [EMAIL] Erro ao processar: {e}")
+                import traceback
+                traceback.print_exc()
+            finally:
+                cur.close()
+                conn.close()
 # Iniciar o agendador
 scheduler.add_job(
     func=verificar_e_enviar_relatorios,
