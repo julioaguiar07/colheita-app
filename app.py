@@ -398,7 +398,7 @@ def config_email():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Upsert: insere ou atualiza se já existir
+        # AGORA VAI FUNCIONAR! (porque usuario_id é UNIQUE)
         cur.execute('''
             INSERT INTO configuracoes_email (usuario_id, email_destino, frequencias, horario, ativo)
             VALUES (%s, %s, %s, %s, %s)
@@ -412,7 +412,7 @@ def config_email():
         ''', (
             usuario_id, 
             data['email'], 
-            data['frequencias'],  # O PostgreSQL aceita array diretamente
+            data['frequencias'],
             horario_utc,
             True
         ))
@@ -607,25 +607,33 @@ def gerar_relatorio_diario_html(dados):
 
 def carregar_configuracoes_do_banco():
     """Carrega todas as configurações ativas do banco"""
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT * FROM configuracoes_email WHERE ativo = true')
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    
-    configuracoes = {}
-    for row in rows:
-        # Usar IP como chave só para compatibilidade
-        # Idealmente, usar um ID único
-        configuracoes[row['usuario_id']] = {
-            'email': row['email_destino'],
-            'frequencias': row['frequencias'],
-            'horario': row['horario'],
-            'ativo': row['ativo']
-        }
-    
-    return configuracoes
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM configuracoes_email WHERE ativo = true')
+        rows = cur.fetchall()
+        
+        configuracoes = []
+        for row in rows:
+            configuracoes.append({
+                'usuario_id': row['usuario_id'],
+                'email': row['email_destino'],
+                'frequencias': row['frequencias'],
+                'horario': row['horario'],
+                'ativo': row['ativo']
+            })
+        
+        return configuracoes
+    except Exception as e:
+        print(f"❌ Erro ao carregar configurações: {e}")
+        return []
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 # ============================================
 # AGENDADOR DE RELATÓRIOS
@@ -640,7 +648,9 @@ def verificar_e_enviar_relatorios():
         
         print(f"⏰ [SCHEDULER] Verificando envios - {agora.strftime('%d/%m/%Y %H:%M')}")
         
-        # BUSCAR CONFIGURAÇÕES DO BANCO DE DADOS
+        # ============================================
+        # 1. CARREGAR CONFIGURAÇÕES DO BANCO
+        # ============================================
         conn = None
         cur = None
         try:
@@ -653,6 +663,9 @@ def verificar_e_enviar_relatorios():
             
             print(f"📧 [SCHEDULER] Encontradas {len(configuracoes)} configurações ativas")
             
+            # ============================================
+            # 2. PARA CADA CONFIGURAÇÃO, VERIFICAR HORÁRIO
+            # ============================================
             for config in configuracoes:
                 # Verificar se é hora de enviar
                 if config['horario'] != hora_atual:
@@ -660,20 +673,22 @@ def verificar_e_enviar_relatorios():
                 
                 print(f"✅ Vai enviar para {config['email_destino']} - Horário: {config['horario']}")
                 
-                # Buscar dados REAIS do banco para o relatório
+                # ============================================
+                # 3. BUSCAR DADOS REAIS DO BANCO PARA O RELATÓRIO
+                # ============================================
                 hoje = agora.strftime('%Y-%m-%d')
                 ontem = (agora - timedelta(days=1)).strftime('%Y-%m-%d')
                 trinta_dias_atras = (agora - timedelta(days=30)).strftime('%Y-%m-%d')
                 
-                # 1. Vendas de hoje
+                # 3.1 Vendas de hoje
                 cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE data = %s', (hoje,))
                 vendas_hoje = cur.fetchone()['total']
                 
-                # 2. Vendas de ontem
+                # 3.2 Vendas de ontem
                 cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE data = %s', (ontem,))
                 vendas_ontem = cur.fetchone()['total']
                 
-                # 3. Gastos de hoje (gastos + produções)
+                # 3.3 Gastos de hoje (gastos + produções)
                 cur.execute('SELECT COALESCE(SUM(valor), 0) as total FROM gastos WHERE data = %s', (hoje,))
                 gastos_hoje = cur.fetchone()['total']
                 
@@ -682,7 +697,7 @@ def verificar_e_enviar_relatorios():
                 
                 gastos_hoje_total = gastos_hoje + producoes_hoje
                 
-                # 4. Média de gastos dos últimos 30 dias
+                # 3.4 Média de gastos dos últimos 30 dias
                 cur.execute('''
                     SELECT COALESCE(SUM(valor), 0) as total FROM gastos 
                     WHERE data BETWEEN %s AND %s
@@ -695,9 +710,10 @@ def verificar_e_enviar_relatorios():
                 ''', (trinta_dias_atras, ontem))
                 producoes_30 = cur.fetchone()['total']
                 
-                media_gastos_30 = (gastos_30 + producoes_30) / 30 if (gastos_30 + producoes_30) > 0 else 0
+                gastos_30_total = gastos_30 + producoes_30
+                media_gastos_30 = gastos_30_total / 30 if gastos_30_total > 0 else 0
                 
-                # 5. Destaque do dia (produto com maior venda)
+                # 3.5 Destaque do dia (produto com maior venda)
                 cur.execute('''
                     SELECT produto, SUM(total) as total 
                     FROM vendas 
@@ -713,10 +729,13 @@ def verificar_e_enviar_relatorios():
                 else:
                     destaque_texto = "Nenhuma venda hoje"
                 
-                # Calcular variações
+                # 3.6 Calcular variações
                 variacao_vendas = ((vendas_hoje - vendas_ontem) / vendas_ontem * 100) if vendas_ontem > 0 else 0
                 variacao_gastos = ((gastos_hoje_total - media_gastos_30) / media_gastos_30 * 100) if media_gastos_30 > 0 else 0
                 
+                # ============================================
+                # 4. MONTAR DADOS DO RELATÓRIO
+                # ============================================
                 dados = {
                     'data': agora.strftime('%d/%m/%Y'),
                     'vendas_hoje': vendas_hoje,
@@ -726,32 +745,43 @@ def verificar_e_enviar_relatorios():
                     'destaque': destaque_texto
                 }
                 
-                # Enviar relatório baseado nas frequências
+                # ============================================
+                # 5. ENVIAR RELATÓRIO (RESEND)
+                # ============================================
                 if 'diario' in config['frequencias']:
                     try:
+                        # Gerar HTML do relatório
                         html = gerar_relatorio_diario_html(dados)
                         
-                        # Usar Resend para enviar
+                        # Configurar Resend
                         resend.api_key = os.environ.get('RESEND_API_KEY')
+                        
+                        # Enviar e-mail
                         r = resend.Emails.send({
                             "from": "onboarding@resend.dev",
                             "to": config['email_destino'],
                             "subject": "🌱 AGROcore - Resumo Diário",
                             "html": html
                         })
+                        
                         print(f"✅ [EMAIL] Relatório diário enviado para {config['email_destino']}")
+                        
                     except Exception as e:
                         print(f"❌ [EMAIL] Erro ao enviar: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
-                # Se quiser adicionar relatório semanal/mensal depois
+                # Se quiser adicionar relatório semanal depois:
                 # if 'semanal' in config['frequencias']:
                 #     ...
                 
         except Exception as e:
-            print(f"❌ [SCHEDULER] Erro: {e}")
+            print(f"❌ [SCHEDULER] Erro geral: {e}")
             import traceback
             traceback.print_exc()
+            
         finally:
+            # Fechar conexões
             if cur:
                 cur.close()
             if conn:
