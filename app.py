@@ -409,76 +409,77 @@ def config_email():
         print(f"❌ Erro ao salvar: {e}")
         return jsonify({'success': False, 'erro': str(e)}), 500
 
-@app.route('/api/testar-email', methods=['POST'])
-def testar_email():
-    """Envia e-mail de teste com debug detalhado"""
+import threading
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def enviar_email_async(destinatario):
+    """Função que envia e-mail em segundo plano (não trava o servidor)"""
     try:
-        data = request.json
-        email = data['email']
+        print(f"📧 [THREAD] Iniciando envio para {destinatario}")
         
-        print(f"📧 1. Iniciando envio para: {email}")
-        
-        # Pegar credenciais
         email_user = os.environ.get('EMAIL_USER')
         email_password = os.environ.get('EMAIL_PASSWORD')
-        
-        print(f"📧 2. EMAIL_USER: {email_user}")
-        print(f"📧 3. EMAIL_PASSWORD configurado: {'Sim' if email_password else 'Não'}")
-        print(f"📧 4. Tamanho da senha: {len(email_password) if email_password else 0}")
-        
-        if not email_user or not email_password:
-            return jsonify({'success': False, 'erro': 'Credenciais não configuradas'}), 500
-        
-        # Importar smtplib
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        
-        print(f"📧 5. Criando mensagem...")
         
         # Criar mensagem
         msg = MIMEMultipart()
         msg['From'] = email_user
-        msg['To'] = email
-        msg['Subject'] = "🌱 AGROcore - Teste de Configuração"
+        msg['To'] = destinatario
+        msg['Subject'] = "🌱 AGROcore - Teste"
         
         body = """
         <html>
-          <body>
-            <h2>✅ Teste do AGROcore</h2>
-            <p>Se você está lendo este e-mail, a configuração está funcionando!</p>
-            <p>🌱 AGROcore - Gestão Agrícola</p>
-          </body>
+        <body style="font-family: Arial; padding: 20px;">
+            <h2 style="color: #2d7a3a;">✅ AGROcore</h2>
+            <p>Seu e-mail está funcionando perfeitamente!</p>
+            <p>🌱 Você receberá relatórios automáticos em breve.</p>
+        </body>
         </html>
         """
         msg.attach(MIMEText(body, 'html'))
         
-        print(f"📧 6. Conectando ao servidor SMTP...")
-        
-        # Conectar ao Gmail
+        # Conectar e enviar
         server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.set_debuglevel(1)  # Isso vai mostrar TODOS os detalhes da conexão
         server.starttls()
-        
-        print(f"📧 7. Tentando login...")
         server.login(email_user, email_password)
-        
-        print(f"📧 8. Login bem sucedido!")
-        
-        print(f"📧 9. Enviando mensagem...")
         server.send_message(msg)
-        
-        print(f"📧 10. Fechando conexão...")
         server.quit()
         
-        print(f"✅ E-mail enviado com sucesso!")
+        print(f"✅ [THREAD] E-mail enviado para {destinatario}")
         
-        return jsonify({'success': True, 'mensagem': 'E-mail enviado com sucesso!'})
+    except Exception as e:
+        print(f"❌ [THREAD] Erro: {str(e)}")
+
+@app.route('/api/testar-email', methods=['POST'])
+def testar_email():
+    """Envia e-mail de teste de forma assíncrona (não trava)"""
+    try:
+        data = request.json
+        email = data['email']
+        
+        print(f"📧 Iniciando envio para: {email}")
+        
+        # Verificar credenciais
+        email_user = os.environ.get('EMAIL_USER')
+        email_password = os.environ.get('EMAIL_PASSWORD')
+        
+        if not email_user or not email_password:
+            return jsonify({'success': False, 'erro': 'Credenciais não configuradas'}), 500
+        
+        # Criar thread para enviar e-mail em segundo plano
+        thread = threading.Thread(target=enviar_email_async, args=(email,))
+        thread.daemon = True  # A thread morre quando o servidor morre
+        thread.start()
+        
+        # Responder imediatamente (não espera o e-mail ser enviado)
+        return jsonify({
+            'success': True, 
+            'mensagem': 'E-mail sendo enviado em segundo plano. Pode levar alguns segundos.'
+        })
     
     except Exception as e:
-        print(f"❌ ERRO DETALHADO: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erro: {str(e)}")
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 # ============================================
