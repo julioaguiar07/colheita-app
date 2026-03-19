@@ -587,40 +587,72 @@ def gerar_relatorio_diario_html(dados):
 scheduler = BackgroundScheduler()
 
 def verificar_e_enviar_relatorios():
-    """Verifica se há relatórios para enviar"""
+    """Verifica se há relatórios para enviar com dados REAIS"""
     with app.app_context():
+        global vendas, gastos, producoes  # ← IMPORTANTE!
+        
         agora = datetime.now()
         hora_atual = agora.strftime("%H:%M")
         
         print(f"⏰ [SCHEDULER] Verificando envios - {agora.strftime('%d/%m/%Y %H:%M')}")
-        print(f"📧 Configurações ativas: {len(configuracoes_email)}")
         
         for usuario_id, config in configuracoes_email.items():
             if not config.get('ativo', True):
                 continue
                 
-            print(f"⏰ Config: {config['email']} - Horário: {config['horario']} vs Atual: {hora_atual}")
-            
             if config['horario'] != hora_atual:
                 continue
             
-            print(f"✅ Vai enviar para {config['email']}")
+            # Buscar dados REAIS
+            hoje = agora.strftime('%Y-%m-%d')
+            ontem = (agora - timedelta(days=1)).strftime('%Y-%m-%d')
             
-            # Dados de exemplo
+            # Vendas
+            vendas_hoje = sum([v['total'] for v in vendas if v['data'] == hoje])
+            vendas_ontem = sum([v['total'] for v in vendas if v['data'] == ontem])
+            
+            # Gastos (gastos + produções)
+            gastos_hoje = sum([g['valor'] for g in gastos if g['data'] == hoje]) + \
+                          sum([p['total'] for p in producoes if p['data'] == hoje])
+            
+            # Média 30 dias
+            ultimos_30_dias = [(agora - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, 31)]
+            media_gastos_30 = sum([
+                sum([g['valor'] for g in gastos if g['data'] == dia]) + 
+                sum([p['total'] for p in producoes if p['data'] == dia]) 
+                for dia in ultimos_30_dias
+            ]) / 30 if ultimos_30_dias else 0
+            
+            # Variações
+            variacao_vendas = ((vendas_hoje - vendas_ontem) / vendas_ontem * 100) if vendas_ontem > 0 else 0
+            variacao_gastos = ((gastos_hoje - media_gastos_30) / media_gastos_30 * 100) if media_gastos_30 > 0 else 0
+            
+            # Destaque do dia
+            vendas_por_produto = {}
+            for v in vendas:
+                if v['data'] == hoje:
+                    vendas_por_produto[v['produto']] = vendas_por_produto.get(v['produto'], 0) + v['total']
+            
+            if vendas_por_produto:
+                destaque = max(vendas_por_produto, key=vendas_por_produto.get)
+                valor_destaque = vendas_por_produto[destaque]
+                destaque_texto = f'{destaque} (R$ {valor_destaque:,.2f})'
+            else:
+                destaque_texto = 'Nenhuma venda hoje'
+            
             dados = {
                 'data': agora.strftime('%d/%m/%Y'),
-                'vendas_hoje': 3240.50,
-                'gastos_hoje': 1150.00,
-                'variacao_vendas': 15.2,
-                'variacao_gastos': -8.5,
-                'destaque': 'Soja com margem de 42%'
+                'vendas_hoje': vendas_hoje,
+                'gastos_hoje': gastos_hoje,
+                'variacao_vendas': variacao_vendas,
+                'variacao_gastos': variacao_gastos,
+                'destaque': destaque_texto
             }
             
+            # Enviar relatório
             if 'diario' in config['frequencias']:
                 try:
                     html = gerar_relatorio_diario_html(dados)
-                    
-                    # Usar Resend (que já funcionou no teste)
                     resend.api_key = os.environ.get('RESEND_API_KEY')
                     r = resend.Emails.send({
                         "from": "onboarding@resend.dev",
