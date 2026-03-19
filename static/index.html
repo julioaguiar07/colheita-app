@@ -1271,6 +1271,118 @@ input::placeholder, textarea::placeholder {
   font-weight: 600;
   border: 1px solid rgba(255,255,255,0.2);
 }
+
+/* ===================== MARGEM POR CULTURA ===================== */
+.cultura-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cultura-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cultura-nome {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 80px;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+}
+
+.cultura-bar-wrap {
+  flex: 1;
+  height: 10px;
+  background: var(--surface-2);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.cultura-bar-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, var(--green-500), var(--green-700));
+  transition: width 0.3s ease;
+}
+
+.cultura-pct {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-primary);
+  width: 55px;
+  text-align: right;
+}
+
+.cultura-pct.positivo { color: var(--green-700); }
+.cultura-pct.negativo { color: var(--red-600); }
+
+/* ===================== NOVOS REGISTROS ===================== */
+.registro-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--border);
+}
+
+.registro-item:last-child {
+  border-bottom: none;
+}
+
+.registro-item:hover {
+  background: var(--surface-2);
+}
+
+.registro-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.registro-dot.producao { background: var(--green-500); }
+.registro-dot.venda { background: var(--blue-500); }
+.registro-dot.gasto { background: var(--red-500); }
+
+.registro-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.registro-tipo {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.registro-desc {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.registro-valor {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+}
+
+.registro-valor.positivo { color: var(--green-600); }
+.registro-valor.negativo { color: var(--red-600); }
 </style>
 </head>
 <body>
@@ -1361,7 +1473,25 @@ input::placeholder, textarea::placeholder {
         </div>
       </div>
     </div>
-
+    
+    <!-- GRÁFICO DE MARGEM POR CULTURA -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-title">
+        <div class="dot" style="background: var(--purple-600);"></div>
+        Margem por Cultura
+      </div>
+      
+      <!-- Container do gráfico que será preenchido via JavaScript -->
+      <div id="margem-cultura-container">
+        <div class="empty" style="padding: 30px; font-size: 0.82rem;">Carregando dados das culturas...</div>
+      </div>
+      
+      <!-- Insight gerado automaticamente -->
+      <div id="margem-insight" style="margin-top: 16px; padding: 12px 14px; background: var(--green-wash); border-radius: 10px; font-size: 13px; color: var(--green-deep); display: none;">
+        💡 <strong id="insight-melhor-cultura"></strong> tem a melhor margem. <span id="insight-recomendacao"></span>
+      </div>
+    </div>
+    
     <div class="card" style="margin-top: 0;">
       <div class="card-title">
         <div class="dot"></div>
@@ -1388,31 +1518,51 @@ input::placeholder, textarea::placeholder {
       </div>
     </div>
 
-    <div class="ultimos-grid">
-      <div class="ultimos-card">
-        <div class="ultimos-header">
-          <div class="ultimos-header-icon">🌾</div>
-          <h3>Últimas Produções</h3>
+    <!-- ÚLTIMOS REGISTROS (NOVO ESTILO) -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 20px;">
+      
+      <!-- Últimas Produções -->
+      <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <div style="padding: 16px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(34,136,58,0.12); color: var(--green-700); font-size: 0.9rem;">🌾</div>
+          <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin: 0;">Últimas Produções</h3>
         </div>
-        <div class="ultimos-lista" id="ultimas-producoes"><div class="empty" style="padding: 24px; font-size: 0.82rem;">Nenhum registro</div></div>
-        <div class="ultimos-ver-mais"><a href="#" onclick="showSection('producao', document.querySelectorAll('nav button')[4]); return false;">Ver todas →</a></div>
-      </div>
-      <div class="ultimos-card">
-        <div class="ultimos-header">
-          <div class="ultimos-header-icon" style="background: var(--blue-100);">💰</div>
-          <h3>Últimas Vendas</h3>
+        <div style="display: flex; flex-direction: column; padding: 8px 0;" id="ultimas-producoes-novo">
+          <div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>
         </div>
-        <div class="ultimos-lista" id="ultimas-vendas"><div class="empty" style="padding: 24px; font-size: 0.82rem;">Nenhum registro</div></div>
-        <div class="ultimos-ver-mais"><a href="#" onclick="showSection('vendas', document.querySelectorAll('nav button')[5]); return false;">Ver todas →</a></div>
-      </div>
-      <div class="ultimos-card">
-        <div class="ultimos-header">
-          <div class="ultimos-header-icon" style="background: var(--red-100);">💸</div>
-          <h3>Últimos Gastos</h3>
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface-2); text-align: center;">
+          <a href="#" onclick="showSection('producao', document.querySelectorAll('nav button')[4]); return false;" style="color: var(--green-700); text-decoration: none; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;">Ver todas →</a>
         </div>
-        <div class="ultimos-lista" id="ultimos-gastos"><div class="empty" style="padding: 24px; font-size: 0.82rem;">Nenhum registro</div></div>
-        <div class="ultimos-ver-mais"><a href="#" onclick="showSection('gastos', document.querySelectorAll('nav button')[6]); return false;">Ver todas →</a></div>
       </div>
+      
+      <!-- Últimas Vendas -->
+      <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <div style="padding: 16px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(37,99,235,0.12); color: var(--blue-600); font-size: 0.9rem;">💰</div>
+          <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin: 0;">Últimas Vendas</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; padding: 8px 0;" id="ultimas-vendas-novo">
+          <div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>
+        </div>
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface-2); text-align: center;">
+          <a href="#" onclick="showSection('vendas', document.querySelectorAll('nav button')[5]); return false;" style="color: var(--blue-600); text-decoration: none; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;">Ver todas →</a>
+        </div>
+      </div>
+      
+      <!-- Últimos Gastos -->
+      <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <div style="padding: 16px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(220,38,38,0.12); color: var(--red-600); font-size: 0.9rem;">💸</div>
+          <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; margin: 0;">Últimos Gastos</h3>
+        </div>
+        <div style="display: flex; flex-direction: column; padding: 8px 0;" id="ultimos-gastos-novo">
+          <div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>
+        </div>
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface-2); text-align: center;">
+          <a href="#" onclick="showSection('gastos', document.querySelectorAll('nav button')[6]); return false;" style="color: var(--red-600); text-decoration: none; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;">Ver todas →</a>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -2149,38 +2299,14 @@ function atualizarDashboard() {
   kpiLucro.textContent = formatMoney(lucro);
   kpiLucro.style.color = lucro >= 0 ? 'var(--green-700)' : 'var(--red-600)';
 
-  const ultimasProd = producoes.slice(0,5).map(p => `
-    <div class="ultimo-item">
-      <div class="ultimo-info">
-        <div class="ultimo-desc">${p.produto||''} · ${p.tipo||''}</div>
-        <div class="ultimo-detalhe">${formatarDataBR(p.data)} · ${p.area||'sem área'} · ${p.qtd||0} ${p.unidade||'un'}</div>
-      </div>
-      <div class="ultimo-valor prod">${formatMoney(p.total)}</div>
-    </div>`).join('') || '<div class="empty" style="padding:24px;font-size:0.82rem;">Nenhum registro</div>';
-
-  const ultimasVendas = vendas.slice(0,5).map(v => `
-    <div class="ultimo-item">
-      <div class="ultimo-info">
-        <div class="ultimo-desc">${v.produto||''} · ${v.cliente||'sem cliente'}</div>
-        <div class="ultimo-detalhe">${formatarDataBR(v.data)} · ${v.area||'sem área'} · ${v.qtd||0} ${v.unidade||''}</div>
-      </div>
-      <div class="ultimo-valor venda">${formatMoney(v.total)}</div>
-    </div>`).join('') || '<div class="empty" style="padding:24px;font-size:0.82rem;">Nenhum registro</div>';
-
-  const ultimosGastos = gastos.slice(0,5).map(g => `
-    <div class="ultimo-item">
-      <div class="ultimo-info">
-        <div class="ultimo-desc">${g.tipo||''} ${g.obs ? '· '+g.obs : ''}</div>
-        <div class="ultimo-detalhe">${formatarDataBR(g.data)} · ${g.produto ? g.produto+' · ':'' }${g.area||'sem área'}</div>
-      </div>
-      <div class="ultimo-valor gasto">${formatMoney(g.valor)}</div>
-    </div>`).join('') || '<div class="empty" style="padding:24px;font-size:0.82rem;">Nenhum registro</div>';
-
-  document.getElementById('ultimas-producoes').innerHTML = ultimasProd;
-  document.getElementById('ultimas-vendas').innerHTML = ultimasVendas;
-  document.getElementById('ultimos-gastos').innerHTML = ultimosGastos;
+  // As variáveis ultimasProd, ultimasVendas, ultimosGastos NÃO são mais usadas
+  // pois substituímos pelos novos componentes
 
   criarGraficos();
+  
+  // NOVAS CHAMADAS
+  atualizarMargemCultura();
+  atualizarUltimosRegistrosNovo();
 }
 
 // ============================================
@@ -2710,6 +2836,206 @@ function aplicarFiltroCategoria() {
         <td style="font-family:'DM Mono';font-size:0.82rem;">${r.qtd?r.qtd+' '+(r.unidade||''):'—'}</td>
         <td style="font-family:'DM Mono';font-weight:700;color:${r.cor};">${formatMoney(r.valor||r.total)}</td>
       </tr>`).join('');
+}
+
+// ============================================
+// GRÁFICO DE MARGEM POR CULTURA
+// ============================================
+function atualizarMargemCultura() {
+  const container = document.getElementById('margem-cultura-container');
+  if (!container) return;
+  
+  // Coletar todos os produtos com dados
+  const produtosSet = new Set();
+  (vendas || []).forEach(v => { if (v?.produto) produtosSet.add(v.produto); });
+  (producoes || []).forEach(p => { if (p?.produto) produtosSet.add(p.produto); });
+  
+  const produtos = Array.from(produtosSet).filter(p => p && p !== '');
+  
+  if (produtos.length === 0) {
+    container.innerHTML = '<div class="empty" style="padding: 30px; font-size: 0.82rem;">📭 Nenhuma cultura cadastrada</div>';
+    document.getElementById('margem-insight').style.display = 'none';
+    return;
+  }
+  
+  // Calcular margem por produto
+  const margens = produtos.map(produto => {
+    // Vendas totais do produto
+    const vendasTotal = (vendas || [])
+      .filter(v => v?.produto === produto)
+      .reduce((s, v) => s + (Number(v?.total) || 0), 0);
+    
+    // Custos totais (produção + gastos específicos)
+    const custosProd = (producoes || [])
+      .filter(p => p?.produto === produto)
+      .reduce((s, p) => s + (Number(p?.total) || 0), 0);
+    
+    const gastosProd = (gastos || [])
+      .filter(g => g?.produto === produto)
+      .reduce((s, g) => s + (Number(g?.valor) || 0), 0);
+    
+    const custosTotal = custosProd + gastosProd;
+    
+    // Margem percentual
+    const margem = vendasTotal > 0 ? ((vendasTotal - custosTotal) / vendasTotal * 100) : 0;
+    
+    return {
+      nome: produto,
+      vendas: vendasTotal,
+      custos: custosTotal,
+      margem: Math.max(0, margem), // Não mostrar margem negativa no gráfico
+      margemReal: (vendasTotal - custosTotal) / vendasTotal * 100
+    };
+  }).filter(m => m.vendas > 0); // Só mostrar produtos com vendas
+  
+  if (margens.length === 0) {
+    container.innerHTML = '<div class="empty" style="padding: 30px; font-size: 0.82rem;">📊 Venda algum produto para ver as margens</div>';
+    document.getElementById('margem-insight').style.display = 'none';
+    return;
+  }
+  
+  // Ordenar por margem (maior para menor)
+  margens.sort((a, b) => b.margem - a.margem);
+  
+  // Encontrar a maior margem para o insight
+  const melhor = margens[0];
+  
+  // Gerar HTML
+  let html = '<div class="cultura-rows">';
+  
+  margens.forEach(m => {
+    const largura = Math.min(100, Math.max(5, m.margem));
+    const corFundo = m.margem >= 30 ? 'var(--green-600)' : 
+                     m.margem >= 15 ? 'var(--green-500)' : 
+                     'var(--amber-500)';
+    
+    html += `
+      <div class="cultura-row">
+        <span class="cultura-nome">${m.nome}</span>
+        <div class="cultura-bar-wrap">
+          <div class="cultura-bar-fill" style="width: ${largura}%; background: ${corFundo};"></div>
+        </div>
+        <span class="cultura-pct ${m.margemReal >= 0 ? 'positivo' : 'negativo'}">
+          ${m.margemReal >= 0 ? '+' : ''}${m.margemReal.toFixed(1)}%
+        </span>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+  
+  // Atualizar insight
+  const insightEl = document.getElementById('margem-insight');
+  const melhorEl = document.getElementById('insight-melhor-cultura');
+  const recomendacaoEl = document.getElementById('insight-recomendacao');
+  
+  if (melhorEl && recomendacaoEl) {
+    melhorEl.textContent = melhor.nome;
+    
+    if (melhor.margemReal > 30) {
+      recomendacaoEl.textContent = `Excelente rentabilidade! Considere expandir a área plantada.`;
+    } else if (melhor.margemReal > 15) {
+      recomendacaoEl.textContent = `Boa margem. Mantenha o foco nessa cultura.`;
+    } else if (melhor.margemReal > 0) {
+      recomendacaoEl.textContent = `Margem positiva, mas pode melhorar. Revise os custos.`;
+    } else {
+      recomendacaoEl.textContent = `Está com margem negativa. Reveja urgentemente os custos ou preço de venda.`;
+      insightEl.style.background = 'rgba(220,38,38,0.08)';
+      insightEl.style.color = 'var(--red-600)';
+    }
+    
+    insightEl.style.display = 'block';
+  }
+}
+
+// ============================================
+// ATUALIZAR ÚLTIMOS REGISTROS (NOVO ESTILO)
+// ============================================
+function atualizarUltimosRegistrosNovo() {
+  // Produções
+  const prodContainer = document.getElementById('ultimas-producoes-novo');
+  if (prodContainer) {
+    const recentes = producoes.slice(0, 5);
+    if (recentes.length === 0) {
+      prodContainer.innerHTML = '<div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>';
+    } else {
+      prodContainer.innerHTML = recentes.map(p => `
+        <div class="registro-item">
+          <div class="registro-dot producao"></div>
+          <div class="registro-info">
+            <div class="registro-tipo">PRODUÇÃO · ${formatarDataRelativa(p.data)}</div>
+            <div class="registro-desc">${p.produto || ''} — ${p.qtd || 0} ${p.unidade || 'un'}</div>
+          </div>
+          <span class="registro-valor negativo">-${formatMoney(p.total).replace('R$', 'R$')}</span>
+        </div>
+      `).join('');
+    }
+  }
+  
+  // Vendas
+  const vendasContainer = document.getElementById('ultimas-vendas-novo');
+  if (vendasContainer) {
+    const recentes = vendas.slice(0, 5);
+    if (recentes.length === 0) {
+      vendasContainer.innerHTML = '<div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>';
+    } else {
+      vendasContainer.innerHTML = recentes.map(v => `
+        <div class="registro-item">
+          <div class="registro-dot venda"></div>
+          <div class="registro-info">
+            <div class="registro-tipo">VENDA · ${formatarDataRelativa(v.data)}</div>
+            <div class="registro-desc">${v.produto || ''} — ${v.qtd || 0} ${v.unidade || ''}</div>
+          </div>
+          <span class="registro-valor positivo">+${formatMoney(v.total).replace('R$', 'R$')}</span>
+        </div>
+      `).join('');
+    }
+  }
+  
+  // Gastos
+  const gastosContainer = document.getElementById('ultimos-gastos-novo');
+  if (gastosContainer) {
+    const recentes = gastos.slice(0, 5);
+    if (recentes.length === 0) {
+      gastosContainer.innerHTML = '<div class="empty" style="padding: 24px; font-size: 0.82rem; text-align: center; color: var(--text-muted);">Nenhum registro</div>';
+    } else {
+      gastosContainer.innerHTML = recentes.map(g => `
+        <div class="registro-item">
+          <div class="registro-dot gasto"></div>
+          <div class="registro-info">
+            <div class="registro-tipo">${(g.categoria || 'DESPESA').toUpperCase()} · ${formatarDataRelativa(g.data)}</div>
+            <div class="registro-desc">${g.tipo || ''} ${g.obs ? '— ' + g.obs : ''}</div>
+          </div>
+          <span class="registro-valor negativo">-${formatMoney(g.valor).replace('R$', 'R$')}</span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+// ============================================
+// FORMATAR DATA RELATIVA (hoje, ontem, etc)
+// ============================================
+function formatarDataRelativa(dataStr) {
+  if (!dataStr) return '';
+  
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  
+  const ontem = new Date(hoje);
+  ontem.setDate(ontem.getDate() - 1);
+  
+  const data = new Date(dataStr + 'T12:00:00');
+  data.setHours(0, 0, 0, 0);
+  
+  if (data.getTime() === hoje.getTime()) return 'hoje';
+  if (data.getTime() === ontem.getTime()) return 'ontem';
+  
+  const diff = Math.floor((hoje - data) / (1000 * 60 * 60 * 24));
+  if (diff < 7) return `${diff} dias atrás`;
+  
+  return formatarDataBR(dataStr);
 }
 </script>
 </body>
