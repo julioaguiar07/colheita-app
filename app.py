@@ -9,13 +9,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import json
 
-# ============================================
-# DEBUG - VERIFICAR CREDENCIAIS (REMOVER DEPOIS)
-# ============================================
-print(f"📧 EMAIL_USER: {os.environ.get('EMAIL_USER', 'NÃO CONFIGURADO')}")
-print(f"📧 EMAIL_PASSWORD: {'CONFIGURADA' if os.environ.get('EMAIL_PASSWORD') else 'NÃO CONFIGURADA'}")
-print(f"📧 EMAIL_PASSWORD length: {len(os.environ.get('EMAIL_PASSWORD', ''))}")
-
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -415,41 +408,86 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 def enviar_email_async(destinatario):
-    """Função que envia e-mail em segundo plano (não trava o servidor)"""
+    """Função que envia e-mail em segundo plano com debug completo"""
     try:
         print(f"📧 [THREAD] Iniciando envio para {destinatario}")
+        print(f"📧 [THREAD] Hora: {datetime.now().strftime('%H:%M:%S')}")
         
         email_user = os.environ.get('EMAIL_USER')
         email_password = os.environ.get('EMAIL_PASSWORD')
         
-        # Criar mensagem
-        msg = MIMEMultipart()
+        print(f"📧 [THREAD] Email user: {email_user}")
+        print(f"📧 [THREAD] Senha configurada: {'Sim' if email_password else 'Não'}")
+        print(f"📧 [THREAD] Tamanho da senha: {len(email_password) if email_password else 0}")
+        
+        # Criar mensagem SIMPLES (sem HTML)
+        import smtplib
+        from email.mime.text import MIMEText
+        
+        msg = MIMEText("Teste do AGROcore - versão simples")
+        msg['Subject'] = "🌱 Teste AGROcore"
         msg['From'] = email_user
         msg['To'] = destinatario
-        msg['Subject'] = "🌱 AGROcore - Teste"
         
-        body = """
-        <html>
-        <body style="font-family: Arial; padding: 20px;">
-            <h2 style="color: #2d7a3a;">✅ AGROcore</h2>
-            <p>Seu e-mail está funcionando perfeitamente!</p>
-            <p>🌱 Você receberá relatórios automáticos em breve.</p>
-        </body>
-        </html>
-        """
-        msg.attach(MIMEText(body, 'html'))
+        print(f"📧 [THREAD] Conectando ao servidor SMTP...")
         
-        # Conectar e enviar
+        # Conectar ao Gmail
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.set_debuglevel(2)  # Isso vai mostrar TODOS os detalhes da comunicação
+        server.starttls()
+        
+        print(f"📧 [THREAD] Tentando login...")
+        server.login(email_user, email_password)
+        
+        print(f"📧 [THREAD] Login OK! Enviando mensagem...")
+        server.send_message(msg)
+        
+        print(f"📧 [THREAD] Mensagem enviada! Fechando conexão...")
+        server.quit()
+        
+        print(f"✅ [THREAD] E-mail enviado com sucesso para {destinatario}")
+        
+        # Tentar enviar um segundo e-mail como confirmação
+        try:
+            import requests
+            requests.post('https://api.telegram.org/botSEU_TOKEN/sendMessage', 
+                         json={'chat_id': 'SEU_ID', 'text': f'E-mail enviado para {destinatario}'})
+        except:
+            pass
+            
+    except Exception as e:
+        print(f"❌ [THREAD] ERRO DETALHADO: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
+@app.route('/api/testar-email-simples', methods=['GET'])
+def testar_email_simples():
+    """Rota de teste GET para verificar configuração"""
+    try:
+        email_user = os.environ.get('EMAIL_USER')
+        email_password = os.environ.get('EMAIL_PASSWORD')
+        
+        resultado = {
+            'email_user': email_user,
+            'senha_configurada': bool(email_password),
+            'tamanho_senha': len(email_password) if email_password else 0,
+            'status': 'Verificando...'
+        }
+        
+        # Testar conexão SMTP
+        import smtplib
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(email_user, email_password)
-        server.send_message(msg)
         server.quit()
         
-        print(f"✅ [THREAD] E-mail enviado para {destinatario}")
+        resultado['status'] = 'Conexão SMTP OK!'
+        
+        return jsonify(resultado)
         
     except Exception as e:
-        print(f"❌ [THREAD] Erro: {str(e)}")
+        return jsonify({'erro': str(e), 'detalhes': resultado}), 500
+
 
 @app.route('/api/testar-email', methods=['POST'])
 def testar_email():
