@@ -640,7 +640,7 @@ def enviar_email_sendgrid(destinatario, assunto, html_content):
             return False
         
         message = Mail(
-            from_email='noreply@agrocore.com',
+            from_email='julioaguiar05@gmail.com',
             to_emails=destinatario,
             subject=assunto,
             html_content=html_content
@@ -701,7 +701,7 @@ def testar_email():
             }), 500
         
         # Use SEU PRÓPRIO E-MAIL VERIFICADO como remetente
-        from_email = 'julioaguiar05@gmail.com'  # ← USE SEU E-MAIL AQUI
+        from_email = 'julioaguiar05@gmail.com' 
         
         # Criar conteúdo HTML do e-mail
         html_content = """
