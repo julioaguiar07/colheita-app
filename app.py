@@ -4,9 +4,26 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from datetime import datetime, timedelta
+from flask_mail import Mail, Message
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+import json
+
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
+
+# ============================================
+# CONFIGURAÇÃO DO E-MAIL
+# ============================================
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER', '')  # Será configurado no Railway
+app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASSWORD', '')  # Será configurado no Railway
+app.config['MAIL_DEFAULT_SENDER'] = app.config['MAIL_USERNAME']
+
+mail = Mail(app)
 
 # Configuração do banco de dados
 def get_db_connection():
@@ -96,7 +113,7 @@ def criar_tabelas():
             conn.close()
 
 # Rota para criar as tabelas manualmente
-@app.route('/init-db')
+('/init-db')
 def init_db():
     if criar_tabelas():
         return "✅ Banco de dados inicializado com sucesso! <a href='/'>Voltar</a>"
@@ -309,6 +326,8 @@ def add_produto_column():
         return f"<h1 style='color: red;'>❌ Erro: {str(e)}</h1>"
 
 
+
+
 @app.route('/verificar-coluna-produto')
 def verificar_coluna():
     try:
@@ -349,6 +368,232 @@ def verificar_coluna():
             """
     except Exception as e:
         return f"<h1>❌ Erro: {str(e)}</h1>"
+
+# ============================================
+# ARMAZENAMENTO DAS CONFIGURAÇÕES DE E-MAIL
+# ============================================
+# Em produção, use o banco de dados. Por enquanto, usaremos um dicionário
+configuracoes_email = {}
+
+# ============================================
+# ROTAS DE E-MAIL
+# ============================================
+
+@app.route('/api/config-email', methods=['POST'])
+def config_email():
+    """Salva as configurações de e-mail do usuário"""
+    try:
+        data = request.json
+        usuario_id = request.remote_addr  # IP como identificador (simplificado)
+        
+        configuracoes_email[usuario_id] = {
+            'email': data['email'],
+            'frequencias': data['frequencias'],
+            'horario': data['horario'],
+            'conteudo': data.get('conteudo', {
+                'vendas': True,
+                'gastos': True,
+                'producao': True,
+                'destaques': True
+            }),
+            'ativo': True
+        }
+        
+        return jsonify({'success': True, 'mensagem': 'Configurações salvas com sucesso!'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'erro': str(e)}), 500
+
+@app.route('/api/testar-email', methods=['POST'])
+def testar_email():
+    """Envia um e-mail de teste"""
+    try:
+        data = request.json
+        email = data['email']
+        
+        msg = Message(
+            subject="🔔 AGROcore - Teste de Configuração",
+            recipients=[email],
+            html=gerar_email_teste()
+        )
+        
+        mail.send(msg)
+        
+        return jsonify({'success': True, 'mensagem': 'E-mail enviado com sucesso!'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'erro': str(e)}), 500
+
+# ============================================
+# GERADORES DE RELATÓRIOS EM HTML
+# ============================================
+
+def gerar_email_teste():
+    """Gera e-mail de teste em HTML"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #052e10, #155523); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🌱 AGROcore</h1>
+            </div>
+            <div class="content">
+                <h2>✅ Configuração realizada com sucesso!</h2>
+                <p>Olá,</p>
+                <p>Este é um e-mail de teste do <strong>AGROcore</strong>. Sua configuração está funcionando perfeitamente!</p>
+                
+                <div class="success">
+                    <strong>📊 Você receberá relatórios conforme sua configuração.</strong>
+                </div>
+                
+                <p>Em breve você começará a receber os relatórios no horário agendado.</p>
+                
+                <p>Atenciosamente,<br><strong>Equipe AGROcore</strong></p>
+            </div>
+            <div class="footer">
+                <p>© 2026 AGROcore - Este é um e-mail automático.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+def gerar_relatorio_diario_html(dados):
+    """Gera relatório diário em HTML"""
+    
+    cor_vendas = '#28a745' if dados.get('variacao_vendas', 0) >= 0 else '#dc3545'
+    seta_vendas = '▲' if dados.get('variacao_vendas', 0) >= 0 else '▼'
+    
+    cor_gastos = '#28a745' if dados.get('variacao_gastos', 0) <= 0 else '#dc3545'
+    seta_gastos = '▼' if dados.get('variacao_gastos', 0) <= 0 else '▲'
+    
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #052e10, #155523); color: white; padding: 25px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ background: #ffffff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 10px 10px; }}
+            .kpi-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }}
+            .kpi-card {{ background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #155523; }}
+            .kpi-label {{ font-size: 12px; color: #666; text-transform: uppercase; }}
+            .kpi-value {{ font-size: 24px; font-weight: bold; margin: 5px 0; }}
+            .positivo {{ color: #28a745; }}
+            .negativo {{ color: #dc3545; }}
+            .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🌱 AGROcore</h1>
+                <p>Resumo Diário - {dados.get('data', '')}</p>
+            </div>
+            <div class="content">
+                
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">💰 Vendas Hoje</div>
+                        <div class="kpi-value">R$ {dados.get('vendas_hoje', 0):,.2f}</div>
+                        <div class="{ 'positivo' if dados.get('variacao_vendas', 0) >= 0 else 'negativo' }">
+                            {seta_vendas} {abs(dados.get('variacao_vendas', 0)):.1f}% vs ontem
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-label">💸 Gastos Hoje</div>
+                        <div class="kpi-value">R$ {dados.get('gastos_hoje', 0):,.2f}</div>
+                        <div class="{ 'positivo' if dados.get('variacao_gastos', 0) <= 0 else 'negativo' }">
+                            {seta_gastos} {abs(dados.get('variacao_gastos', 0)):.1f}% vs média
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    🌟 <strong>Destaque:</strong> {dados.get('destaque', 'Soja com margem de 42%')}
+                </div>
+                
+                <p style="text-align: center; margin-top: 30px;">
+                    <a href="https://aguiar.up.railway.app" style="background: #155523; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                        Acessar o Sistema →
+                    </a>
+                </p>
+            </div>
+            <div class="footer">
+                <p>© 2026 AGROcore - Relatório automático</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+
+# ============================================
+# AGENDADOR DE RELATÓRIOS
+# ============================================
+scheduler = BackgroundScheduler()
+
+def verificar_e_enviar_relatorios():
+    """Verifica se há relatórios para enviar"""
+    with app.app_context():
+        agora = datetime.now()
+        hora_atual = agora.strftime("%H:%M")
+        
+        for usuario_id, config in configuracoes_email.items():
+            if not config.get('ativo', True):
+                continue
+                
+            if config['horario'] != hora_atual:
+                continue
+            
+            # Dados de exemplo (depois você vai buscar do banco)
+            dados = {
+                'data': agora.strftime('%d/%m/%Y'),
+                'vendas_hoje': 3240.50,
+                'gastos_hoje': 1150.00,
+                'variacao_vendas': 15.2,
+                'variacao_gastos': -8.5,
+                'destaque': 'Soja com margem de 42%'
+            }
+            
+            # Enviar relatório diário
+            if 'diario' in config['frequencias']:
+                try:
+                    msg = Message(
+                        subject="🌱 AGROcore - Resumo Diário",
+                        recipients=[config['email']],
+                        html=gerar_relatorio_diario_html(dados)
+                    )
+                    mail.send(msg)
+                    print(f"[EMAIL] Relatório diário enviado para {config['email']}")
+                except Exception as e:
+                    print(f"[EMAIL] Erro ao enviar: {e}")
+
+# Iniciar o agendador
+scheduler.add_job(
+    func=verificar_e_enviar_relatorios,
+    trigger="interval",
+    minutes=1,  # Verificar a cada minuto
+    id="verificar_envios_email"
+)
+scheduler.start()
+
+# Parar o agendador quando a aplicação parar
+atexit.register(lambda: scheduler.shutdown())
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
