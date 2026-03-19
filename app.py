@@ -8,6 +8,8 @@ from flask_mail import Mail, Message
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import json
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -460,66 +462,6 @@ def enviar_email_async(destinatario):
         import traceback
         traceback.print_exc()
 
-@app.route('/api/testar-email-simples', methods=['GET'])
-def testar_email_simples():
-    """Rota de teste GET para verificar configuração"""
-    try:
-        email_user = os.environ.get('EMAIL_USER')
-        email_password = os.environ.get('EMAIL_PASSWORD')
-        
-        resultado = {
-            'email_user': email_user,
-            'senha_configurada': bool(email_password),
-            'tamanho_senha': len(email_password) if email_password else 0,
-            'status': 'Verificando...'
-        }
-        
-        # Testar conexão SMTP
-        import smtplib
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(email_user, email_password)
-        server.quit()
-        
-        resultado['status'] = 'Conexão SMTP OK!'
-        
-        return jsonify(resultado)
-        
-    except Exception as e:
-        return jsonify({'erro': str(e), 'detalhes': resultado}), 500
-
-
-@app.route('/api/testar-email', methods=['POST'])
-def testar_email():
-    """Envia e-mail de teste de forma assíncrona (não trava)"""
-    try:
-        data = request.json
-        email = data['email']
-        
-        print(f"📧 Iniciando envio para: {email}")
-        
-        # Verificar credenciais
-        email_user = os.environ.get('EMAIL_USER')
-        email_password = os.environ.get('EMAIL_PASSWORD')
-        
-        if not email_user or not email_password:
-            return jsonify({'success': False, 'erro': 'Credenciais não configuradas'}), 500
-        
-        # Criar thread para enviar e-mail em segundo plano
-        thread = threading.Thread(target=enviar_email_async, args=(email,))
-        thread.daemon = True  # A thread morre quando o servidor morre
-        thread.start()
-        
-        # Responder imediatamente (não espera o e-mail ser enviado)
-        return jsonify({
-            'success': True, 
-            'mensagem': 'E-mail sendo enviado em segundo plano. Pode levar alguns segundos.'
-        })
-    
-    except Exception as e:
-        print(f"❌ Erro: {str(e)}")
-        return jsonify({'success': False, 'erro': str(e)}), 500
-
 # ============================================
 # GERADORES DE RELATÓRIOS EM HTML
 # ============================================
@@ -666,18 +608,13 @@ def verificar_e_enviar_relatorios():
                 'destaque': 'Soja com margem de 42%'
             }
             
-            # Enviar relatório diário
             if 'diario' in config['frequencias']:
-                try:
-                    msg = Message(
-                        subject="🌱 AGROcore - Resumo Diário",
-                        recipients=[config['email']],
-                        html=gerar_relatorio_diario_html(dados)
-                    )
-                    mail.send(msg)
-                    print(f"[EMAIL] Relatório diário enviado para {config['email']}")
-                except Exception as e:
-                    print(f"[EMAIL] Erro ao enviar: {e}")
+                html = gerar_relatorio_diario_html(dados)
+                enviar_email_sendgrid(
+                    config['email'],
+                    "🌱 AGROcore - Resumo Diário",
+                    html
+                )
 
 # Iniciar o agendador
 scheduler.add_job(
@@ -690,7 +627,135 @@ scheduler.start()
 
 # Parar o agendador quando a aplicação parar
 atexit.register(lambda: scheduler.shutdown())
+# ============================================
+# FUNÇÃO PARA ENVIAR E-MAIL COM SENDGRID
+# ============================================
+def enviar_email_sendgrid(destinatario, assunto, html_content):
+    """Envia e-mail usando SendGrid (não trava o servidor)"""
+    try:
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        
+        if not sendgrid_key:
+            print("❌ SENDGRID_API_KEY não configurada")
+            return False
+        
+        message = Mail(
+            from_email='noreply@agrocore.com',
+            to_emails=destinatario,
+            subject=assunto,
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ E-mail enviado para {destinatario}")
+            return True
+        else:
+            print(f"❌ Erro {response.status_code} ao enviar e-mail")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {str(e)}")
+        return False
 
+# ============================================
+# NOVAS ROTAS DE E-MAIL (SUBSTITUA AS ATUAIS)
+# ============================================
+
+@app.route('/api/testar-email', methods=['POST'])
+def testar_email():
+    """Envia e-mail de teste usando SendGrid"""
+    try:
+        data = request.json
+        email = data['email']
+        
+        print(f"📧 Enviando e-mail de teste para: {email}")
+        
+        # Verificar se SendGrid está configurado
+        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+        if not sendgrid_key:
+            return jsonify({
+                'success': False, 
+                'erro': 'SendGrid não configurado. Adicione SENDGRID_API_KEY no Railway.'
+            }), 500
+        
+        # Criar conteúdo HTML do e-mail
+        html_content = """
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #052e10, #155523); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🌱 AGROcore</h1>
+                </div>
+                <div class="content">
+                    <h2>✅ Configuração realizada com sucesso!</h2>
+                    <p>Olá,</p>
+                    <p>Este é um e-mail de teste do <strong>AGROcore</strong>. Sua configuração está funcionando perfeitamente!</p>
+                    <div class="success">
+                        <strong>📊 Agora você pode configurar relatórios diários, semanais ou mensais.</strong>
+                    </div>
+                    <p>Atenciosamente,<br><strong>Equipe AGROcore</strong></p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Enviar e-mail
+        message = Mail(
+            from_email='noreply@agrocore.com',
+            to_emails=email,
+            subject='🌱 AGROcore - Teste de Configuração',
+            html_content=html_content
+        )
+        
+        sg = SendGridAPIClient(sendgrid_key)
+        response = sg.send(message)
+        
+        if response.status_code in [200, 201, 202]:
+            print(f"✅ E-mail de teste enviado para {email}")
+            return jsonify({
+                'success': True, 
+                'mensagem': 'E-mail de teste enviado! Verifique sua caixa de entrada.'
+            })
+        else:
+            print(f"❌ Erro {response.status_code} ao enviar e-mail")
+            return jsonify({
+                'success': False, 
+                'erro': f'Erro {response.status_code} ao enviar e-mail'
+            }), 500
+            
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {str(e)}")
+        return jsonify({'success': False, 'erro': str(e)}), 500
+
+@app.route('/api/verificar-email', methods=['GET'])
+def verificar_email():
+    """Verifica configuração do SendGrid"""
+    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+    
+    if sendgrid_key:
+        return jsonify({
+            'status': 'OK',
+            'mensagem': 'SendGrid configurado',
+            'key_prefix': sendgrid_key[:10] + '...'
+        })
+    else:
+        return jsonify({
+            'status': 'ERRO',
+            'mensagem': 'SENDGRID_API_KEY não encontrada no Railway'
+        }), 500
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
