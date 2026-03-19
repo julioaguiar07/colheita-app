@@ -610,11 +610,17 @@ def verificar_e_enviar_relatorios():
             
             if 'diario' in config['frequencias']:
                 html = gerar_relatorio_diario_html(dados)
-                enviar_email_sendgrid(
-                    config['email'],
-                    "🌱 AGROcore - Resumo Diário",
-                    html
-                )
+                try:
+                    resend.api_key = os.environ.get('RESEND_API_KEY')
+                    resend.Emails.send({
+                        "from": "onboarding@resend.dev",
+                        "to": config['email'],
+                        "subject": "🌱 AGROcore - Resumo Diário",
+                        "html": html
+                    })
+                    print(f"[EMAIL] Relatório diário enviado para {config['email']}")
+                except Exception as e:
+                    print(f"[EMAIL] Erro ao enviar: {e}")
 
 # Iniciar o agendador
 scheduler.add_job(
@@ -683,112 +689,97 @@ def diagnostico_email():
     
     return jsonify(resultado)
 
+import resend
+
 @app.route('/api/testar-email', methods=['POST'])
 def testar_email():
-    """Envia e-mail de teste usando SendGrid"""
+    """Envia e-mail usando Resend (funciona no Railway)"""
     try:
         data = request.json
         email = data['email']
         
-        print(f"📧 Enviando e-mail de teste para: {email}")
+        print(f"📧 Enviando e-mail via Resend para: {email}")
         
-        # Verificar se SendGrid está configurado
-        sendgrid_key = os.environ.get('SENDGRID_API_KEY')
-        if not sendgrid_key:
+        # Pegar API Key do ambiente
+        resend_api_key = os.environ.get('RESEND_API_KEY')
+        if not resend_api_key:
             return jsonify({
                 'success': False, 
-                'erro': 'SendGrid não configurado. Adicione SENDGRID_API_KEY no Railway.'
+                'erro': 'Resend não configurado. Adicione RESEND_API_KEY no Railway.'
             }), 500
         
-        # Use SEU PRÓPRIO E-MAIL VERIFICADO como remetente
-        from_email = 'julioaguiar05@gmail.com' 
+        # Configurar a API key
+        resend.api_key = resend_api_key
         
-        # Criar conteúdo HTML do e-mail
-        html_content = """
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: linear-gradient(135deg, #052e10, #155523); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-                .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🌱 AGROcore</h1>
-                </div>
-                <div class="content">
-                    <h2>✅ Configuração realizada com sucesso!</h2>
-                    <p>Olá,</p>
-                    <p>Este é um e-mail de teste do <strong>AGROcore</strong>. Sua configuração está funcionando perfeitamente!</p>
-                    <div class="success">
-                        <strong>📊 Agora você pode configurar relatórios diários, semanais ou mensais.</strong>
+        # Enviar e-mail exatamente como no exemplo deles
+        r = resend.Emails.send({
+            "from": "onboarding@resend.dev",  # E-mail padrão do Resend
+            "to": email,
+            "subject": "🌱 AGROcore - Teste de Configuração",
+            "html": """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #052e10, #155523); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                    .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🌱 AGROcore</h1>
                     </div>
-                    <p>Atenciosamente,<br><strong>Equipe AGROcore</strong></p>
+                    <div class="content">
+                        <h2>✅ Configuração realizada com sucesso!</h2>
+                        <p>Olá,</p>
+                        <p>Este é um e-mail de teste do <strong>AGROcore</strong>. Sua configuração está funcionando perfeitamente!</p>
+                        
+                        <div class="success">
+                            <strong>📊 Agora você pode configurar relatórios diários, semanais ou mensais.</strong>
+                        </div>
+                        
+                        <p>Agora é só usar o sistema!</p>
+                        
+                        <p>Atenciosamente,<br><strong>Equipe AGROcore</strong></p>
+                    </div>
                 </div>
-            </div>
-        </body>
-        </html>
-        """
+            </body>
+            </html>
+            """
+        })
         
-        # Enviar e-mail
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail
+        print(f"✅ E-mail enviado! Resposta: {r}")
         
-        message = Mail(
-            from_email=from_email,  # ← AGORA USA SEU E-MAIL VERIFICADO
-            to_emails=email,
-            subject='🌱 AGROcore - Teste de Configuração',
-            html_content=html_content
-        )
+        return jsonify({
+            'success': True, 
+            'mensagem': 'E-mail de teste enviado! Verifique sua caixa de entrada.'
+        })
         
-        sg = SendGridAPIClient(sendgrid_key)
-        response = sg.send(message)
-        
-        print(f"📧 Status Code: {response.status_code}")
-        print(f"📧 Headers: {response.headers}")
-        
-        if response.status_code in [200, 201, 202]:
-            print(f"✅ E-mail de teste enviado para {email}")
-            return jsonify({
-                'success': True, 
-                'mensagem': 'E-mail de teste enviado! Verifique sua caixa de entrada.'
-            })
-        else:
-            print(f"❌ Erro {response.status_code} ao enviar e-mail")
-            return jsonify({
-                'success': False, 
-                'erro': f'Erro {response.status_code} ao enviar e-mail'
-            }), 500
-            
     except Exception as e:
-        print(f"❌ Erro detalhado: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erro: {str(e)}")
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 @app.route('/api/verificar-email', methods=['GET'])
 def verificar_email():
-    """Verifica configuração do SendGrid"""
-    sendgrid_key = os.environ.get('SENDGRID_API_KEY')
+    """Verifica configuração do Resend"""
+    resend_key = os.environ.get('RESEND_API_KEY')
     
-    if sendgrid_key:
+    if resend_key:
         return jsonify({
             'status': 'OK',
-            'mensagem': 'SendGrid configurado',
-            'key_prefix': sendgrid_key[:10] + '...'
+            'mensagem': 'Resend configurado',
+            'key_prefix': resend_key[:10] + '...'
         })
     else:
         return jsonify({
             'status': 'ERRO',
-            'mensagem': 'SENDGRID_API_KEY não encontrada no Railway'
+            'mensagem': 'RESEND_API_KEY não encontrada no Railway'
         }), 500
-if __name__ == '__main__':
-    print("🔄 Inicializando banco de dados...")
-    criar_tabelas()
     
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
