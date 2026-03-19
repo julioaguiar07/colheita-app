@@ -384,44 +384,73 @@ def config_email():
     """Salva as configurações de e-mail do usuário"""
     try:
         data = request.json
-        usuario_id = request.remote_addr  # IP como identificador (simplificado)
+        usuario_id = request.remote_addr
         
+        # Log para debug
+        print(f"📧 Configuração recebida: {data}")
+        
+        # Salvar em memória (simples)
         configuracoes_email[usuario_id] = {
             'email': data['email'],
             'frequencias': data['frequencias'],
             'horario': data['horario'],
-            'conteudo': data.get('conteudo', {
-                'vendas': True,
-                'gastos': True,
-                'producao': True,
-                'destaques': True
-            }),
             'ativo': True
         }
         
-        return jsonify({'success': True, 'mensagem': 'Configurações salvas com sucesso!'})
+        return jsonify({'success': True, 'mensagem': 'Configurações salvas!'})
     
     except Exception as e:
+        print(f"❌ Erro ao salvar: {e}")
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 @app.route('/api/testar-email', methods=['POST'])
 def testar_email():
-    """Envia um e-mail de teste"""
+    """Envia um e-mail de teste usando variáveis de ambiente"""
     try:
         data = request.json
         email = data['email']
         
+        print(f"📧 Tentando enviar e-mail para: {email}")
+        
+        # Pegar configurações do ambiente
+        email_user = os.environ.get('EMAIL_USER')
+        email_password = os.environ.get('EMAIL_PASSWORD')
+        
+        if not email_user or not email_password:
+            return jsonify({
+                'success': False, 
+                'erro': 'E-mail não configurado no servidor'
+            }), 500
+        
+        # Configurar e-mail
+        app.config['MAIL_USERNAME'] = email_user
+        app.config['MAIL_PASSWORD'] = email_password
+        app.config['MAIL_DEFAULT_SENDER'] = email_user
+        
+        # Mensagem simples (sem HTML para evitar problemas)
         msg = Message(
-            subject="🔔 AGROcore - Teste de Configuração",
+            subject="🌱 AGROcore - Teste",
             recipients=[email],
-            html=gerar_email_teste()
+            body=f"""Olá!
+
+Este é um e-mail de teste do AGROcore.
+
+✅ Configuração funcionando perfeitamente!
+
+Você receberá relatórios conforme agendado.
+
+--- 
+🌱 AGROcore - Gestão Agrícola"""
         )
         
+        # Enviar
         mail.send(msg)
+        print(f"✅ E-mail enviado com sucesso para {email}")
         
-        return jsonify({'success': True, 'mensagem': 'E-mail enviado com sucesso!'})
+        return jsonify({'success': True, 'mensagem': 'E-mail enviado!'})
     
     except Exception as e:
+        print(f"❌ Erro detalhado: {str(e)}")
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 # ============================================
