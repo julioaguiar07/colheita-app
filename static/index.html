@@ -2279,7 +2279,35 @@ function atualizarTudo() {
 
 function formatarDataBR(dataStr) {
   if (!dataStr) return '';
-  try { const [ano,mes,dia] = dataStr.split('-'); return `${dia}/${mes}/${ano}`; } catch { return dataStr; }
+  
+  // Se já estiver no formato dd/mm/aaaa, retorna como está
+  if (typeof dataStr === 'string' && dataStr.includes('/')) {
+    return dataStr;
+  }
+  
+  // Se for uma string ISO (yyyy-mm-dd)
+  if (typeof dataStr === 'string' && dataStr.includes('-')) {
+    const partes = dataStr.split('-');
+    if (partes.length === 3) {
+      // Retorna dd/mm/aaaa sem passar pelo objeto Date
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+  }
+  
+  // Tentar converter outros formatos
+  try {
+    // Remover qualquer informação de fuso horário
+    const dataLimpa = dataStr.replace(/\s.*$/, '').split('T')[0];
+    
+    if (dataLimpa.includes('-')) {
+      const partes = dataLimpa.split('-');
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+  } catch (e) {
+    console.error('Erro ao formatar data:', e);
+  }
+  
+  return dataStr;
 }
 
 // ============================================
@@ -2973,7 +3001,7 @@ function atualizarUltimosRegistrosNovo() {
     }
   }
   
-  // Vendas
+  // Vendas (similar)
   const vendasContainer = document.getElementById('ultimas-vendas-novo');
   if (vendasContainer) {
     const recentes = vendas.slice(0, 5);
@@ -2993,7 +3021,7 @@ function atualizarUltimosRegistrosNovo() {
     }
   }
   
-  // Gastos
+  // Gastos (similar)
   const gastosContainer = document.getElementById('ultimos-gastos-novo');
   if (gastosContainer) {
     const recentes = gastos.slice(0, 5);
@@ -3020,19 +3048,35 @@ function atualizarUltimosRegistrosNovo() {
 function formatarDataRelativa(dataStr) {
   if (!dataStr) return '';
   
+  // Usar a mesma lógica segura da formatarDataBR
+  let dataObj;
+  
+  if (typeof dataStr === 'string' && dataStr.includes('-')) {
+    // Criar data no formato yyyy, mm-1, dd sem timezone
+    const [ano, mes, dia] = dataStr.split('-');
+    dataObj = new Date(ano, mes-1, dia);
+  } else {
+    dataObj = new Date(dataStr);
+  }
+  
+  // Verificar se a data é válida
+  if (isNaN(dataObj.getTime())) {
+    return formatarDataBR(dataStr);
+  }
+  
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   
   const ontem = new Date(hoje);
   ontem.setDate(ontem.getDate() - 1);
   
-  const data = new Date(dataStr + 'T12:00:00');
-  data.setHours(0, 0, 0, 0);
+  const dataComp = new Date(dataObj);
+  dataComp.setHours(0, 0, 0, 0);
   
-  if (data.getTime() === hoje.getTime()) return 'hoje';
-  if (data.getTime() === ontem.getTime()) return 'ontem';
+  if (dataComp.getTime() === hoje.getTime()) return 'hoje';
+  if (dataComp.getTime() === ontem.getTime()) return 'ontem';
   
-  const diff = Math.floor((hoje - data) / (1000 * 60 * 60 * 24));
+  const diff = Math.floor((hoje - dataComp) / (1000 * 60 * 60 * 24));
   if (diff < 7) return `${diff} dias atrás`;
   
   return formatarDataBR(dataStr);
