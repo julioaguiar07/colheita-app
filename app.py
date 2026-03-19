@@ -10,6 +10,7 @@ import atexit
 import json
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+import resend
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -591,14 +592,21 @@ def verificar_e_enviar_relatorios():
         agora = datetime.now()
         hora_atual = agora.strftime("%H:%M")
         
+        print(f"⏰ [SCHEDULER] Verificando envios - {agora.strftime('%d/%m/%Y %H:%M')}")
+        print(f"📧 Configurações ativas: {len(configuracoes_email)}")
+        
         for usuario_id, config in configuracoes_email.items():
             if not config.get('ativo', True):
                 continue
                 
+            print(f"⏰ Config: {config['email']} - Horário: {config['horario']} vs Atual: {hora_atual}")
+            
             if config['horario'] != hora_atual:
                 continue
             
-            # Dados de exemplo (depois você vai buscar do banco)
+            print(f"✅ Vai enviar para {config['email']}")
+            
+            # Dados de exemplo
             dados = {
                 'data': agora.strftime('%d/%m/%Y'),
                 'vendas_hoje': 3240.50,
@@ -609,18 +617,20 @@ def verificar_e_enviar_relatorios():
             }
             
             if 'diario' in config['frequencias']:
-                html = gerar_relatorio_diario_html(dados)
                 try:
+                    html = gerar_relatorio_diario_html(dados)
+                    
+                    # Usar Resend (que já funcionou no teste)
                     resend.api_key = os.environ.get('RESEND_API_KEY')
-                    resend.Emails.send({
+                    r = resend.Emails.send({
                         "from": "onboarding@resend.dev",
                         "to": config['email'],
                         "subject": "🌱 AGROcore - Resumo Diário",
                         "html": html
                     })
-                    print(f"[EMAIL] Relatório diário enviado para {config['email']}")
+                    print(f"✅ [EMAIL] Relatório enviado para {config['email']}")
                 except Exception as e:
-                    print(f"[EMAIL] Erro ao enviar: {e}")
+                    print(f"❌ [EMAIL] Erro: {e}")
 
 # Iniciar o agendador
 scheduler.add_job(
@@ -780,6 +790,11 @@ def verificar_email():
             'status': 'ERRO',
             'mensagem': 'RESEND_API_KEY não encontrada no Railway'
         }), 500
+
+
+if __name__ == '__main__':
+    print("🔄 Inicializando banco de dados...")
+    criar_tabelas()
     
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
