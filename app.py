@@ -383,23 +383,47 @@ configuracoes_email = {}
 
 @app.route('/api/config-email', methods=['POST'])
 def config_email():
-    """Salva as configurações de e-mail do usuário"""
+    """Salva as configurações de e-mail no banco de dados"""
     try:
         data = request.json
-        usuario_id = request.remote_addr
+        usuario_id = request.remote_addr  # Idealmente, use um ID de usuário real
         
-        # Log para debug
-        print(f"📧 Configuração recebida: {data}")
+        # Converter horário local para UTC
+        horas, minutos = map(int, data['horario'].split(':'))
+        horas_utc = horas + 3
+        if horas_utc >= 24:
+            horas_utc -= 24
+        horario_utc = f"{horas_utc:02d}:{minutos:02d}"
         
-        # Salvar em memória (simples)
-        configuracoes_email[usuario_id] = {
-            'email': data['email'],
-            'frequencias': data['frequencias'],
-            'horario': data['horario'],  # ← LINHA DO HORÁRIO
-            'ativo': True
-        }
+        conn = get_db_connection()
+        cur = conn.cursor()
         
-        return jsonify({'success': True, 'mensagem': 'Configurações salvas!'})
+        # Upsert: insere ou atualiza se já existir
+        cur.execute('''
+            INSERT INTO configuracoes_email (usuario_id, email_destino, frequencias, horario, ativo)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT (usuario_id) 
+            DO UPDATE SET 
+                email_destino = EXCLUDED.email_destino,
+                frequencias = EXCLUDED.frequencias,
+                horario = EXCLUDED.horario,
+                ativo = EXCLUDED.ativo,
+                updated_at = CURRENT_TIMESTAMP
+        ''', (
+            usuario_id, 
+            data['email'], 
+            data['frequencias'],  # O PostgreSQL aceita array diretamente
+            horario_utc,
+            True
+        ))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        print(f"✅ Configurações salvas no banco para {data['email']}")
+        
+        return jsonify({'success': True, 'mensagem': 'Configurações salvas permanentemente!'})
     
     except Exception as e:
         print(f"❌ Erro ao salvar: {e}")
@@ -581,37 +605,66 @@ def gerar_relatorio_diario_html(dados):
     </html>
     '''
 
+def carregar_configuracoes_do_banco():
+    """Carrega todas as configurações ativas do banco"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM configuracoes_email WHERE ativo = true')
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    configuracoes = {}
+    for row in rows:
+        # Usar IP como chave só para compatibilidade
+        # Idealmente, usar um ID único
+        configuracoes[row['usuario_id']] = {
+            'email': row['email_destino'],
+            'frequencias': row['frequencias'],
+            'horario': row['horario'],
+            'ativo': row['ativo']
+        }
+    
+    return configuracoes
+
 # ============================================
 # AGENDADOR DE RELATÓRIOS
 # ============================================
 scheduler = BackgroundScheduler()
 
 def verificar_e_enviar_relatorios():
-    """Verifica se há relatórios para enviar - buscando dados do banco"""
+    """Verifica se há relatórios para enviar - buscando configurações do banco"""
     with app.app_context():
         agora = datetime.now()
         hora_atual = agora.strftime("%H:%M")
         
         print(f"⏰ [SCHEDULER] Verificando envios - {agora.strftime('%d/%m/%Y %H:%M')}")
         
-        for usuario_id, config in configuracoes_email.items():
-            if not config.get('ativo', True):
-                continue
-                
-            if config['horario'] != hora_atual:
-                continue
-            
-            print(f"✅ Vai enviar para {config['email']}")
-            
-            # Buscar dados REAIS do banco de dados
-            hoje = agora.strftime('%Y-%m-%d')
-            ontem = (agora - timedelta(days=1)).strftime('%Y-%m-%d')
-            trinta_dias_atras = (agora - timedelta(days=30)).strftime('%Y-%m-%d')
-            
+        # BUSCAR CONFIGURAÇÕES DO BANCO DE DADOS
+        conn = None
+        cur = None
+        try:
             conn = get_db_connection()
             cur = conn.cursor()
             
-            try:
+            # Buscar todas as configurações ativas
+            cur.execute('SELECT * FROM configuracoes_email WHERE ativo = true')
+            configuracoes = cur.fetchall()
+            
+            print(f"📧 [SCHEDULER] Encontradas {len(configuracoes)} configurações ativas")
+            
+            for config in configuracoes:
+                # Verificar se é hora de enviar
+                if config['horario'] != hora_atual:
+                    continue
+                
+                print(f"✅ Vai enviar para {config['email_destino']} - Horário: {config['horario']}")
+                
+                # Buscar dados REAIS do banco para o relatório
+                hoje = agora.strftime('%Y-%m-%d')
+                ontem = (agora - timedelta(days=1)).strftime('%Y-%m-%d')
+                trinta_dias_atras = (agora - timedelta(days=30)).strftime('%Y-%m-%d')
+                
                 # 1. Vendas de hoje
                 cur.execute('SELECT COALESCE(SUM(total), 0) as total FROM vendas WHERE data = %s', (hoje,))
                 vendas_hoje = cur.fetchone()['total']
@@ -655,7 +708,7 @@ def verificar_e_enviar_relatorios():
                 ''', (hoje,))
                 destaque_row = cur.fetchone()
                 
-                if destaque_row:
+                if destaque_row and destaque_row['produto']:
                     destaque_texto = f"{destaque_row['produto']} (R$ {destaque_row['total']:,.2f})"
                 else:
                     destaque_texto = "Nenhuma venda hoje"
@@ -673,24 +726,35 @@ def verificar_e_enviar_relatorios():
                     'destaque': destaque_texto
                 }
                 
-                # Enviar relatório
+                # Enviar relatório baseado nas frequências
                 if 'diario' in config['frequencias']:
-                    html = gerar_relatorio_diario_html(dados)
-                    resend.api_key = os.environ.get('RESEND_API_KEY')
-                    r = resend.Emails.send({
-                        "from": "onboarding@resend.dev",
-                        "to": config['email'],
-                        "subject": "🌱 AGROcore - Resumo Diário",
-                        "html": html
-                    })
-                    print(f"✅ [EMAIL] Relatório enviado para {config['email']}")
-                    
-            except Exception as e:
-                print(f"❌ [EMAIL] Erro ao processar: {e}")
-                import traceback
-                traceback.print_exc()
-            finally:
+                    try:
+                        html = gerar_relatorio_diario_html(dados)
+                        
+                        # Usar Resend para enviar
+                        resend.api_key = os.environ.get('RESEND_API_KEY')
+                        r = resend.Emails.send({
+                            "from": "onboarding@resend.dev",
+                            "to": config['email_destino'],
+                            "subject": "🌱 AGROcore - Resumo Diário",
+                            "html": html
+                        })
+                        print(f"✅ [EMAIL] Relatório diário enviado para {config['email_destino']}")
+                    except Exception as e:
+                        print(f"❌ [EMAIL] Erro ao enviar: {e}")
+                
+                # Se quiser adicionar relatório semanal/mensal depois
+                # if 'semanal' in config['frequencias']:
+                #     ...
+                
+        except Exception as e:
+            print(f"❌ [SCHEDULER] Erro: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            if cur:
                 cur.close()
+            if conn:
                 conn.close()
 # Iniciar o agendador
 scheduler.add_job(
