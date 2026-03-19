@@ -9,6 +9,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 import json
 
+# ============================================
+# DEBUG - VERIFICAR CREDENCIAIS (REMOVER DEPOIS)
+# ============================================
+print(f"📧 EMAIL_USER: {os.environ.get('EMAIL_USER', 'NÃO CONFIGURADO')}")
+print(f"📧 EMAIL_PASSWORD: {'CONFIGURADA' if os.environ.get('EMAIL_PASSWORD') else 'NÃO CONFIGURADA'}")
+print(f"📧 EMAIL_PASSWORD length: {len(os.environ.get('EMAIL_PASSWORD', ''))}")
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -405,52 +411,74 @@ def config_email():
 
 @app.route('/api/testar-email', methods=['POST'])
 def testar_email():
-    """Envia um e-mail de teste usando variáveis de ambiente"""
+    """Envia e-mail de teste com debug detalhado"""
     try:
         data = request.json
         email = data['email']
         
-        print(f"📧 Tentando enviar e-mail para: {email}")
+        print(f"📧 1. Iniciando envio para: {email}")
         
-        # Pegar configurações do ambiente
+        # Pegar credenciais
         email_user = os.environ.get('EMAIL_USER')
         email_password = os.environ.get('EMAIL_PASSWORD')
         
+        print(f"📧 2. EMAIL_USER: {email_user}")
+        print(f"📧 3. EMAIL_PASSWORD configurado: {'Sim' if email_password else 'Não'}")
+        print(f"📧 4. Tamanho da senha: {len(email_password) if email_password else 0}")
+        
         if not email_user or not email_password:
-            return jsonify({
-                'success': False, 
-                'erro': 'E-mail não configurado no servidor'
-            }), 500
+            return jsonify({'success': False, 'erro': 'Credenciais não configuradas'}), 500
         
-        # Configurar e-mail
-        app.config['MAIL_USERNAME'] = email_user
-        app.config['MAIL_PASSWORD'] = email_password
-        app.config['MAIL_DEFAULT_SENDER'] = email_user
+        # Importar smtplib
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
         
-        # Mensagem simples (sem HTML para evitar problemas)
-        msg = Message(
-            subject="🌱 AGROcore - Teste",
-            recipients=[email],
-            body=f"""Olá!
-
-Este é um e-mail de teste do AGROcore.
-
-✅ Configuração funcionando perfeitamente!
-
-Você receberá relatórios conforme agendado.
-
---- 
-🌱 AGROcore - Gestão Agrícola"""
-        )
+        print(f"📧 5. Criando mensagem...")
         
-        # Enviar
-        mail.send(msg)
-        print(f"✅ E-mail enviado com sucesso para {email}")
+        # Criar mensagem
+        msg = MIMEMultipart()
+        msg['From'] = email_user
+        msg['To'] = email
+        msg['Subject'] = "🌱 AGROcore - Teste de Configuração"
         
-        return jsonify({'success': True, 'mensagem': 'E-mail enviado!'})
+        body = """
+        <html>
+          <body>
+            <h2>✅ Teste do AGROcore</h2>
+            <p>Se você está lendo este e-mail, a configuração está funcionando!</p>
+            <p>🌱 AGROcore - Gestão Agrícola</p>
+          </body>
+        </html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        
+        print(f"📧 6. Conectando ao servidor SMTP...")
+        
+        # Conectar ao Gmail
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.set_debuglevel(1)  # Isso vai mostrar TODOS os detalhes da conexão
+        server.starttls()
+        
+        print(f"📧 7. Tentando login...")
+        server.login(email_user, email_password)
+        
+        print(f"📧 8. Login bem sucedido!")
+        
+        print(f"📧 9. Enviando mensagem...")
+        server.send_message(msg)
+        
+        print(f"📧 10. Fechando conexão...")
+        server.quit()
+        
+        print(f"✅ E-mail enviado com sucesso!")
+        
+        return jsonify({'success': True, 'mensagem': 'E-mail enviado com sucesso!'})
     
     except Exception as e:
-        print(f"❌ Erro detalhado: {str(e)}")
+        print(f"❌ ERRO DETALHADO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'erro': str(e)}), 500
 
 # ============================================
