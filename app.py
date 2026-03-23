@@ -352,7 +352,27 @@ def add_produto_column():
         return f"<h1 style='color: red;'>❌ Erro: {str(e)}</h1>"
 
 
-
+@app.route('/criar-admin', methods=['GET'])
+def criar_admin():
+    """Cria usuário admin (apenas para teste)"""
+    try:
+        senha_hash = gerar_hash_senha('admin123')
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verificar se já existe
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', ('admin@agrocore.com',))
+        if not cur.fetchone():
+            cur.execute('''
+                INSERT INTO usuarios (email, senha_hash, nome)
+                VALUES (%s, %s, %s)
+            ''', ('admin@agrocore.com', senha_hash, 'Administrador'))
+            conn.commit()
+            return "✅ Usuário admin criado!<br>Email: admin@agrocore.com<br>Senha: admin123"
+        else:
+            return "⚠️ Usuário admin já existe!"
+    except Exception as e:
+        return f"❌ Erro: {e}"
 
 @app.route('/verificar-coluna-produto')
 def verificar_coluna():
