@@ -3503,14 +3503,126 @@ async function carregarDados() {
 }
 
 // MODIFICAR showSection para verificar autenticação
-const showSectionOriginal = showSection;
+const showSectionOriginal = window.showSection;
 window.showSection = function(id, btn) {
-  if (!token && id !== 'login') {
-    toast('Por favor, faça login primeiro');
-    return;
-  }
-  showSectionOriginal(id, btn);
+    if (!token && id !== 'login') {
+        toast('Por favor, faça login primeiro');
+        return;
+    }
+    showSectionOriginal(id, btn);
+    
+    // Se entrou na página de configurações, carregar lista de usuários
+    if (id === 'configuracoes') {
+        carregarListaUsuarios();
+    }
 };
+// ============================================
+// ADMIN - CRIAR USUÁRIO
+// ============================================
+
+function criarUsuario() {
+    const email = document.getElementById('novo-email').value.trim();
+    const senha = document.getElementById('nova-senha-usuario').value;
+    const nome = document.getElementById('novo-nome').value.trim();
+    const statusEl = document.getElementById('status-criar');
+    
+    // Validações
+    if (!email || !senha || !nome) {
+        mostrarStatusCriar('⚠️ Preencha todos os campos', 'erro');
+        return;
+    }
+    
+    if (senha.length < 6) {
+        mostrarStatusCriar('⚠️ A senha deve ter pelo menos 6 caracteres', 'erro');
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        mostrarStatusCriar('⚠️ E-mail inválido', 'erro');
+        return;
+    }
+    
+    mostrarStatusCriar('🔄 Criando usuário...', 'info');
+    
+    fetch('/api/criar-usuario', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ email, senha, nome })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarStatusCriar(`✅ Usuário ${email} criado com sucesso!`, 'sucesso');
+            // Limpar campos
+            document.getElementById('novo-email').value = '';
+            document.getElementById('nova-senha-usuario').value = '';
+            document.getElementById('novo-nome').value = '';
+            // Recarregar lista
+            carregarListaUsuarios();
+        } else {
+            mostrarStatusCriar('❌ ' + (data.error || 'Erro ao criar usuário'), 'erro');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarStatusCriar('❌ Erro ao conectar com o servidor', 'erro');
+    });
+}
+
+function carregarListaUsuarios() {
+    fetch('/api/usuarios', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const lista = document.getElementById('lista-usuarios');
+        if (data.success && data.usuarios && data.usuarios.length > 0) {
+            lista.innerHTML = data.usuarios.map(u => `
+                <div style="padding: 10px; border-bottom: 1px solid var(--border);">
+                    <div style="font-weight: 600;">${u.nome}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${u.email}</div>
+                    <div style="font-size: 0.7rem; color: var(--green-600); margin-top: 4px;">
+                        📅 Criado em: ${formatarDataBR(u.created_at.split('T')[0])}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            lista.innerHTML = '<div style="text-align: center; padding: 20px;">📭 Nenhum usuário encontrado</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        document.getElementById('lista-usuarios').innerHTML = '<div style="text-align: center; padding: 20px;">❌ Erro ao carregar</div>';
+    });
+}
+
+function mostrarStatusCriar(mensagem, tipo) {
+    const statusEl = document.getElementById('status-criar');
+    statusEl.textContent = mensagem;
+    statusEl.style.display = 'block';
+    
+    if (tipo === 'sucesso') {
+        statusEl.style.background = '#dcfce7';
+        statusEl.style.color = '#166534';
+        statusEl.style.border = '1px solid #bbf7d0';
+    } else if (tipo === 'erro') {
+        statusEl.style.background = '#fee2e2';
+        statusEl.style.color = '#b91c1c';
+        statusEl.style.border = '1px solid #fecaca';
+    } else {
+        statusEl.style.background = '#dbeafe';
+        statusEl.style.color = '#1e40af';
+        statusEl.style.border = '1px solid #bfdbfe';
+    }
+    
+    setTimeout(() => {
+        statusEl.style.display = 'none';
+    }, 5000);
+}
+
   
 // ============================================
 // FORMATAR DATA RELATIVA (hoje, ontem, etc)
