@@ -11,7 +11,49 @@ import json
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import resend
+import bcrypt
+import jwt
+from functools import wraps
+from datetime import datetime, timedelta
 
+# Configuração JWT
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# ============================================
+# FUNÇÕES DE AUTENTICAÇÃO
+# ============================================
+
+def gerar_hash_senha(senha):
+    """Gera hash da senha com bcrypt"""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(senha.encode('utf-8'), salt).decode('utf-8')
+
+def verificar_senha(senha, hash_armazenado):
+    """Verifica se a senha corresponde ao hash"""
+    return bcrypt.checkpw(senha.encode('utf-8'), hash_armazenado.encode('utf-8'))
+
+def token_required(f):
+    """Decorator para proteger rotas que precisam de autenticação"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        
+        if not token:
+            return jsonify({'error': 'Token não fornecido'}), 401
+        
+        try:
+            token = token.replace('Bearer ', '')
+            payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+            request.usuario_id = payload['usuario_id']
+            request.usuario_email = payload['email']
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token expirado'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Token inválido'}), 401
+        
+        return f(*args, **kwargs)
+    
+    return decorated
+    
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -129,27 +171,29 @@ def index():
 
 # ========== API PRODUÇÕES ==========
 @app.route('/api/producoes', methods=['GET'])
+@token_required
 def get_producoes():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM producoes ORDER BY data DESC')
+    cur.execute('SELECT * FROM producoes WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return jsonify(list(rows))
 
 @app.route('/api/producoes', methods=['POST'])
+@token_required
 def create_producao():
     data = request.json
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO producoes (id, data, produto, tipo, area, qtd, unidade, valor_unit, total)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO producoes (id, data, produto, tipo, area, qtd, unidade, valor_unit, total, usuario_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         data['id'], data['data'], data['produto'], data['tipo'],
         data.get('area', ''), data.get('qtd', 0), data.get('unidade', ''),
-        data.get('valorUnit', 0), data['total']
+        data.get('valorUnit', 0), data['total'], request.usuario_id
     ))
     conn.commit()
     cur.close()
@@ -157,97 +201,77 @@ def create_producao():
     return jsonify({'message': 'Produção criada'}), 201
 
 @app.route('/api/producoes/<id>', methods=['DELETE'])
+@token_required
 def delete_producao(id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('DELETE FROM producoes WHERE id = %s', (id,))
+    cur.execute('DELETE FROM producoes WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Produção deletada'})
 
-# ========== API VENDAS ==========
+# ========== API VENDAS (MODIFICADA) ==========
 @app.route('/api/vendas', methods=['GET'])
+@token_required
 def get_vendas():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM vendas ORDER BY data DESC')
+    cur.execute('SELECT * FROM vendas WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return jsonify(list(rows))
 
 @app.route('/api/vendas', methods=['POST'])
+@token_required
 def create_venda():
     data = request.json
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO vendas (id, data, produto, cliente, area, unidade, qtd, valor_unit, total)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO vendas (id, data, produto, cliente, area, unidade, qtd, valor_unit, total, usuario_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         data['id'], data['data'], data['produto'], 
         data.get('cliente', ''), data.get('area', ''), 
-        data['unidade'], data['qtd'], data['valorUnit'], data['total']
+        data['unidade'], data['qtd'], data['valorUnit'], data['total'], request.usuario_id
     ))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Venda criada'}), 201
 
-@app.route('/api/vendas/<id>', methods=['DELETE'])
-def delete_venda(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('DELETE FROM vendas WHERE id = %s', (id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({'message': 'Venda deletada'})
-
-# ========== API GASTOS (COM PRODUTO) ==========
+# ========== API GASTOS (MODIFICADA) ==========
 @app.route('/api/gastos', methods=['GET'])
+@token_required
 def get_gastos():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM gastos ORDER BY data DESC')
+    cur.execute('SELECT * FROM gastos WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
     return jsonify(list(rows))
 
 @app.route('/api/gastos', methods=['POST'])
+@token_required
 def create_gasto():
     data = request.json
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO gastos (id, data, tipo, categoria, produto, area, obs, valor)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO gastos (id, data, tipo, categoria, produto, area, obs, valor, usuario_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
-        data['id'], 
-        data['data'], 
-        data['tipo'], 
-        data.get('categoria', 'Outros'), 
-        data.get('produto', ''),  # ← NOVO CAMPO
-        data.get('area', ''), 
-        data.get('obs', ''), 
-        data['valor']
+        data['id'], data['data'], data['tipo'], 
+        data.get('categoria', 'Outros'), data.get('produto', ''),
+        data.get('area', ''), data.get('obs', ''), data['valor'], request.usuario_id
     ))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Gasto criado'}), 201
-
-@app.route('/api/gastos/<id>', methods=['DELETE'])
-def delete_gasto(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('DELETE FROM gastos WHERE id = %s', (id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({'message': 'Gasto deletado'})
 
 # Adicione esta rota TEMPORÁRIA no seu app.py
 @app.route('/recriar-tabela-gastos')
@@ -372,21 +396,16 @@ def verificar_coluna():
         return f"<h1>❌ Erro: {str(e)}</h1>"
 
 # ============================================
-# ARMAZENAMENTO DAS CONFIGURAÇÕES DE E-MAIL
-# ============================================
-# Em produção, use o banco de dados. Por enquanto, usaremos um dicionário
-configuracoes_email = {}
-
-# ============================================
 # ROTAS DE E-MAIL
 # ============================================
 
 @app.route('/api/config-email', methods=['POST'])
+@token_required
 def config_email():
-    """Salva as configurações de e-mail no banco de dados"""
+    """Salva as configurações de e-mail do usuário"""
     try:
         data = request.json
-        usuario_id = request.remote_addr  # Idealmente, use um ID de usuário real
+        usuario_id = request.usuario_id  # ← AGORA USA O ID DO USUÁRIO LOGADO
         
         # Converter horário local para UTC
         horas, minutos = map(int, data['horario'].split(':'))
@@ -398,32 +417,29 @@ def config_email():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # AGORA VAI FUNCIONAR! (porque usuario_id é UNIQUE)
-        cur.execute('''
-            INSERT INTO configuracoes_email (usuario_id, email_destino, frequencias, horario, ativo)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (usuario_id) 
-            DO UPDATE SET 
-                email_destino = EXCLUDED.email_destino,
-                frequencias = EXCLUDED.frequencias,
-                horario = EXCLUDED.horario,
-                ativo = EXCLUDED.ativo,
-                updated_at = CURRENT_TIMESTAMP
-        ''', (
-            usuario_id, 
-            data['email'], 
-            data['frequencias'],
-            horario_utc,
-            True
-        ))
+        # Verificar se já existe configuração para este usuário
+        cur.execute('SELECT * FROM configuracoes_email WHERE usuario_id = %s', (usuario_id,))
+        existente = cur.fetchone()
+        
+        if existente:
+            # Atualizar
+            cur.execute('''
+                UPDATE configuracoes_email 
+                SET email_destino = %s, frequencias = %s, horario = %s, ativo = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE usuario_id = %s
+            ''', (data['email'], data['frequencias'], horario_utc, True, usuario_id))
+        else:
+            # Inserir
+            cur.execute('''
+                INSERT INTO configuracoes_email (usuario_id, email_destino, frequencias, horario, ativo)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (usuario_id, data['email'], data['frequencias'], horario_utc, True))
         
         conn.commit()
         cur.close()
         conn.close()
         
-        print(f"✅ Configurações salvas no banco para {data['email']}")
-        
-        return jsonify({'success': True, 'mensagem': 'Configurações salvas permanentemente!'})
+        return jsonify({'success': True, 'mensagem': 'Configurações salvas!'})
     
     except Exception as e:
         print(f"❌ Erro ao salvar: {e}")
@@ -927,6 +943,106 @@ def testar_email():
     except Exception as e:
         print(f"❌ Erro: {str(e)}")
         return jsonify({'success': False, 'erro': str(e)}), 500
+
+# ============================================
+# ROTAS DE AUTENTICAÇÃO
+# ============================================
+
+@app.route('/api/registrar', methods=['POST'])
+def registrar_usuario():
+    """Registrar novo usuário (protegido - só admin pode acessar)"""
+    try:
+        data = request.json
+        email = data.get('email')
+        senha = data.get('senha')
+        nome = data.get('nome')
+        
+        if not email or not senha:
+            return jsonify({'error': 'E-mail e senha são obrigatórios'}), 400
+        
+        # Verificar se e-mail já existe
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', (email,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'E-mail já cadastrado'}), 400
+        
+        # Criar novo usuário
+        senha_hash = gerar_hash_senha(senha)
+        cur.execute('''
+            INSERT INTO usuarios (email, senha_hash, nome)
+            VALUES (%s, %s, %s)
+            RETURNING id
+        ''', (email, senha_hash, nome))
+        
+        usuario_id = cur.fetchone()['id']
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Usuário registrado com sucesso!', 'usuario_id': usuario_id})
+        
+    except Exception as e:
+        print(f"❌ Erro no registro: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Login do usuário"""
+    try:
+        data = request.json
+        email = data.get('email')
+        senha = data.get('senha')
+        
+        if not email or not senha:
+            return jsonify({'error': 'E-mail e senha são obrigatórios'}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM usuarios WHERE email = %s AND ativo = true', (email,))
+        usuario = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not usuario or not verificar_senha(senha, usuario['senha_hash']):
+            return jsonify({'error': 'E-mail ou senha inválidos'}), 401
+        
+        # Gerar token JWT
+        token = jwt.encode({
+            'usuario_id': usuario['id'],
+            'email': usuario['email'],
+            'nome': usuario['nome'],
+            'exp': datetime.utcnow() + timedelta(days=7)  # Token válido por 7 dias
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'usuario': {
+                'id': usuario['id'],
+                'email': usuario['email'],
+                'nome': usuario['nome']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro no login: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/verificar-token', methods=['GET'])
+@token_required
+def verificar_token():
+    """Verifica se o token é válido"""
+    return jsonify({
+        'success': True,
+        'usuario': {
+            'id': request.usuario_id,
+            'email': request.usuario_email
+        }
+    })
+
 
 @app.route('/api/verificar-email', methods=['GET'])
 def verificar_email():
