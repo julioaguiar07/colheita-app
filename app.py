@@ -1166,41 +1166,6 @@ def listar_usuarios():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/alterar-senha-admin', methods=['GET'])
-def alterar_senha_admin():
-    """Rota temporária para alterar senha do admin"""
-    try:
-        import bcrypt
-        
-        # DEFINA AQUI A NOVA SENHA
-        nova_senha = "@Julio030422"
-        
-        nova_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('UPDATE usuarios SET senha_hash = %s WHERE email = %s', (nova_hash, 'admin@agrocore.com'))
-        conn.commit()
-        linhas = cur.rowcount
-        cur.close()
-        conn.close()
-        
-        if linhas > 0:
-            return f"""
-            <html>
-            <body style="font-family: Arial; padding: 40px; text-align: center;">
-                <h1 style="color: green;">✅ Senha alterada com sucesso!</h1>
-                <p><strong>E-mail:</strong> admin@agrocore.com</p>
-                <p><strong>Nova senha:</strong> {nova_senha}</p>
-                <p><a href="/" style="background: #22883a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ir para o login</a></p>
-            </body>
-            </html>
-            """
-        else:
-            return "<h1 style='color: orange;'>⚠️ Usuário admin não encontrado</h1>"
-            
-    except Exception as e:
-        return f"<h1 style='color: red;'>❌ Erro: {str(e)}</h1>"
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
