@@ -2328,6 +2328,37 @@ async function carregarDados() {
   }
 }
 
+
+// Função para sincronizar dados (remover registros órfãos)
+async function sincronizarDados() {
+  if (!token) return;
+  
+  try {
+    const headers = { 'Authorization': `Bearer ${token}` };
+    
+    // Buscar dados atuais do servidor
+    const [prodRes, vendasRes, gastosRes] = await Promise.all([
+      fetch('/api/producoes', { headers }),
+      fetch('/api/vendas', { headers }),
+      fetch('/api/gastos', { headers })
+    ]);
+    
+    const serverProducoes = prodRes.ok ? await prodRes.json() : [];
+    const serverVendas = vendasRes.ok ? await vendasRes.json() : [];
+    const serverGastos = gastosRes.ok ? await gastosRes.json() : [];
+    
+    // Atualizar arrays locais
+    producoes = serverProducoes;
+    vendas = serverVendas;
+    gastos = serverGastos;
+    
+    atualizarTudo();
+    console.log('✅ Dados sincronizados com o servidor');
+  } catch (error) {
+    console.error('Erro na sincronização:', error);
+  }
+}
+  
 // ============================================
 // NAVEGAÇÃO
 // ============================================
@@ -2580,10 +2611,35 @@ function limparFormGasto() {
 
 async function deleteGasto(id) {
   if (!confirm('Remover este gasto?')) return;
+  
   try {
-    const r = await fetch(`/api/gastos/${id}`, {method:'DELETE'});
-    if (r.ok) { gastos = gastos.filter(g => g.id !== id); atualizarTudo(); toast('🗑️ Removido'); }
-  } catch { toast('❌ Erro ao remover'); }
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/gastos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      gastos = gastos.filter(g => g.id !== id);
+      atualizarTudo();
+      toast('🗑️ Removido');
+    } else if (response.status === 404) {
+      // Se não encontrou no servidor, remove só do frontend
+      gastos = gastos.filter(g => g.id !== id);
+      atualizarTudo();
+      toast('🗑️ Registro removido localmente');
+    } else {
+      toast('❌ Erro ao remover');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    // Fallback: remover localmente
+    gastos = gastos.filter(g => g.id !== id);
+    atualizarTudo();
+    toast('⚠️ Removido apenas localmente');
+  }
 }
 
 // ============================================
@@ -2863,17 +2919,20 @@ function atualizarListaGastosFiltrada() {
   if(filtrosGasto.area) f=f.filter(g=>g.area===filtrosGasto.area);
   const total = f.reduce((s,g)=>s+(Number(g?.valor)||0),0);
   document.getElementById('total-gastos').textContent = `Total: ${formatMoney(total)}`;
-  document.getElementById('lista-gastos').innerHTML = f.map(g=>`
+  document.getElementById('lista-gastos').innerHTML = f.map(g => `
     <tr>
-      <td style="font-family:'DM Mono';font-size:0.8rem;color:var(--text-muted);">${formatarDataBR(g.data)}</td>
+      <td>${formatarDataBR(g.data)}</td>
       <td><span class="badge badge-gasto">${g.tipo||''}</span></td>
-      <td style="color:var(--text-secondary);">${g.categoria||'—'}</td>
-      <td style="color:var(--text-muted);">${g.produto||'—'}</td>
-      <td style="color:var(--text-muted);">${g.area||'—'}</td>
+      <td>${g.categoria||'—'}</td>
+      <td>${g.produto||'—'}</td>
+      <td>${g.area||'—'}</td>
       <td class="observacao" title="${g.obs||''}">${g.obs?g.obs.substring(0,20)+(g.obs.length>20?'...':''):'—'}</td>
-      <td style="font-family:'DM Mono';font-weight:700;color:var(--red-600);">${formatMoney(g.valor)}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteGasto('${g.id}')">🗑️</button></td>
-    </tr>`).join('') || '<tr><td colspan="8" class="empty" style="padding:28px;font-size:0.82rem;">📭 Nenhum gasto</td></tr>';
+      <td>${formatMoney(g.valor)}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteGasto('${g.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="8" class="empty">📭 Nenhum gasto</td></tr>';
 }
 
 function atualizarDataLists() {
@@ -3525,6 +3584,7 @@ function fazerLogin() {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
+      // ATUALIZAR A VARIÁVEL GLOBAL token
       token = data.token;
       usuarioAtual = data.usuario;
       
@@ -3548,7 +3608,7 @@ function fazerLogin() {
         // Adicionar botão de logout
         adicionarBotaoLogout();
         
-        // Carregar dados do sistema
+        // ⭐ IMPORTANTE: Chamar carregarDados DEPOIS de definir o token
         carregarDados();
       }, 1000);
     } else {
