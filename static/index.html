@@ -2321,7 +2321,14 @@ async function carregarDados() {
     if (vendasRes.ok) vendas = await vendasRes.json();
     if (gastosRes.ok) gastos = await gastosRes.json();
     
+    // Destruir gráfico antes de atualizar
+    if (charts.gastos) {
+      charts.gastos.destroy();
+      charts.gastos = null;
+    }
+    
     atualizarTudo();
+    console.log('✅ Dados carregados para o usuário:', token);
   } catch (error) {
     console.error('Erro ao carregar:', error);
     toast('Erro ao conectar com o servidor');
@@ -2649,6 +2656,7 @@ function limparFormGasto() {
 
 async function deleteGasto(id) {
   if (!confirm('Remover este gasto?')) return;
+  
   try {
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`/api/gastos/${id}`, {
@@ -2658,19 +2666,42 @@ async function deleteGasto(id) {
         'Content-Type': 'application/json'
       }
     });
+    
     if (response.ok) {
       gastos = gastos.filter(g => g.id !== id);
+      
+      // Destruir gráfico antigo
+      if (charts.gastos) {
+        charts.gastos.destroy();
+        charts.gastos = null;
+      }
+      
       atualizarTudo();
       toast('🗑️ Gasto removido');
-    } else if (response.status === 401) {
-      toast('❌ Sessão expirada. Faça login novamente.');
-      logout();
+    } else if (response.status === 404) {
+      gastos = gastos.filter(g => g.id !== id);
+      
+      if (charts.gastos) {
+        charts.gastos.destroy();
+        charts.gastos = null;
+      }
+      
+      atualizarTudo();
+      toast('🗑️ Registro removido localmente');
     } else {
       toast('❌ Erro ao remover');
     }
   } catch (error) {
     console.error('Erro:', error);
-    toast('❌ Erro ao conectar com o servidor');
+    gastos = gastos.filter(g => g.id !== id);
+    
+    if (charts.gastos) {
+      charts.gastos.destroy();
+      charts.gastos = null;
+    }
+    
+    atualizarTudo();
+    toast('⚠️ Removido apenas localmente');
   }
 }
 
@@ -2682,9 +2713,15 @@ function atualizarTudo() {
   atualizarListaProducoesFiltrada();
   atualizarListaVendasFiltrada();
   atualizarListaGastosFiltrada();
-  atualizarDashboard();
+  atualizarDashboard();  
   atualizarDataLists();
   inicializarSeletorProdutos();
+  
+  // FORÇAR RECRIAÇÃO DO GRÁFICO DE GASTOS
+  if (typeof criarGraficos === 'function') {
+    criarGraficos();
+  }
+  
   if (produtoSelecionado) atualizarDashboardProduto();
   else {
     const s = document.getElementById('sem-produto'), c = document.getElementById('conteudo-produto');
@@ -2788,34 +2825,58 @@ function atualizarPrecosProdutos() {
 // GRÁFICOS
 // ============================================
 function criarGraficos() {
+  // Destruir gráfico anterior se existir
+  if (charts.gastos) {
+    charts.gastos.destroy();
+    charts.gastos = null;
+  }
+  
   const gastosCat = {};
   gastos.forEach(g => { if(g?.valor){ const c=g.categoria||'Outros'; gastosCat[c]=(gastosCat[c]||0)+(Number(g.valor)||0); }});
   const sorted = Object.entries(gastosCat).sort((a,b)=>b[1]-a[1]);
 
-  if (sorted.length > 0) {
-    if (charts.gastos) charts.gastos.destroy();
-    const ctx = document.getElementById('chartGastos')?.getContext('2d');
-    if (ctx) {
-      charts.gastos = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: sorted.map(([k])=>k),
-          datasets: [{ label: 'Valor', data: sorted.map(([,v])=>v), backgroundColor: CHART_COLORS, borderRadius: 8, barPercentage: 0.65 }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: c => formatMoney(c.parsed.y) } },
-            datalabels: { display: true, color: '#fff', font: {weight:'bold',size:10}, formatter: v => `R$${(v/1000).toFixed(0)}k`, anchor: 'end', align: 'top', offset: 2 }
-          },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
-            x: { grid: { display: false }, ticks: { font: {size:11} } }
-          }
-        }
-      });
+  // Se não há dados, mostrar mensagem de vazio
+  if (sorted.length === 0) {
+    const container = document.getElementById('chartGastos')?.parentElement;
+    if (container) {
+      // Verificar se já tem mensagem de vazio para não duplicar
+      if (!container.querySelector('.empty-graph')) {
+        container.innerHTML = '<div class="empty-graph" style="padding: 40px; text-align: center; font-size: 0.82rem; color: var(--text-muted);">📭 Nenhum gasto registrado ainda</div>';
+      }
     }
+    atualizarPrecosProdutos();
+    atualizarVisaoGeralProdutos();
+    return;
+  }
+  
+  // Remover mensagem de vazio se existir
+  const container = document.getElementById('chartGastos')?.parentElement;
+  if (container) {
+    const emptyMsg = container.querySelector('.empty-graph');
+    if (emptyMsg) emptyMsg.remove();
+  }
+  
+  const ctx = document.getElementById('chartGastos')?.getContext('2d');
+  if (ctx) {
+    charts.gastos = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(([k])=>k),
+        datasets: [{ label: 'Valor', data: sorted.map(([,v])=>v), backgroundColor: CHART_COLORS, borderRadius: 8, barPercentage: 0.65 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => formatMoney(c.parsed.y) } },
+          datalabels: { display: true, color: '#fff', font: {weight:'bold',size:10}, formatter: v => `R$${(v/1000).toFixed(0)}k`, anchor: 'end', align: 'top', offset: 2 }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
+          x: { grid: { display: false }, ticks: { font: {size:11} } }
+        }
+      }
+    });
   }
   atualizarPrecosProdutos();
   atualizarVisaoGeralProdutos();
@@ -3699,14 +3760,46 @@ function logout() {
   token = null;
   usuarioAtual = null;
   
-  // Resetar interface
-  document.getElementById('dashboard').classList.remove('active');
-  document.getElementById('login').classList.add('active');
-  
   // Limpar dados
   producoes = [];
   vendas = [];
   gastos = [];
+  
+  // DESTRUIR GRÁFICOS
+  if (charts.gastos) {
+    charts.gastos.destroy();
+    charts.gastos = null;
+  }
+  
+  if (chartsProduto.gastos) {
+    chartsProduto.gastos.destroy();
+    chartsProduto.gastos = null;
+  }
+  
+  if (chartsProduto.categorias) {
+    chartsProduto.categorias.destroy();
+    chartsProduto.categorias = null;
+  }
+  
+  if (chartsProduto.comparativo) {
+    chartsProduto.comparativo.destroy();
+    chartsProduto.comparativo = null;
+  }
+  
+  // Resetar interface
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('login').classList.add('active');
+  
+  // Limpar mensagem de vazio do gráfico
+  const container = document.getElementById('chartGastos')?.parentElement;
+  if (container) {
+    const emptyMsg = container.querySelector('.empty-graph');
+    if (emptyMsg) emptyMsg.remove();
+    // Opcional: restaurar o canvas
+    if (!document.getElementById('chartGastos')) {
+      container.innerHTML = '<canvas id="chartGastos"></canvas>';
+    }
+  }
   
   // Remover botão de logout
   const logoutBtn = document.getElementById('btn-logout');
