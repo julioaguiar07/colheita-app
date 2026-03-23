@@ -94,7 +94,35 @@ def criar_tabelas():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Tabela de produções (custos de produção)
+        # Tabela de usuários
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                nome VARCHAR(255),
+                ativo BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'usuarios' criada/verificada")
+        
+        # Tabela de configurações de email
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS configuracoes_email (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                email_destino VARCHAR(255) NOT NULL,
+                frequencias TEXT[],
+                horario VARCHAR(5),
+                ativo BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'configuracoes_email' criada/verificada")
+        
+        # Tabela de produções
         cur.execute('''
             CREATE TABLE IF NOT EXISTS producoes (
                 id VARCHAR(50) PRIMARY KEY,
@@ -106,6 +134,7 @@ def criar_tabelas():
                 unidade VARCHAR(50),
                 valor_unit DECIMAL(10,2),
                 total DECIMAL(10,2),
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -123,21 +152,24 @@ def criar_tabelas():
                 qtd DECIMAL(10,2),
                 valor_unit DECIMAL(10,2),
                 total DECIMAL(10,2),
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         print("✅ Tabela 'vendas' criada/verificada")
         
-        # Tabela de gastos (com campo obs)
+        # Tabela de gastos (completa)
         cur.execute('''
             CREATE TABLE IF NOT EXISTS gastos (
                 id VARCHAR(50) PRIMARY KEY,
                 data DATE NOT NULL,
                 tipo VARCHAR(255) NOT NULL,
                 categoria VARCHAR(50),
+                produto VARCHAR(255),
                 area VARCHAR(255),
                 obs TEXT,
                 valor DECIMAL(10,2),
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -145,6 +177,18 @@ def criar_tabelas():
         
         conn.commit()
         print("🎉 Todas as tabelas criadas com sucesso!")
+        
+        # Criar usuário admin se não existir
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', ('admin@agrocore.com',))
+        if not cur.fetchone():
+            senha_hash = gerar_hash_senha('admin123')
+            cur.execute('''
+                INSERT INTO usuarios (email, senha_hash, nome, ativo)
+                VALUES (%s, %s, %s, true)
+            ''', ('admin@agrocore.com', senha_hash, 'Administrador'))
+            conn.commit()
+            print("✅ Usuário admin criado (email: admin@agrocore.com / senha: admin123)")
+        
         return True
     except Exception as e:
         print(f"❌ Erro ao criar tabelas: {e}")
@@ -1165,7 +1209,250 @@ def listar_usuarios():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+# ============================================
+# ROTAS DE CORREÇÃO DO BANCO DE DADOS
+# ============================================
 
+@app.route('/corrigir-banco-completo')
+def corrigir_banco_completo():
+    """Corrige completamente a estrutura do banco de dados"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        relatorio = []
+        
+        # 1. Criar tabela de usuários se não existir
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                nome VARCHAR(255),
+                ativo BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        relatorio.append("✅ Tabela 'usuarios' criada/verificada")
+        
+        # 2. Criar tabela de configurações de email
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS configuracoes_email (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                email_destino VARCHAR(255) NOT NULL,
+                frequencias TEXT[],
+                horario VARCHAR(5),
+                ativo BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        relatorio.append("✅ Tabela 'configuracoes_email' criada/verificada")
+        
+        # 3. Adicionar coluna usuario_id na tabela producoes
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='producoes' AND column_name='usuario_id'")
+        if not cur.fetchone():
+            cur.execute('ALTER TABLE producoes ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)')
+            relatorio.append("✅ Coluna 'usuario_id' adicionada em producoes")
+        else:
+            relatorio.append("ℹ️ Coluna 'usuario_id' já existe em producoes")
+        
+        # 4. Adicionar coluna usuario_id na tabela vendas
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='vendas' AND column_name='usuario_id'")
+        if not cur.fetchone():
+            cur.execute('ALTER TABLE vendas ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)')
+            relatorio.append("✅ Coluna 'usuario_id' adicionada em vendas")
+        else:
+            relatorio.append("ℹ️ Coluna 'usuario_id' já existe em vendas")
+        
+        # 5. Adicionar colunas na tabela gastos
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='gastos' AND column_name='usuario_id'")
+        if not cur.fetchone():
+            cur.execute('ALTER TABLE gastos ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)')
+            relatorio.append("✅ Coluna 'usuario_id' adicionada em gastos")
+        else:
+            relatorio.append("ℹ️ Coluna 'usuario_id' já existe em gastos")
+        
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='gastos' AND column_name='produto'")
+        if not cur.fetchone():
+            cur.execute('ALTER TABLE gastos ADD COLUMN produto VARCHAR(255)')
+            relatorio.append("✅ Coluna 'produto' adicionada em gastos")
+        else:
+            relatorio.append("ℹ️ Coluna 'produto' já existe em gastos")
+        
+        conn.commit()
+        
+        # 6. Criar usuário admin se não existir
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', ('admin@agrocore.com',))
+        if not cur.fetchone():
+            senha_hash = gerar_hash_senha('admin123')
+            cur.execute('''
+                INSERT INTO usuarios (email, senha_hash, nome, ativo)
+                VALUES (%s, %s, %s, true)
+            ''', ('admin@agrocore.com', senha_hash, 'Administrador'))
+            conn.commit()
+            relatorio.append("✅ Usuário admin criado (email: admin@agrocore.com / senha: admin123)")
+        else:
+            relatorio.append("ℹ️ Usuário admin já existe")
+        
+        # 7. Corrigir registros órfãos (se houver algum usuário)
+        cur.execute('SELECT id FROM usuarios LIMIT 1')
+        primeiro_usuario = cur.fetchone()
+        
+        if primeiro_usuario:
+            usuario_id = primeiro_usuario['id']
+            
+            # Corrigir producoes
+            cur.execute('UPDATE producoes SET usuario_id = %s WHERE usuario_id IS NULL', (usuario_id,))
+            prod_fixed = cur.rowcount
+            
+            # Corrigir vendas
+            cur.execute('UPDATE vendas SET usuario_id = %s WHERE usuario_id IS NULL', (usuario_id,))
+            vendas_fixed = cur.rowcount
+            
+            # Corrigir gastos
+            cur.execute('UPDATE gastos SET usuario_id = %s WHERE usuario_id IS NULL', (usuario_id,))
+            gastos_fixed = cur.rowcount
+            
+            conn.commit()
+            
+            if prod_fixed > 0:
+                relatorio.append(f"✅ {prod_fixed} registros de produção corrigidos")
+            if vendas_fixed > 0:
+                relatorio.append(f"✅ {vendas_fixed} registros de vendas corrigidos")
+            if gastos_fixed > 0:
+                relatorio.append(f"✅ {gastos_fixed} registros de gastos corrigidos")
+        
+        cur.close()
+        conn.close()
+        
+        # Gerar HTML com o relatório
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Correção - AGROcore</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 50px auto;
+                    padding: 20px;
+                    background: #f5f5f5;
+                }
+                .card {
+                    background: white;
+                    border-radius: 16px;
+                    padding: 30px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                }
+                h1 {
+                    color: #2d7a3a;
+                    margin-top: 0;
+                }
+                .success {
+                    color: #28a745;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+                .info {
+                    color: #6c757d;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+                .button {
+                    display: inline-block;
+                    background: #2d7a3a;
+                    color: white;
+                    padding: 12px 24px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    margin-top: 20px;
+                    font-weight: bold;
+                }
+                .button:hover {
+                    background: #1e5a2a;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>🔧 Correção do Banco de Dados</h1>
+                <h2>📊 Relatório:</h2>
+                <ul style="list-style: none; padding: 0;">
+        """
+        
+        for item in relatorio:
+            if "✅" in item:
+                html += f'<li class="success">{item}</li>'
+            else:
+                html += f'<li class="info">{item}</li>'
+        
+        html += """
+                </ul>
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <strong>🎉 Correção concluída!</strong><br>
+                    Agora o sistema está pronto para uso com múltiplos usuários.
+                </div>
+                <a href="/" class="button">🔙 Voltar ao Sistema</a>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html
+        
+    except Exception as e:
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Erro</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: red;">❌ Erro durante correção</h1>
+            <p style="color: #666;">{str(e)}</p>
+            <a href="/" style="background: #2d7a3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar</a>
+        </body>
+        </html>
+        """
+
+@app.route('/adicionar-rota-delete-gastos')
+def adicionar_rota_delete_gastos():
+    """Informação sobre a rota DELETE de gastos"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Rota DELETE de Gastos</title></head>
+    <body style="font-family: Arial; padding: 50px;">
+        <h1 style="color: green;">✅ A rota DELETE de gastos já existe!</h1>
+        <p>No seu código, a função <code>delete_gasto()</code> está implementada na linha:</p>
+        <pre style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
+@app.route('/api/gastos/&lt;id&gt;', methods=['DELETE'])
+@token_required
+def delete_gasto(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Gasto deletado'})
+        </pre>
+        <p><a href="/" style="background: #2d7a3a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar</a></p>
+    </body>
+    </html>
+    """
+
+@app.route('/api/gastos/<id>', methods=['DELETE'])
+@token_required
+def delete_gasto(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Gasto deletado'})
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
