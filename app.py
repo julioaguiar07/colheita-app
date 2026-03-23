@@ -1089,13 +1089,17 @@ def verificar_email():
 @app.route('/api/criar-usuario', methods=['POST'])
 @token_required
 def criar_usuario():
-    """Cria novo usuário (apenas admin)"""
+    """Cria novo usuário (apenas admin@agrocore.com)"""
     try:
+        # Verificar se o usuário logado é o admin
+        if request.usuario_email != 'admin@agrocore.com':
+            return jsonify({'error': 'Acesso negado. Apenas o administrador pode criar usuários.'}), 403
+        
         data = request.json
         email = data.get('email')
         senha = data.get('senha')
         nome = data.get('nome')
-        
+            
         if not email or not senha or not nome:
             return jsonify({'error': 'E-mail, senha e nome são obrigatórios'}), 400
         
@@ -1161,6 +1165,8 @@ def listar_usuarios():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
