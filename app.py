@@ -15,6 +15,9 @@ import bcrypt
 import jwt
 from functools import wraps
 from datetime import datetime, timedelta
+    
+app = Flask(__name__, static_folder='static')
+CORS(app)
 
 # Configuração JWT
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -53,9 +56,7 @@ def token_required(f):
         return f(*args, **kwargs)
     
     return decorated
-    
-app = Flask(__name__, static_folder='static')
-CORS(app)
+
 
 # ============================================
 # CONFIGURAÇÃO DO E-MAIL
