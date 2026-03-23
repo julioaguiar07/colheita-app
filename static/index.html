@@ -1566,12 +1566,13 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  z-index: 1000;
+  z-index: 1001; 
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
   transition: all 0.2s ease;
   box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+  pointer-events: auto; 
 }
 
 .menu-dropdown.active {
@@ -4561,13 +4562,17 @@ function calcularPontoEquilibrioProduto(produto) {
 // MENU DROPDOWN (TRÊS PONTINHOS)
 // ============================================
 
+// ============================================
+// MENU DROPDOWN (TRÊS PONTINHOS) - CORRIGIDO
+// ============================================
+
 function initMenu() {
   const menuToggle = document.getElementById('menuToggle');
   const menuDropdown = document.getElementById('menuDropdown');
   
   if (!menuToggle || !menuDropdown) return;
   
-  // Criar overlay para fechar ao clicar fora
+  // Criar overlay para fechar ao clicar fora (mas sem bloquear a página)
   const overlay = document.createElement('div');
   overlay.className = 'menu-overlay';
   document.body.appendChild(overlay);
@@ -4575,11 +4580,20 @@ function initMenu() {
   // Abrir/fechar menu ao clicar no botão
   menuToggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    menuDropdown.classList.toggle('active');
-    overlay.classList.toggle('active');
+    const isOpen = menuDropdown.classList.contains('active');
+    
+    // Fechar todos os menus primeiro
+    menuDropdown.classList.remove('active');
+    overlay.classList.remove('active');
+    
+    // Se não estava aberto, abre
+    if (!isOpen) {
+      menuDropdown.classList.add('active');
+      overlay.classList.add('active');
+    }
   });
   
-  // Fechar menu ao clicar no overlay
+  // Fechar menu ao clicar no overlay (agora funciona)
   overlay.addEventListener('click', () => {
     menuDropdown.classList.remove('active');
     overlay.classList.remove('active');
@@ -4601,6 +4615,17 @@ function initMenu() {
       overlay.classList.remove('active');
     }
   });
+  
+  // Fechar menu ao rolar a página
+  window.addEventListener('scroll', () => {
+    menuDropdown.classList.remove('active');
+    overlay.classList.remove('active');
+  });
+  
+  // Garantir que o overlay não bloqueie cliques em elementos interativos
+  overlay.style.pointerEvents = 'auto';
+  
+  console.log('✅ Menu dropdown inicializado');
 }
 
 // Modificar a função showSection para atualizar o botão ativo no menu dropdown
