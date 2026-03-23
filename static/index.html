@@ -1512,6 +1512,142 @@ input::placeholder, textarea::placeholder {
   opacity: 0.6;
   text-align: center;
 }  
+
+/* ===================== MENU HAMBURGUER ===================== */
+nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: rgba(255,255,255,0.9);
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.menu-toggle:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.menu-icon {
+  font-size: 1.1rem;
+  font-weight: normal;
+}
+
+.menu-text {
+  letter-spacing: -0.01em;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--green-950);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+}
+
+.menu-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.menu-dropdown button {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.menu-dropdown button:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.95);
+}
+
+.menu-dropdown button.active {
+  background: var(--green-700);
+  color: #ffffff;
+}
+
+/* Fechar menu ao clicar fora */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  display: none;
+}
+
+.menu-overlay.active {
+  display: block;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .menu-dropdown {
+    right: auto;
+    left: 0;
+    min-width: 180px;
+  }
+  
+  .menu-text {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .menu-text {
+    display: none;
+  }
+  
+  .menu-toggle {
+    padding: 6px 12px;
+  }
+  
+  .menu-icon {
+    font-size: 1.2rem;
+  }
+}
+  
 </style>
 </head>
 <body>
@@ -1522,15 +1658,21 @@ input::placeholder, textarea::placeholder {
       <div class="logo-mark">🌿</div>
       <span class="logo-text">AGRO<span>core</span></span>
     </div>
-    <nav>
-      <button onclick="showSection('dashboard', this)">📊 Resumo</button>
-      <button onclick="showSection('produtos', this)">🌱 Produtos</button>
-      <button onclick="showSection('areas', this)">🗺️ Áreas</button>
-      <button onclick="showSection('producao', this)">🌾 Produção</button>
-      <button onclick="showSection('vendas', this)">💰 Vendas</button>
-      <button onclick="showSection('gastos', this)">💸 Gastos</button>
-      <button onclick="showSection('configuracoes', this)">⚙️ Configurações</button>
-    </nav>
+      <nav>
+        <div class="menu-toggle" id="menuToggle">
+          <span class="menu-icon">☰</span>
+          <span class="menu-text">Menu</span>
+        </div>
+        <div class="menu-dropdown" id="menuDropdown">
+          <button onclick="showSection('dashboard', this)">📊 Resumo</button>
+          <button onclick="showSection('produtos', this)">🌱 Produtos</button>
+          <button onclick="showSection('areas', this)">🗺️ Áreas</button>
+          <button onclick="showSection('producao', this)">🌾 Produção</button>
+          <button onclick="showSection('vendas', this)">💰 Vendas</button>
+          <button onclick="showSection('gastos', this)">💸 Gastos</button>
+          <button onclick="showSection('configuracoes', this)">⚙️ Configurações</button>
+        </div>
+      </nav>
   </div>
 </header>
 
@@ -3950,13 +4092,25 @@ function mostrarMensagemLogin(mensagem, tipo) {
 
 function adicionarBotaoLogout() {
   const nav = document.querySelector('nav');
+  const menuDropdown = document.getElementById('menuDropdown');
+  
   if (nav && !document.getElementById('btn-logout')) {
     const logoutBtn = document.createElement('button');
     logoutBtn.id = 'btn-logout';
     logoutBtn.innerHTML = '🚪 Sair';
     logoutBtn.onclick = logout;
-    logoutBtn.style.marginLeft = '10px';
+    logoutBtn.style.marginLeft = 'auto';
     logoutBtn.style.background = 'rgba(220,38,38,0.8)';
+    logoutBtn.style.padding = '6px 14px';
+    logoutBtn.style.borderRadius = '8px';
+    logoutBtn.style.border = 'none';
+    logoutBtn.style.color = 'white';
+    logoutBtn.style.fontWeight = '600';
+    logoutBtn.style.cursor = 'pointer';
+    logoutBtn.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+    logoutBtn.style.fontSize = '0.8rem';
+    
+    // Colocar o botão de logout fora do menu dropdown
     nav.appendChild(logoutBtn);
   }
 }
@@ -4403,6 +4557,87 @@ function calcularPontoEquilibrioProduto(produto) {
   document.getElementById('be-prod-footer').innerHTML = `⚖️ Ponto de equilíbrio em kg = (custo total) ÷ (preço médio R$ ${formatMoney(precoMedioKg)}/kg) · Dados de ${mesAno}`;
 }
   
+// ============================================
+// MENU DROPDOWN (TRÊS PONTINHOS)
+// ============================================
+
+function initMenu() {
+  const menuToggle = document.getElementById('menuToggle');
+  const menuDropdown = document.getElementById('menuDropdown');
+  
+  if (!menuToggle || !menuDropdown) return;
+  
+  // Criar overlay para fechar ao clicar fora
+  const overlay = document.createElement('div');
+  overlay.className = 'menu-overlay';
+  document.body.appendChild(overlay);
+  
+  // Abrir/fechar menu ao clicar no botão
+  menuToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuDropdown.classList.toggle('active');
+    overlay.classList.toggle('active');
+  });
+  
+  // Fechar menu ao clicar no overlay
+  overlay.addEventListener('click', () => {
+    menuDropdown.classList.remove('active');
+    overlay.classList.remove('active');
+  });
+  
+  // Fechar menu ao clicar em um item
+  const menuButtons = menuDropdown.querySelectorAll('button');
+  menuButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      overlay.classList.remove('active');
+    });
+  });
+  
+  // Fechar menu ao pressionar ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menuDropdown.classList.remove('active');
+      overlay.classList.remove('active');
+    }
+  });
+}
+
+// Modificar a função showSection para atualizar o botão ativo no menu dropdown
+const originalShowSection = window.showSection;
+window.showSection = function(id, btn) {
+  if (!token && id !== 'login') {
+    toast('Por favor, faça login primeiro');
+    return;
+  }
+  
+  // Chamar função original
+  if (originalShowSection) {
+    originalShowSection(id, btn);
+  }
+  
+  // Atualizar botão ativo no menu dropdown
+  const menuButtons = document.querySelectorAll('.menu-dropdown button');
+  menuButtons.forEach(b => {
+    const onclickAttr = b.getAttribute('onclick');
+    if (onclickAttr && onclickAttr.includes(id)) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  
+  // Fechar menu ao mudar de seção
+  const menuDropdown = document.getElementById('menuDropdown');
+  const overlay = document.querySelector('.menu-overlay');
+  if (menuDropdown) menuDropdown.classList.remove('active');
+  if (overlay) overlay.classList.remove('active');
+};
+
+// Inicializar menu quando o DOM carregar
+document.addEventListener('DOMContentLoaded', () => {
+  initMenu();
+});
   
 </script>
 </body>
