@@ -2457,9 +2457,28 @@ function limparFormProducao() {
 async function deleteProducao(id) {
   if (!confirm('Remover este custo?')) return;
   try {
-    const r = await fetch(`/api/producoes/${id}`, {method:'DELETE'});
-    if (r.ok) { producoes = producoes.filter(p => p.id !== id); atualizarTudo(); toast('🗑️ Removido'); }
-  } catch { toast('❌ Erro ao remover'); }
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/producoes/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.ok) {
+      producoes = producoes.filter(p => p.id !== id);
+      atualizarTudo();
+      toast('🗑️ Produção removida');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
+    } else {
+      toast('❌ Erro ao remover');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    toast('❌ Erro ao conectar com o servidor');
+  }
 }
 
 // ============================================
@@ -2536,9 +2555,28 @@ function limparFormVenda() {
 async function deleteVenda(id) {
   if (!confirm('Remover esta venda?')) return;
   try {
-    const r = await fetch(`/api/vendas/${id}`, {method:'DELETE'});
-    if (r.ok) { vendas = vendas.filter(v => v.id !== id); atualizarTudo(); toast('🗑️ Removido'); }
-  } catch { toast('❌ Erro ao remover'); }
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`/api/vendas/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.ok) {
+      vendas = vendas.filter(v => v.id !== id);
+      atualizarTudo();
+      toast('🗑️ Venda removida');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
+    } else {
+      toast('❌ Erro ao remover');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    toast('❌ Erro ao conectar com o servidor');
+  }
 }
 
 // ============================================
@@ -2611,34 +2649,28 @@ function limparFormGasto() {
 
 async function deleteGasto(id) {
   if (!confirm('Remover este gasto?')) return;
-  
   try {
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`/api/gastos/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
-    
     if (response.ok) {
       gastos = gastos.filter(g => g.id !== id);
       atualizarTudo();
-      toast('🗑️ Removido');
-    } else if (response.status === 404) {
-      // Se não encontrou no servidor, remove só do frontend
-      gastos = gastos.filter(g => g.id !== id);
-      atualizarTudo();
-      toast('🗑️ Registro removido localmente');
+      toast('🗑️ Gasto removido');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
     } else {
       toast('❌ Erro ao remover');
     }
   } catch (error) {
     console.error('Erro:', error);
-    // Fallback: remover localmente
-    gastos = gastos.filter(g => g.id !== id);
-    atualizarTudo();
-    toast('⚠️ Removido apenas localmente');
+    toast('❌ Erro ao conectar com o servidor');
   }
 }
 
