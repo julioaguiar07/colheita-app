@@ -1679,46 +1679,7 @@ input::placeholder, textarea::placeholder {
         </div>
       </div>
     </div>
-    <!-- ========== PONTO DE EQUILÍBRIO (BREAK-EVEN) ========== -->
-    <div class="break-even-card" id="break-even-card">
-      <div class="break-even-header">
-        <div class="break-even-header-icon">⚖️</div>
-        <div>
-          <h3>Ponto de Equilíbrio</h3>
-          <p>Quantos kg você precisa vender para pagar os custos?</p>
-        </div>
-      </div>
-      
-      <div class="break-even-grid">
-        <div class="break-even-stat">
-          <div class="break-even-stat-label">💰 Preço Médio de Venda</div>
-          <div class="break-even-stat-value" id="be-preco-medio">R$ 0,00</div>
-          <div class="break-even-stat-unit">por kg</div>
-        </div>
-        <div class="break-even-stat">
-          <div class="break-even-stat-label">📦 Custo Variável Médio</div>
-          <div class="break-even-stat-value" id="be-custo-variavel">R$ 0,00</div>
-          <div class="break-even-stat-unit">por kg</div>
-        </div>
-        <div class="break-even-stat">
-          <div class="break-even-stat-label">📊 Margem de Contribuição</div>
-          <div class="break-even-stat-value" id="be-margem-contribuicao">R$ 0,00</div>
-          <div class="break-even-stat-unit">por kg</div>
-        </div>
-      </div>
-      
-      <div class="break-even-result">
-        <div class="break-even-result-label">🎯 PONTO DE EQUILÍBRIO</div>
-        <div class="break-even-result-value" id="be-ponto-equilibrio">0 kg</div>
-        <div class="break-even-result-desc" id="be-descricao">
-          Você precisa vender esta quantidade para cobrir todos os custos
-        </div>
-      </div>
-      
-      <div class="break-even-footer" id="be-footer">
-        ⚖️ Baseado nos custos totais do mês atual
-      </div>
-    </div>
+
     <!-- ÚLTIMOS REGISTROS (NOVO ESTILO) -->
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 20px;">
       
@@ -1854,7 +1815,46 @@ input::placeholder, textarea::placeholder {
           <div class="chart-container"><canvas id="chartProdutoCategorias"></canvas></div>
         </div>
       </div>
-
+      <!-- ========== PONTO DE EQUILÍBRIO POR PRODUTO ========== -->
+      <div class="break-even-card" id="break-even-produto-card" style="display: none;">
+        <div class="break-even-header">
+          <div class="break-even-header-icon">⚖️</div>
+          <div>
+            <h3>Ponto de Equilíbrio - <span id="be-produto-nome">Produto</span></h3>
+            <p>Quantos kg você precisa vender para pagar os custos deste produto?</p>
+          </div>
+        </div>
+        
+        <div class="break-even-grid">
+          <div class="break-even-stat">
+            <div class="break-even-stat-label">💰 Preço Médio de Venda</div>
+            <div class="break-even-stat-value" id="be-prod-preco-medio">R$ 0,00</div>
+            <div class="break-even-stat-unit">por kg</div>
+          </div>
+          <div class="break-even-stat">
+            <div class="break-even-stat-label">📦 Custo Variável Médio</div>
+            <div class="break-even-stat-value" id="be-prod-custo-variavel">R$ 0,00</div>
+            <div class="break-even-stat-unit">por kg</div>
+          </div>
+          <div class="break-even-stat">
+            <div class="break-even-stat-label">📊 Margem de Contribuição</div>
+            <div class="break-even-stat-value" id="be-prod-margem">R$ 0,00</div>
+            <div class="break-even-stat-unit">por kg</div>
+          </div>
+        </div>
+        
+        <div class="break-even-result">
+          <div class="break-even-result-label">🎯 PONTO DE EQUILÍBRIO</div>
+          <div class="break-even-result-value" id="be-prod-ponto">0 kg</div>
+          <div class="break-even-result-desc" id="be-prod-descricao">
+            Selecione um produto para ver o ponto de equilíbrio
+          </div>
+        </div>
+        
+        <div class="break-even-footer" id="be-prod-footer">
+          ⚖️ Baseado nos custos fixos do produto no mês atual
+        </div>
+      </div>
       <div class="card" style="margin-bottom: 24px;">
         <div class="card-title"><div class="dot"></div> Todos os Registros</div>
         <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
@@ -3287,8 +3287,13 @@ function mudarProdutoSelecionado() {
   if (produtoSelecionado) {
     if(s) s.style.display='none'; if(c) c.style.display='block';
     atualizarDashboardProduto();
+    // 👇 ADICIONE ESTA LINHA 👇
+    calcularPontoEquilibrioProduto(produtoSelecionado);
   } else {
     if(s) s.style.display='block'; if(c) c.style.display='none';
+    // Esconder o card quando nenhum produto selecionado
+    const breakCard = document.getElementById('break-even-produto-card');
+    if (breakCard) breakCard.style.display = 'none';
   }
 }
 
@@ -3329,6 +3334,7 @@ function atualizarDashboardProduto() {
   atualizarTabelaProduto('todos', custosProd, vendasProd, gastosProd);
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
+  calcularPontoEquilibrioProduto(produtoSelecionado);
 }
 
 function mudarAbaProduto(tipo, botao) {
@@ -4266,7 +4272,150 @@ function calcularPontoEquilibrio() {
   document.getElementById('be-footer').innerHTML = `⚖️ Ponto de equilíbrio baseado nos custos fixos de ${mesAno} (${custosFixosFormatado}) · Margem de contribuição: ${formatMoney(margemContribuicaoKg)}/kg`;
 }
 
+// ============================================
+// PONTO DE EQUILÍBRIO POR PRODUTO
+// ============================================
 
+function calcularPontoEquilibrioProduto(produto) {
+  if (!produto) {
+    // Esconder o card se nenhum produto selecionado
+    const card = document.getElementById('break-even-produto-card');
+    if (card) card.style.display = 'none';
+    return;
+  }
+  
+  // Mostrar o card
+  const card = document.getElementById('break-even-produto-card');
+  if (card) card.style.display = 'block';
+  
+  // Atualizar nome do produto
+  document.getElementById('be-produto-nome').textContent = produto;
+  
+  // Pegar o primeiro dia do mês atual
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const primeiroDiaStr = primeiroDiaMes.toISOString().split('T')[0];
+  
+  // 1. Custos Fixos do produto no mês (gastos vinculados ao produto sem quantidade)
+  // Esses são custos fixos porque não variam com a quantidade vendida
+  const custosFixosProduto = gastos.filter(g => {
+    if (!g?.valor) return false;
+    const dataGasto = new Date(g.data);
+    return dataGasto >= primeiroDiaMes && g.produto === produto && (!g.qtd || g.qtd === 0);
+  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  
+  // 2. Custos Variáveis do produto no mês (custos de produção + gastos com quantidade)
+  // Custos de produção (sempre variáveis)
+  const custosProducao = producoes.filter(p => {
+    if (!p?.total) return false;
+    const dataProd = new Date(p.data);
+    return dataProd >= primeiroDiaMes && p.produto === produto;
+  }).reduce((s, p) => s + (Number(p.total) || 0), 0);
+  
+  // Gastos com quantidade (como insumos por kg produzido)
+  const gastosVariaveis = gastos.filter(g => {
+    if (!g?.valor) return false;
+    const dataGasto = new Date(g.data);
+    return dataGasto >= primeiroDiaMes && g.produto === produto && g.qtd && g.qtd > 0;
+  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  
+  const totalCustosVariaveis = custosProducao + gastosVariaveis;
+  
+  // 3. Vendas do produto no mês
+  const vendasProduto = vendas.filter(v => {
+    if (!v?.total) return false;
+    const dataVenda = new Date(v.data);
+    return dataVenda >= primeiroDiaMes && v.produto === produto;
+  });
+  
+  const totalVendasValor = vendasProduto.reduce((s, v) => s + (Number(v.total) || 0), 0);
+  
+  // 4. Calcular quantidade total vendida em KG (normalizado)
+  let totalQuilosVendidos = 0;
+  vendasProduto.forEach(v => {
+    const qtd = Number(v.qtd) || 0;
+    const u = (v.unidade || '').toLowerCase();
+    if (u === 'kg' || u === 'quilo' || u === 'quilograma') {
+      totalQuilosVendidos += qtd;
+    } else if (u === 'balde') {
+      totalQuilosVendidos += qtd * 20;
+    } else if (u === 'caixa') {
+      totalQuilosVendidos += qtd * 15;
+    } else if (u === 'saco') {
+      totalQuilosVendidos += qtd * 30;
+    } else if (u === 'un' || u === 'unidade') {
+      totalQuilosVendidos += qtd * 0.5;
+    } else {
+      totalQuilosVendidos += qtd;
+    }
+  });
+  
+  // 5. Calcular preço médio por kg
+  const precoMedioKg = totalQuilosVendidos > 0 ? totalVendasValor / totalQuilosVendidos : 0;
+  
+  // 6. Calcular custo variável médio por kg
+  const custoVariavelMedioKg = totalQuilosVendidos > 0 ? totalCustosVariaveis / totalQuilosVendidos : 0;
+  
+  // 7. Margem de contribuição por kg
+  const margemContribuicaoKg = precoMedioKg - custoVariavelMedioKg;
+  
+  // 8. Ponto de equilíbrio em kg
+  const pontoEquilibrioKg = margemContribuicaoKg > 0 ? custosFixosProduto / margemContribuicaoKg : 0;
+  
+  // 9. Atualizar o HTML
+  document.getElementById('be-prod-preco-medio').textContent = formatMoney(precoMedioKg) + '/kg';
+  document.getElementById('be-prod-custo-variavel').textContent = formatMoney(custoVariavelMedioKg) + '/kg';
+  document.getElementById('be-prod-margem').textContent = formatMoney(margemContribuicaoKg) + '/kg';
+  
+  const pontoFormatado = pontoEquilibrioKg.toFixed(0);
+  const pontoElement = document.getElementById('be-prod-ponto');
+  pontoElement.textContent = `${pontoFormatado} kg`;
+  
+  // Gerar descrição personalizada
+  let descricao = '';
+  let cor = '#4ade80';
+  
+  if (totalQuilosVendidos === 0 && custosFixosProduto === 0 && totalCustosVariaveis === 0) {
+    descricao = `📭 Nenhum dado registrado para ${produto} neste mês. Adicione vendas e custos para calcular o ponto de equilíbrio.`;
+    cor = '#9ca3af';
+    pontoElement.style.color = '#9ca3af';
+  } else if (totalQuilosVendidos === 0) {
+    descricao = `⚠️ Você ainda não vendeu ${produto} neste mês. Precisa vender ${pontoFormatado} kg para atingir o ponto de equilíbrio.`;
+    cor = '#fbbf24';
+    pontoElement.style.color = '#fbbf24';
+  } else if (pontoEquilibrioKg <= 0) {
+    if (margemContribuicaoKg <= 0) {
+      descricao = `⚠️ A margem de contribuição é negativa (${formatMoney(margemContribuicaoKg)}/kg). Você está vendendo abaixo do custo variável. Revise seus preços ou reduza custos!`;
+      cor = '#f87171';
+      pontoElement.textContent = '❌ Inviável';
+    } else {
+      descricao = `✅ Sem custos fixos para este produto! Cada kg vendido gera lucro direto.`;
+      cor = '#4ade80';
+      pontoElement.textContent = '0 kg';
+    }
+    pontoElement.style.color = cor;
+  } else if (totalQuilosVendidos >= pontoEquilibrioKg) {
+    const excedente = totalQuilosVendidos - pontoEquilibrioKg;
+    descricao = `✅ Você ultrapassou o ponto de equilíbrio! Vendeu ${totalQuilosVendidos.toFixed(0)} kg e está ${excedente.toFixed(0)} kg acima. Lucro garantido! 🎉`;
+    cor = '#4ade80';
+    pontoElement.style.color = '#4ade80';
+  } else {
+    const faltam = pontoEquilibrioKg - totalQuilosVendidos;
+    const faturamentoFaltante = faltam * precoMedioKg;
+    descricao = `⚠️ Faltam ${faltam.toFixed(0)} kg para atingir o ponto de equilíbrio (R$ ${formatMoney(faturamentoFaltante)} em vendas). Continue! 💪`;
+    cor = '#fbbf24';
+    pontoElement.style.color = '#fbbf24';
+  }
+  
+  document.getElementById('be-prod-descricao').textContent = descricao;
+  
+  // Atualizar footer
+  const mesAno = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+  const custosFixosFormatado = formatMoney(custosFixosProduto);
+  const margemFormatada = formatMoney(margemContribuicaoKg);
+  
+  document.getElementById('be-prod-footer').innerHTML = `⚖️ Ponto de equilíbrio baseado nos custos fixos de ${mesAno} (${custosFixosFormatado}) · Margem de contribuição: ${margemFormatada}/kg`;
+}
   
   
 </script>
