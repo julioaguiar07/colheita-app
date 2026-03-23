@@ -1166,7 +1166,48 @@ def listar_usuarios():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+@app.route('/criar-admin', methods=['GET'])
+def criar_admin_temp():
+    """Rota temporária para criar usuário admin"""
+    try:
+        import bcrypt
+        
+        email = 'admin@agrocore.com'
+        senha = '@Julio030422'
+        senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verificar se já existe
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', (email,))
+        existe = cur.fetchone()
+        
+        if existe:
+            return "<h1 style='color: orange;'>⚠️ Usuário admin já existe!</h1><p>Email: admin@agrocore.com<br>Senha: admin123</p>"
+        
+        # Criar admin
+        cur.execute('''
+            INSERT INTO usuarios (email, senha_hash, nome, ativo)
+            VALUES (%s, %s, %s, true)
+        ''', (email, senha_hash, 'Administrador'))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return """
+        <html>
+        <body style="font-family: Arial; padding: 40px; text-align: center;">
+            <h1 style="color: green;">✅ Usuário admin criado com sucesso!</h1>
+            <p><strong>E-mail:</strong> admin@agrocore.com</p>
+            <p><strong>Senha:</strong> admin123</p>
+            <p><a href="/" style="background: #22883a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ir para o login</a></p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"<h1 style='color: red;'>❌ Erro: {str(e)}</h1>"
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
