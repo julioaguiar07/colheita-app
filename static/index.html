@@ -2189,6 +2189,49 @@ input::placeholder, textarea::placeholder {
         </div>
       </div>
     </div>
+    
+  <!-- CARD DE ADMINISTRAÇÃO - CRIAR USUÁRIOS -->
+  <div class="card" style="margin-top: 20px;">
+    <div class="card-title">
+      <div class="dot" style="background: var(--purple-600);"></div>
+      👥 Administração - Criar Novo Usuário
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+      <!-- Formulário de criação -->
+      <div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>📧 E-mail do cliente</label>
+          <input type="email" id="novo-email" placeholder="cliente@email.com" style="font-size: 1rem;">
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>🔒 Senha desejada</label>
+          <input type="text" id="nova-senha-usuario" placeholder="senha escolhida pelo cliente" style="font-size: 1rem;">
+          <small style="color: var(--text-muted);">Mínimo 6 caracteres</small>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>👤 Nome do cliente</label>
+          <input type="text" id="novo-nome" placeholder="Nome completo" style="font-size: 1rem;">
+        </div>
+        
+        <button class="btn btn-primary" onclick="criarUsuario()" style="width: 100%;">
+          ➕ Criar Usuário
+        </button>
+        
+        <div id="status-criar" style="margin-top: 16px; padding: 12px; border-radius: 8px; display: none;"></div>
+      </div>
+      
+      <!-- Lista de usuários recentes -->
+      <div style="background: var(--surface-2); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border);">
+        <h4 style="margin-bottom: 15px;">📋 Últimos usuários criados</h4>
+        <div id="lista-usuarios" style="font-size: 0.85rem; max-height: 300px; overflow-y: auto;">
+          <div style="text-align: center; padding: 20px;">Carregando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
   </section>
   
 </main>
