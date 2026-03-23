@@ -1692,6 +1692,345 @@ body.menu-open .menu-container {
     width: 24px;
   }
 }
+
+
+/* ===================== ÁREAS - NOVO ESTILO ===================== */
+
+/* Container principal */
+.areas-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Botão de adicionar fazenda */
+.btn-add-fazenda {
+  background: linear-gradient(135deg, var(--green-600), var(--green-700));
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-add-fazenda:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  background: linear-gradient(135deg, var(--green-500), var(--green-600));
+}
+
+/* Card da fazenda */
+.fazenda-card {
+  background: var(--surface);
+  border-radius: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.fazenda-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Cabeçalho da fazenda */
+.fazenda-header {
+  background: linear-gradient(135deg, var(--green-950), var(--green-800));
+  padding: 20px 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.fazenda-header:hover {
+  background: linear-gradient(135deg, var(--green-800), var(--green-700));
+}
+
+.fazenda-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.fazenda-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.fazenda-nome {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.03em;
+}
+
+.fazenda-stats {
+  display: flex;
+  gap: 24px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+}
+
+.fazenda-stats span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fazenda-toggle {
+  font-size: 24px;
+  color: white;
+  transition: transform 0.2s ease;
+}
+
+.fazenda-card.expanded .fazenda-toggle {
+  transform: rotate(180deg);
+}
+
+/* Conteúdo da fazenda (expansível) */
+.fazenda-content {
+  display: none;
+  padding: 24px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+}
+
+.fazenda-card.expanded .fazenda-content {
+  display: block;
+}
+
+/* Cabeçalho de áreas */
+.areas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.areas-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-add-area {
+  background: var(--green-600);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-add-area:hover {
+  background: var(--green-500);
+  transform: translateY(-1px);
+}
+
+/* Grid de áreas */
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+/* Card da área */
+.area-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.area-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.area-header {
+  background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+  padding: 16px 20px;
+  color: white;
+  position: relative;
+}
+
+.area-nome {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.area-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.area-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.area-body {
+  padding: 16px 20px;
+  display: none;
+  border-top: 1px solid var(--border);
+}
+
+.area-card.expanded .area-body {
+  display: block;
+}
+
+.area-body p {
+  margin: 8px 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.area-cultivos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.cultivo-tag {
+  background: var(--green-100);
+  color: var(--green-700);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.area-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.area-kpi {
+  background: var(--surface-2);
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.area-kpi-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.area-kpi-value {
+  font-size: 1rem;
+  font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  margin-top: 4px;
+}
+
+.btn-delete-area {
+  background: rgba(220,38,38,0.9);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-area:hover {
+  background: var(--red-600);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.modal .form-group {
+  margin-bottom: 20px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
   
 </style>
 </head>
@@ -2154,128 +2493,60 @@ body.menu-open .menu-container {
   <section id="areas" class="section">
     <div class="page-header">
       <div>
-        <h1 class="section-title"><span class="title-icon">🗺️</span> Áreas de Cultivo</h1>
-        <p class="section-sub">Informações sobre as áreas da fazenda</p>
+        <h1 class="section-title"><span class="title-icon">🗺️</span> Fazendas e Áreas</h1>
+        <p class="section-sub">Organize suas propriedades e acompanhe os resultados por área</p>
       </div>
     </div>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
-      <div style="background: linear-gradient(135deg, var(--green-950), var(--green-700)); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); color: white; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
-        <div style="position: absolute; top: -30px; right: -30px; font-size: 9rem; opacity: 0.05;">🌱</div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
-          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🗺️</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">Area 1</h3>
+  
+    <div class="areas-container">
+      <button class="btn-add-fazenda" onclick="abrirModalFazenda()">
+        ➕ Nova Fazenda
+      </button>
+  
+      <div id="fazendas-container"></div>
+    </div>
+  
+    <!-- Modal Nova Fazenda -->
+    <div id="modal-fazenda" class="modal-overlay">
+      <div class="modal">
+        <h3>➕ Nova Fazenda</h3>
+        <div class="form-group">
+          <label>Nome da Fazenda</label>
+          <input type="text" id="nova-fazenda-nome" placeholder="Ex: Fazenda Boa Vista">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Hectares</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">11</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">ha</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Pés</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">2.065</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">unidades</div>
-          </div>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.12);">
-          <span style="font-weight: 700; opacity: 0.85;">Cultivo:</span> Acerola, Caju
-        </div>
-      </div>
-
-      <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); color: white; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
-        <div style="position: absolute; top: -30px; right: -30px; font-size: 9rem; opacity: 0.05;">🌱</div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
-          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🗺️</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">Area 3</h3>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Hectares</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">50</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">ha</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Pés</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">0</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">unidades</div>
-          </div>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.12);">
-          <span style="font-weight: 700; opacity: 0.85;">Cultivo:</span> Castanha, Manga
-        </div>
-      </div>
-
-      <div style="background: linear-gradient(135deg, #78350f, #d97706); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); color: white; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
-        <div style="position: absolute; top: -30px; right: -30px; font-size: 9rem; opacity: 0.05;">🌱</div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
-          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🗺️</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">Ca</h3>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Hectares</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">50</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">ha</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Pés</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">10.058</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">unidades</div>
-          </div>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.12);">
-          <span style="font-weight: 700; opacity: 0.85;">Cultivo:</span> Caju
-        </div>
-      </div>
-
-      <div style="background: linear-gradient(135deg, #4c1d95, #7c3aed); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); color: white; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.06);">
-        <div style="position: absolute; top: -30px; right: -30px; font-size: 9rem; opacity: 0.05;">🌱</div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
-          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🗺️</div>
-          <h3 style="font-size: 1.6rem; font-weight: 800; margin: 0; letter-spacing: -0.04em;">Área Quatin</h3>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Hectares</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">22</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">ha</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.12); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Pés</div>
-            <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono';">3.880</div>
-            <div style="font-size: 0.7rem; opacity: 0.65; font-weight: 600;">unidades</div>
-          </div>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.12);">
-          <span style="font-weight: 700; opacity: 0.85;">Cultivo:</span> Acerola, Castanha, Manga
+        <div class="modal-buttons">
+          <button class="btn btn-secondary" onclick="fecharModalFazenda()">Cancelar</button>
+          <button class="btn btn-primary" onclick="criarFazenda()">Criar Fazenda</button>
         </div>
       </div>
     </div>
-
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 24px;">
-      <div style="background: var(--surface); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); text-align: center; border-top: 3px solid var(--green-500);">
-        <div style="font-size: 1.8rem; margin-bottom: 10px;">🌾</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; margin-bottom: 6px;">Total Hectares</div>
-        <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono'; color: var(--text-primary); letter-spacing: -0.03em;">133</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">hectares</div>
+  
+    <!-- Modal Nova Área -->
+    <div id="modal-area" class="modal-overlay">
+      <div class="modal">
+        <h3>➕ Nova Área</h3>
+        <input type="hidden" id="area-fazenda-id">
+        <div class="form-group">
+          <label>Nome da Área</label>
+          <input type="text" id="nova-area-nome" placeholder="Ex: Talhão A, Lote 1">
+        </div>
+        <div class="form-group">
+          <label>Hectares (ha)</label>
+          <input type="number" id="nova-area-hectares" step="0.1" placeholder="Ex: 10.5">
+        </div>
+        <div class="form-group">
+          <label>Número de Pés</label>
+          <input type="number" id="nova-area-pes" placeholder="Ex: 2000">
+        </div>
+        <div class="form-group">
+          <label>Cultivos (separados por vírgula)</label>
+          <input type="text" id="nova-area-cultivos" placeholder="Ex: Acerola, Caju, Manga">
+        </div>
+        <div class="modal-buttons">
+          <button class="btn btn-secondary" onclick="fecharModalArea()">Cancelar</button>
+          <button class="btn btn-primary" onclick="criarArea()">Criar Área</button>
+        </div>
       </div>
-      <div style="background: var(--surface); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); text-align: center; border-top: 3px solid var(--blue-600);">
-        <div style="font-size: 1.8rem; margin-bottom: 10px;">🌳</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; margin-bottom: 6px;">Total de Pés</div>
-        <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono'; color: var(--text-primary); letter-spacing: -0.03em;">16.003</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">unidades</div>
-      </div>
-      <div style="background: var(--surface); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); text-align: center; border-top: 3px solid var(--amber-500);">
-        <div style="font-size: 1.8rem; margin-bottom: 10px;">📊</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; margin-bottom: 6px;">Densidade Média</div>
-        <div style="font-size: 2rem; font-weight: 800; font-family: 'DM Mono'; color: var(--text-primary); letter-spacing: -0.03em;">120,32</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-top: 2px;">pés/ha</div>
-      </div>
-    </div>
-
-    <div style="margin-top: 22px; text-align: center; color: var(--text-muted); font-size: 0.8rem; background: var(--surface); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-weight: 600;">
-      🌱 Informações cadastrais das áreas · Atualizado em 10/03/2026
     </div>
   </section>
 
@@ -2698,7 +2969,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gasto-data').value = hoje;
   carregarDados();
   carregarConfiguracoesEmail();
-  initMinimalMenu(); 
+  initMinimalMenu();
+  carregarFazendas();
 });
 
 
@@ -4653,6 +4925,306 @@ function initMinimalMenu() {
   
   console.log('✅ Menu minimalista inicializado');
 }
+
+
+// ============================================
+// GERENCIAMENTO DE FAZENDAS E ÁREAS
+// ============================================
+
+let fazendas = [];
+
+// Carregar fazendas do localStorage
+function carregarFazendas() {
+  const saved = localStorage.getItem('agrocore_fazendas');
+  if (saved) {
+    fazendas = JSON.parse(saved);
+  } else {
+    // Dados de exemplo
+    fazendas = [
+      {
+        id: 'faz1',
+        nome: 'Fazenda Boa Vista',
+        areas: [
+          {
+            id: 'area1',
+            nome: 'Talhão A',
+            hectares: 11,
+            pes: 2065,
+            cultivos: ['Acerola', 'Caju']
+          },
+          {
+            id: 'area2',
+            nome: 'Área Quatin',
+            hectares: 22,
+            pes: 3880,
+            cultivos: ['Acerola', 'Castanha', 'Manga']
+          }
+        ]
+      },
+      {
+        id: 'faz2',
+        nome: 'Fazenda São José',
+        areas: [
+          {
+            id: 'area3',
+            nome: 'Area 3',
+            hectares: 50,
+            pes: 0,
+            cultivos: ['Castanha', 'Manga']
+          },
+          {
+            id: 'area4',
+            nome: 'Ca',
+            hectares: 50,
+            pes: 10058,
+            cultivos: ['Caju']
+          }
+        ]
+      }
+    ];
+    salvarFazendas();
+  }
+  renderizarFazendas();
+}
+
+function salvarFazendas() {
+  localStorage.setItem('agrocore_fazendas', JSON.stringify(fazendas));
+}
+
+function renderizarFazendas() {
+  const container = document.getElementById('fazendas-container');
+  if (!container) return;
+
+  if (fazendas.length === 0) {
+    container.innerHTML = `
+      <div class="empty" style="padding: 60px; text-align: center;">
+        <span class="empty-icon">🏠</span>
+        <h3 style="margin-top: 16px;">Nenhuma fazenda cadastrada</h3>
+        <p>Clique em "Nova Fazenda" para começar</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = fazendas.map(fazenda => `
+    <div class="fazenda-card" id="fazenda-${fazenda.id}">
+      <div class="fazenda-header" onclick="toggleFazenda('${fazenda.id}')">
+        <div class="fazenda-info">
+          <div class="fazenda-icon">🏠</div>
+          <div>
+            <div class="fazenda-nome">${fazenda.nome}</div>
+            <div class="fazenda-stats">
+              <span>📊 ${fazenda.areas.length} área(s)</span>
+              <span>🌾 ${fazenda.areas.reduce((s,a) => s + (a.hectares || 0), 0).toFixed(1)} ha</span>
+              <span>🌳 ${fazenda.areas.reduce((s,a) => s + (a.pes || 0), 0)} pés</span>
+            </div>
+          </div>
+        </div>
+        <div class="fazenda-toggle">▼</div>
+      </div>
+      <div class="fazenda-content">
+        <div class="areas-header">
+          <h3>🌱 Áreas de Cultivo</h3>
+          <button class="btn-add-area" onclick="abrirModalArea('${fazenda.id}')">
+            ➕ Adicionar Área
+          </button>
+        </div>
+        <div class="areas-grid">
+          ${renderizarAreas(fazenda)}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderizarAreas(fazenda) {
+  if (fazenda.areas.length === 0) {
+    return '<div class="empty" style="padding: 40px;">Nenhuma área cadastrada. Clique em "Adicionar Área"</div>';
+  }
+
+  return fazenda.areas.map(area => {
+    // Buscar dados reais da área nas outras abas
+    const dadosArea = buscarDadosArea(area.nome);
+    
+    return `
+      <div class="area-card" id="area-${area.id}">
+        <div class="area-header" onclick="toggleArea('${area.id}')">
+          <div class="area-nome">
+            <span>🌾 ${area.nome}</span>
+            <button class="btn-delete-area" onclick="event.stopPropagation(); deletarArea('${fazenda.id}', '${area.id}')">🗑️</button>
+          </div>
+          <div class="area-stats">
+            <span>📏 ${area.hectares || 0} ha</span>
+            <span>🌳 ${area.pes || 0} pés</span>
+          </div>
+        </div>
+        <div class="area-body">
+          <div class="area-cultivos">
+            ${area.cultivos.map(c => `<span class="cultivo-tag">${c}</span>`).join('')}
+          </div>
+          
+          <div class="area-kpis">
+            <div class="area-kpi">
+              <div class="area-kpi-label">💰 Vendas</div>
+              <div class="area-kpi-value">${formatMoney(dadosArea.vendas)}</div>
+            </div>
+            <div class="area-kpi">
+              <div class="area-kpi-label">🌾 Custos Produção</div>
+              <div class="area-kpi-value">${formatMoney(dadosArea.custos)}</div>
+            </div>
+            <div class="area-kpi">
+              <div class="area-kpi-label">💸 Gastos</div>
+              <div class="area-kpi-value">${formatMoney(dadosArea.gastos)}</div>
+            </div>
+            <div class="area-kpi">
+              <div class="area-kpi-label">📈 Lucro</div>
+              <div class="area-kpi-value" style="color: ${dadosArea.lucro >= 0 ? 'var(--green-600)' : 'var(--red-600)'}">
+                ${formatMoney(dadosArea.lucro)}
+              </div>
+            </div>
+          </div>
+          
+          ${dadosArea.produtos.length > 0 ? `
+            <div style="margin-top: 12px; font-size: 0.75rem; color: var(--text-muted);">
+              <strong>📦 Produtos cultivados:</strong> ${dadosArea.produtos.join(', ')}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buscarDadosArea(nomeArea) {
+  // Filtrar registros da área específica
+  const custos = producoes.filter(p => p.area === nomeArea).reduce((s, p) => s + (Number(p.total) || 0), 0);
+  const vendas = vendas.filter(v => v.area === nomeArea).reduce((s, v) => s + (Number(v.total) || 0), 0);
+  const gastosArea = gastos.filter(g => g.area === nomeArea).reduce((s, g) => s + (Number(g.valor) || 0), 0);
+  
+  // Produtos cultivados na área
+  const produtos = new Set();
+  producoes.filter(p => p.area === nomeArea).forEach(p => { if(p.produto) produtos.add(p.produto); });
+  vendas.filter(v => v.area === nomeArea).forEach(v => { if(v.produto) produtos.add(v.produto); });
+  gastos.filter(g => g.area === nomeArea).forEach(g => { if(g.produto) produtos.add(g.produto); });
+  
+  return {
+    custos,
+    vendas,
+    gastos: gastosArea,
+    lucro: vendas - (custos + gastosArea),
+    produtos: Array.from(produtos)
+  };
+}
+
+// Funções de controle
+function toggleFazenda(id) {
+  const card = document.getElementById(`fazenda-${id}`);
+  if (card) card.classList.toggle('expanded');
+}
+
+function toggleArea(id) {
+  const card = document.getElementById(`area-${id}`);
+  if (card) card.classList.toggle('expanded');
+}
+
+function abrirModalFazenda() {
+  document.getElementById('modal-fazenda').classList.add('active');
+  document.getElementById('nova-fazenda-nome').value = '';
+}
+
+function fecharModalFazenda() {
+  document.getElementById('modal-fazenda').classList.remove('active');
+}
+
+function criarFazenda() {
+  const nome = document.getElementById('nova-fazenda-nome').value.trim();
+  if (!nome) {
+    toast('⚠️ Informe o nome da fazenda');
+    return;
+  }
+  
+  const novaFazenda = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+    nome: nome,
+    areas: []
+  };
+  
+  fazendas.push(novaFazenda);
+  salvarFazendas();
+  renderizarFazendas();
+  fecharModalFazenda();
+  toast(`✅ Fazenda "${nome}" criada com sucesso!`);
+}
+
+function abrirModalArea(fazendaId) {
+  document.getElementById('area-fazenda-id').value = fazendaId;
+  document.getElementById('nova-area-nome').value = '';
+  document.getElementById('nova-area-hectares').value = '';
+  document.getElementById('nova-area-pes').value = '';
+  document.getElementById('nova-area-cultivos').value = '';
+  document.getElementById('modal-area').classList.add('active');
+}
+
+function fecharModalArea() {
+  document.getElementById('modal-area').classList.remove('active');
+}
+
+function criarArea() {
+  const fazendaId = document.getElementById('area-fazenda-id').value;
+  const nome = document.getElementById('nova-area-nome').value.trim();
+  const hectares = parseFloat(document.getElementById('nova-area-hectares').value) || 0;
+  const pes = parseInt(document.getElementById('nova-area-pes').value) || 0;
+  const cultivosStr = document.getElementById('nova-area-cultivos').value.trim();
+  const cultivos = cultivosStr ? cultivosStr.split(',').map(c => c.trim()) : [];
+  
+  if (!nome) {
+    toast('⚠️ Informe o nome da área');
+    return;
+  }
+  
+  const fazenda = fazendas.find(f => f.id === fazendaId);
+  if (!fazenda) return;
+  
+  const novaArea = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+    nome: nome,
+    hectares: hectares,
+    pes: pes,
+    cultivos: cultivos
+  };
+  
+  fazenda.areas.push(novaArea);
+  salvarFazendas();
+  renderizarFazendas();
+  fecharModalArea();
+  toast(`✅ Área "${nome}" criada com sucesso!`);
+}
+
+function deletarArea(fazendaId, areaId) {
+  if (!confirm('Remover esta área? Todos os registros associados permanecerão, mas a área será removida da lista.')) return;
+  
+  const fazenda = fazendas.find(f => f.id === fazendaId);
+  if (!fazenda) return;
+  
+  fazenda.areas = fazenda.areas.filter(a => a.id !== areaId);
+  salvarFazendas();
+  renderizarFazendas();
+  toast('🗑️ Área removida');
+}
+
+// Atualizar dados das áreas quando houver mudanças
+function atualizarDadosAreas() {
+  if (document.getElementById('areas')?.classList.contains('active')) {
+    renderizarFazendas();
+  }
+}
+
+// Modificar atualizarTudo para atualizar as áreas também
+const originalAtualizarTudo = window.atualizarTudo;
+window.atualizarTudo = function() {
+  if (originalAtualizarTudo) originalAtualizarTudo();
+  atualizarDadosAreas();
+};
   
 </script>
 </body>
