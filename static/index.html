@@ -2835,28 +2835,40 @@ function criarGraficos() {
   gastos.forEach(g => { if(g?.valor){ const c=g.categoria||'Outros'; gastosCat[c]=(gastosCat[c]||0)+(Number(g.valor)||0); }});
   const sorted = Object.entries(gastosCat).sort((a,b)=>b[1]-a[1]);
 
+  // Pegar o container do gráfico
+  const container = document.getElementById('chartGastos')?.parentElement;
+  
   // Se não há dados, mostrar mensagem de vazio
   if (sorted.length === 0) {
-    const container = document.getElementById('chartGastos')?.parentElement;
     if (container) {
-      // Verificar se já tem mensagem de vazio para não duplicar
-      if (!container.querySelector('.empty-graph')) {
-        container.innerHTML = '<div class="empty-graph" style="padding: 40px; text-align: center; font-size: 0.82rem; color: var(--text-muted);">📭 Nenhum gasto registrado ainda</div>';
+      // Salvar o canvas original se não existir
+      if (!container.dataset.originalCanvas) {
+        container.dataset.originalCanvas = '<canvas id="chartGastos"></canvas>';
       }
+      container.innerHTML = '<div class="empty-graph" style="padding: 40px; text-align: center; font-size: 0.82rem; color: var(--text-muted);">📭 Nenhum gasto registrado ainda</div>';
     }
     atualizarPrecosProdutos();
     atualizarVisaoGeralProdutos();
     return;
   }
   
-  // Remover mensagem de vazio se existir
-  const container = document.getElementById('chartGastos')?.parentElement;
+  // Se HÁ dados, restaurar o canvas e criar o gráfico
   if (container) {
-    const emptyMsg = container.querySelector('.empty-graph');
-    if (emptyMsg) emptyMsg.remove();
+    // Restaurar o canvas se foi substituído
+    if (container.querySelector('.empty-graph')) {
+      container.innerHTML = '<canvas id="chartGastos"></canvas>';
+    }
   }
   
-  const ctx = document.getElementById('chartGastos')?.getContext('2d');
+  const canvas = document.getElementById('chartGastos');
+  if (!canvas) {
+    console.error('Canvas chartGastos não encontrado');
+    atualizarPrecosProdutos();
+    atualizarVisaoGeralProdutos();
+    return;
+  }
+  
+  const ctx = canvas.getContext('2d');
   if (ctx) {
     charts.gastos = new Chart(ctx, {
       type: 'bar',
@@ -3765,41 +3777,21 @@ function logout() {
   vendas = [];
   gastos = [];
   
-  // DESTRUIR GRÁFICOS
+  // Destruir gráfico
   if (charts.gastos) {
     charts.gastos.destroy();
     charts.gastos = null;
   }
   
-  if (chartsProduto.gastos) {
-    chartsProduto.gastos.destroy();
-    chartsProduto.gastos = null;
-  }
-  
-  if (chartsProduto.categorias) {
-    chartsProduto.categorias.destroy();
-    chartsProduto.categorias = null;
-  }
-  
-  if (chartsProduto.comparativo) {
-    chartsProduto.comparativo.destroy();
-    chartsProduto.comparativo = null;
+  // Restaurar o canvas no container
+  const container = document.getElementById('chartGastos')?.parentElement;
+  if (container) {
+    container.innerHTML = '<canvas id="chartGastos"></canvas>';
   }
   
   // Resetar interface
   document.getElementById('dashboard').classList.remove('active');
   document.getElementById('login').classList.add('active');
-  
-  // Limpar mensagem de vazio do gráfico
-  const container = document.getElementById('chartGastos')?.parentElement;
-  if (container) {
-    const emptyMsg = container.querySelector('.empty-graph');
-    if (emptyMsg) emptyMsg.remove();
-    // Opcional: restaurar o canvas
-    if (!document.getElementById('chartGastos')) {
-      container.innerHTML = '<canvas id="chartGastos"></canvas>';
-    }
-  }
   
   // Remover botão de logout
   const logoutBtn = document.getElementById('btn-logout');
