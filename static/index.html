@@ -2263,25 +2263,6 @@ let filtrosVenda = { produto: '', cliente: '', area: '' };
 let filtrosGasto = { tipo: '', categoria: '', produto: '', area: '' };
 
 Chart.register(ChartDataLabels);
-
-// ============================================
-// INTERCEPTOR PARA ERROS 401 (COLOQUE AQUI)
-// ============================================
-const originalFetch = window.fetch;
-window.fetch = function(...args) {
-  return originalFetch.apply(this, args).then(response => {
-    if (response.status === 401) {
-      console.log('Token expirado ou inválido');
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        logout();
-        toast('Sessão expirada. Faça login novamente.');
-      }
-    }
-    return response;
-  });
-};
-
   
 // ============================================
 // CHART DEFAULTS
@@ -2320,7 +2301,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // API
 // ============================================
 async function carregarDados() {
-  // Verificar se tem token
   if (!token) {
     console.log('Sem token, não carregando dados');
     return;
@@ -2345,11 +2325,6 @@ async function carregarDados() {
   } catch (error) {
     console.error('Erro ao carregar:', error);
     toast('Erro ao conectar com o servidor');
-    
-    // Se erro 401, fazer logout
-    if (error.status === 401) {
-      logout();
-    }
   }
 }
 
@@ -3556,11 +3531,12 @@ function fazerLogin() {
       
       localStorage.setItem('auth_token', token);
       localStorage.setItem('usuario_atual', JSON.stringify(usuarioAtual));
+      localStorage.setItem('is_admin', usuarioAtual.is_admin || false);
       
       mostrarMensagemLogin('✅ Login realizado! Carregando dados...', 'sucesso');
       
       setTimeout(() => {
-        // Esconder login e mostrar sistema
+        // Esconder login e mostrar dashboard
         document.getElementById('login').classList.remove('active');
         document.getElementById('dashboard').classList.add('active');
         
@@ -3588,6 +3564,8 @@ function fazerLogin() {
 
 function mostrarMensagemLogin(mensagem, tipo) {
   const msgDiv = document.getElementById('login-mensagem');
+  if (!msgDiv) return;
+  
   msgDiv.textContent = mensagem;
   msgDiv.style.display = 'block';
   
@@ -3604,6 +3582,10 @@ function mostrarMensagemLogin(mensagem, tipo) {
     msgDiv.style.color = '#1e40af';
     msgDiv.style.border = '1px solid #bfdbfe';
   }
+  
+  setTimeout(() => {
+    msgDiv.style.display = 'none';
+  }, 5000);
 }
 
 function adicionarBotaoLogout() {
@@ -3622,6 +3604,7 @@ function adicionarBotaoLogout() {
 function logout() {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('usuario_atual');
+  localStorage.removeItem('is_admin');
   token = null;
   usuarioAtual = null;
   
