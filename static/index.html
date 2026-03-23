@@ -1407,13 +1407,46 @@ input::placeholder, textarea::placeholder {
 </header>
 
 <main>
-
-  <!-- ========== INÍCIO ========== -->
-  <section id="inicio" class="section active">
-    <div style="position: fixed; top: 60px; left: 0; right: 0; bottom: 0; overflow: hidden;">
-      <img src="/static/capa.png" alt="Capa" style="width: 100%; height: 100%; object-fit: cover; object-position: center;">
+  
+  <!-- ========== TELA DE LOGIN ========== -->
+  <section id="login" class="section active">
+    <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #052e10, #0a3d18); z-index: 0;">
+      <img src="/static/capa.png" alt="Background" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.3;">
+    </div>
+    
+    <div style="position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 28px; padding: 40px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--green-500), var(--green-700)); margin: 0 auto 16px; border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 28px;">🌱</span>
+          </div>
+          <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary);">AGRO<span style="color: var(--green-600);">core</span></h1>
+          <p style="color: var(--text-muted); margin-top: 8px;">Gestão Agrícola Inteligente</p>
+        </div>
+        
+        <div id="login-form">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label>E-mail</label>
+            <input type="email" id="login-email" placeholder="seu@email.com" style="font-size: 1rem;">
+          </div>
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label>Senha</label>
+            <input type="password" id="login-senha" placeholder="••••••••" style="font-size: 1rem;">
+          </div>
+          <button class="btn btn-primary" onclick="fazerLogin()" style="width: 100%; padding: 14px; font-size: 1rem;">
+            Entrar no Sistema
+          </button>
+          
+          <div id="login-mensagem" style="margin-top: 16px; padding: 10px; border-radius: 8px; text-align: center; font-size: 0.85rem; display: none;"></div>
+        </div>
+        
+        <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 20px;">
+          <p style="font-size: 0.8rem; color: var(--text-muted);">🌿 Sistema exclusivo para produtores cadastrados</p>
+        </div>
+      </div>
     </div>
   </section>
+
 
   <!-- ========== DASHBOARD ========== -->
   <section id="dashboard" class="section">
@@ -2242,6 +2275,12 @@ async function carregarDados() {
 // NAVEGAÇÃO
 // ============================================
 function showSection(id, btn) {
+  // Verificar autenticação
+  if (!token && id !== 'login') {
+    toast('Por favor, faça login primeiro');
+    return;
+  }
+  
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -3277,6 +3316,160 @@ function testarEnvioEmail() {
   });
 }
 
+// ============================================
+// AUTENTICAÇÃO
+// ============================================
+let token = localStorage.getItem('auth_token');
+let usuarioAtual = JSON.parse(localStorage.getItem('usuario_atual') || 'null');
+
+function fazerLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  const msgDiv = document.getElementById('login-mensagem');
+  
+  if (!email || !senha) {
+    mostrarMensagemLogin('⚠️ Preencha e-mail e senha', 'erro');
+    return;
+  }
+  
+  mostrarMensagemLogin('🔄 Entrando...', 'info');
+  
+  fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, senha })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      token = data.token;
+      usuarioAtual = data.usuario;
+      
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('usuario_atual', JSON.stringify(usuarioAtual));
+      
+      mostrarMensagemLogin('✅ Login realizado! Carregando dados...', 'sucesso');
+      
+      setTimeout(() => {
+        // Esconder login e mostrar sistema
+        document.getElementById('login').classList.remove('active');
+        document.getElementById('dashboard').classList.add('active');
+        
+        // Atualizar cabeçalho com nome do usuário
+        const headerNav = document.querySelector('.logo-text');
+        if (headerNav) {
+          headerNav.innerHTML = `AGRO<span>core</span> · ${usuarioAtual.nome || usuarioAtual.email.split('@')[0]}`;
+        }
+        
+        // Adicionar botão de logout
+        adicionarBotaoLogout();
+        
+        // Carregar dados do sistema
+        carregarDados();
+      }, 1000);
+    } else {
+      mostrarMensagemLogin('❌ ' + (data.error || 'E-mail ou senha inválidos'), 'erro');
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    mostrarMensagemLogin('❌ Erro ao conectar com o servidor', 'erro');
+  });
+}
+
+function mostrarMensagemLogin(mensagem, tipo) {
+  const msgDiv = document.getElementById('login-mensagem');
+  msgDiv.textContent = mensagem;
+  msgDiv.style.display = 'block';
+  
+  if (tipo === 'sucesso') {
+    msgDiv.style.background = '#dcfce7';
+    msgDiv.style.color = '#166534';
+    msgDiv.style.border = '1px solid #bbf7d0';
+  } else if (tipo === 'erro') {
+    msgDiv.style.background = '#fee2e2';
+    msgDiv.style.color = '#b91c1c';
+    msgDiv.style.border = '1px solid #fecaca';
+  } else {
+    msgDiv.style.background = '#dbeafe';
+    msgDiv.style.color = '#1e40af';
+    msgDiv.style.border = '1px solid #bfdbfe';
+  }
+}
+
+function adicionarBotaoLogout() {
+  const nav = document.querySelector('nav');
+  if (nav && !document.getElementById('btn-logout')) {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'btn-logout';
+    logoutBtn.innerHTML = '🚪 Sair';
+    logoutBtn.onclick = logout;
+    logoutBtn.style.marginLeft = '10px';
+    logoutBtn.style.background = 'rgba(220,38,38,0.8)';
+    nav.appendChild(logoutBtn);
+  }
+}
+
+function logout() {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('usuario_atual');
+  token = null;
+  usuarioAtual = null;
+  
+  // Resetar interface
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('login').classList.add('active');
+  
+  // Limpar dados
+  producoes = [];
+  vendas = [];
+  gastos = [];
+  
+  // Remover botão de logout
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) logoutBtn.remove();
+  
+  toast('👋 Logout realizado com sucesso');
+}
+
+// MODIFICAR a função carregarDados para incluir o token
+async function carregarDados() {
+  if (!token) return;
+  
+  try {
+    const headers = { 'Authorization': `Bearer ${token}` };
+    
+    const [prodRes, vendasRes, gastosRes] = await Promise.all([
+      fetch('/api/producoes', { headers }),
+      fetch('/api/vendas', { headers }),
+      fetch('/api/gastos', { headers })
+    ]);
+    
+    if (prodRes.ok) producoes = await prodRes.json();
+    if (vendasRes.ok) vendas = await vendasRes.json();
+    if (gastosRes.ok) gastos = await gastosRes.json();
+    
+    atualizarTudo();
+  } catch (error) {
+    console.error('Erro ao carregar:', error);
+    toast('Erro ao conectar com o servidor');
+    
+    if (error.status === 401) {
+      logout();
+    }
+  }
+}
+
+// MODIFICAR showSection para verificar autenticação
+const showSectionOriginal = showSection;
+window.showSection = function(id, btn) {
+  if (!token && id !== 'login') {
+    toast('Por favor, faça login primeiro');
+    return;
+  }
+  showSectionOriginal(id, btn);
+};
+  
 // ============================================
 // FORMATAR DATA RELATIVA (hoje, ontem, etc)
 // ============================================
