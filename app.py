@@ -1082,6 +1082,85 @@ def verificar_email():
             'mensagem': 'RESEND_API_KEY não encontrada no Railway'
         }), 500
 
+# ============================================
+# ADMIN - CRIAÇÃO DE USUÁRIOS
+# ============================================
+
+@app.route('/api/criar-usuario', methods=['POST'])
+@token_required
+def criar_usuario():
+    """Cria novo usuário (apenas admin)"""
+    try:
+        data = request.json
+        email = data.get('email')
+        senha = data.get('senha')
+        nome = data.get('nome')
+        
+        if not email or not senha or not nome:
+            return jsonify({'error': 'E-mail, senha e nome são obrigatórios'}), 400
+        
+        if '@' not in email or '.' not in email:
+            return jsonify({'error': 'E-mail inválido'}), 400
+        
+        if len(senha) < 6:
+            return jsonify({'error': 'A senha deve ter pelo menos 6 caracteres'}), 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verificar se e-mail já existe
+        cur.execute('SELECT id FROM usuarios WHERE email = %s', (email,))
+        if cur.fetchone():
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'E-mail já cadastrado'}), 400
+        
+        # Gerar hash da senha
+        senha_hash = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Criar usuário
+        cur.execute('''
+            INSERT INTO usuarios (email, senha_hash, nome, ativo)
+            VALUES (%s, %s, %s, true)
+            RETURNING id
+        ''', (email, senha_hash, nome))
+        
+        usuario_id = cur.fetchone()['id']
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'✅ Usuário {email} criado com sucesso!',
+            'usuario_id': usuario_id
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao criar usuário: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/usuarios', methods=['GET'])
+@token_required
+def listar_usuarios():
+    """Lista os últimos 10 usuários"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, email, nome, created_at 
+            FROM usuarios 
+            ORDER BY id DESC 
+            LIMIT 10
+        ''')
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify({'success': True, 'usuarios': list(rows)})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
