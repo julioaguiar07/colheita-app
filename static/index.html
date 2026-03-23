@@ -1513,19 +1513,11 @@ input::placeholder, textarea::placeholder {
   text-align: center;
 }  
 
-/* ===================== MENU CIRCULAR EXPANSIVO ===================== */
-@import url(https://fonts.googleapis.com/css?family=Lusitana);
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;  
-  width: 100%;
-}
+/* ===================== MENU CIRCULAR OTIMIZADO ===================== */
 
 /* Botão do menu (hambúrguer) */
 .menu-toggle {
-  opacity: 0.8;
+  opacity: 0.9;
   background-color: transparent;
   position: fixed;
   z-index: 1002;
@@ -1536,7 +1528,7 @@ html, body {
   height: 30px;
   outline: none;
   cursor: pointer;
-  transition: opacity 0.2s ease-out;
+  transition: opacity 0.2s ease;
 }
 
 .menu-toggle:before {
@@ -1557,7 +1549,7 @@ html, body {
     transparent 60%, transparent 80%, 
     var(--green-500) 80%, var(--green-500) 100%
   );
-  transition: opacity 0.2s ease-out, width 0.2s 0.2s ease-out;
+  transition: all 0.3s ease;
 }
 
 .menu-toggle:after {
@@ -1570,7 +1562,7 @@ html, body {
   font-family: Arial, sans-serif;
   font-size: 76px;
   line-height: 0;
-  transition: opacity 0.4s ease-out;
+  transition: all 0.3s ease;
 }
 
 .menu-toggle:hover {
@@ -1584,48 +1576,45 @@ body.menu-open .menu-toggle:before {
 
 body.menu-open .menu-toggle:after {
   opacity: 1;
-  transform: translate3d(0,0,0) rotate(360deg);
-  transition: transform 0.4s 1s ease-out, opacity 0.4s 1s ease-out;
+  transform: rotate(360deg);
+  transition: transform 0.3s ease, opacity 0.2s ease;
 }
 
 /* Menu de navegação */
 .menu-nav {
   z-index: 1001;
   position: fixed;
-  top: -100%;
+  top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  transform: translate3d(0,0,0);
-  backface-visibility: hidden;
-  overflow: hidden;
+  visibility: hidden;
   pointer-events: none;
 }
 
 .menu-nav:before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: auto;
-  background: rgba(5, 46, 16, 0.98);
-  width: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 0;
   height: 0;
-  padding-bottom: 100%;
-  border-radius: 100%;
-  transform: scale(0.04) translateY(9999px);
-  overflow: hidden;
+  background: rgba(5, 46, 16, 0.98);
+  border-radius: 50%;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.menu-open .menu-nav {
-  top: 0;
+  visibility: visible;
   pointer-events: auto;
 }
 
 body.menu-open .menu-nav:before {
-  animation: menu-animation 0.8s ease-out forwards;
+  width: 200%;
+  height: 200%;
+  transform: translate(-50%, -50%) scale(1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Lista de itens do menu */
@@ -1633,137 +1622,82 @@ body.menu-open .menu-nav:before {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate3d(-50%, -50%, 0);
-  backface-visibility: hidden;
-  perspective: 1000;
-  color: white;
+  transform: translate(-50%, -50%);
   list-style: none;
   margin: 0;
   padding: 0;
   z-index: 1002;
+  text-align: center;
+  width: 80%;
+  max-width: 400px;
 }
 
 .menu-list li {
   cursor: pointer;
-  padding: 12px 30px;
-  font-size: 2rem;
+  padding: 14px 24px;
+  font-size: 1.8rem;
   text-align: center;
   opacity: 0;
-  transform: translate3d(0, 36px, 0);
-  transition: all 0.2s ease-out;
+  transform: translateY(20px);
+  transition: all 0.25s ease;
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.85);
   position: relative;
-  color: rgba(255,255,255,0.8);
-}
-
-.menu-list li:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: auto;
-  left: auto;
-  background-color: white;
-  height: 100%;
-  width: 0;
-  overflow: hidden;
-  transition: width 0.14s ease-out;
-}
-
-.menu-list li:after {
-  opacity: 0;
-  content: attr(data-text);
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: auto;
-  color: var(--green-700);
-  overflow: hidden;
-  transform: translate(-24px, 6px);
-  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
+  margin: 8px 0;
+  border-radius: 12px;
 }
 
 .menu-list li:hover {
-  color: transparent;
-}
-
-.menu-list li:hover:before {
-  left: 0;
-  right: auto;
-  width: 100%;
-}
-
-.menu-list li:hover:after {
-  opacity: 1;
-  transform: translate(0px, 6px);
-  transition: transform 0.2s 0.14s ease-out, opacity 0.2s 0.14s ease-out;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: translateY(-2px);
 }
 
 body.menu-open .menu-list li {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
-  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+  transform: translateY(0);
 }
 
-body.menu-open .menu-list li:nth-child(1) { transition-delay: 0.75s; }
-body.menu-open .menu-list li:nth-child(2) { transition-delay: 0.85s; }
-body.menu-open .menu-list li:nth-child(3) { transition-delay: 0.95s; }
-body.menu-open .menu-list li:nth-child(4) { transition-delay: 1.05s; }
-body.menu-open .menu-list li:nth-child(5) { transition-delay: 1.15s; }
-body.menu-open .menu-list li:nth-child(6) { transition-delay: 1.25s; }
-body.menu-open .menu-list li:nth-child(7) { transition-delay: 1.35s; }
+body.menu-open .menu-list li:nth-child(1) { transition-delay: 0.05s; }
+body.menu-open .menu-list li:nth-child(2) { transition-delay: 0.1s; }
+body.menu-open .menu-list li:nth-child(3) { transition-delay: 0.15s; }
+body.menu-open .menu-list li:nth-child(4) { transition-delay: 0.2s; }
+body.menu-open .menu-list li:nth-child(5) { transition-delay: 0.25s; }
+body.menu-open .menu-list li:nth-child(6) { transition-delay: 0.3s; }
+body.menu-open .menu-list li:nth-child(7) { transition-delay: 0.35s; }
 
-/* Animações */
-@keyframes menu-animation {
-  0% {
-    opacity: 0;
-    transform: scale(0.04) translateY(300%);
-  }
-  40% {
-    transform: scale(0.04) translateY(0);
-    transition: ease-out;
-  }
-  60% {
-    opacity: 1;
-    transform: scale(0.02) translateY(0px);
-  }
-  61% {
-    transform: scale(0.04);
-  }
-  99.9% {
-    height: 0;
-    padding-bottom: 100%;
-    border-radius: 100%;
-  }
-  100% {
-    transform: scale(2);
-    height: 100%;
-    padding-bottom: 0;
-    border-radius: 0;
-  }
+/* Animação de saída - mais rápida */
+body:not(.menu-open) .menu-list li {
+  transition-delay: 0s !important;
+  transition-duration: 0.15s !important;
+}
+
+/* Botão de Logout dentro do menu */
+.menu-list .logout-item {
+  margin-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 20px;
+  color: rgba(255, 100, 100, 0.9);
+}
+
+.menu-list .logout-item:hover {
+  background: rgba(220, 38, 38, 0.3);
+  color: #ff6b6b;
 }
 
 /* Responsivo */
 @media (max-width: 768px) {
   .menu-list li {
-    font-size: 1.5rem;
-    padding: 10px 20px;
+    font-size: 1.4rem;
+    padding: 12px 20px;
   }
 }
 
 @media (max-width: 480px) {
   .menu-list li {
     font-size: 1.2rem;
-    padding: 8px 16px;
+    padding: 10px 16px;
   }
 }
   
@@ -1787,6 +1721,7 @@ body.menu-open .menu-list li:nth-child(7) { transition-delay: 1.35s; }
           <li data-text="💰 Vendas" onclick="showSection('vendas', this)">💰 Vendas</li>
           <li data-text="💸 Gastos" onclick="showSection('gastos', this)">💸 Gastos</li>
           <li data-text="⚙️ Configurações" onclick="showSection('configuracoes', this)">⚙️ Configurações</li>
+          <li class="logout-item" data-text="🚪 Sair" onclick="logout()">🚪 Sair</li>
         </ul>
       </nav>
   </div>
@@ -2744,7 +2679,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gasto-data').value = hoje;
   carregarDados();
   carregarConfiguracoesEmail();
-  initCircularMenu(); // ← ADICIONE ESTA LINHA
+  initCircularMenu(); 
 });
 
 
@@ -4167,8 +4102,6 @@ function fazerLogin() {
           headerNav.innerHTML = `AGRO<span>core</span> · ${usuarioAtual.nome || usuarioAtual.email.split('@')[0]}`;
         }
         
-        // Adicionar botão de logout
-        adicionarBotaoLogout();
         
         // ⭐ IMPORTANTE: Chamar carregarDados DEPOIS de definir o token
         carregarDados();
@@ -4207,31 +4140,6 @@ function mostrarMensagemLogin(mensagem, tipo) {
   setTimeout(() => {
     msgDiv.style.display = 'none';
   }, 5000);
-}
-
-function adicionarBotaoLogout() {
-  const nav = document.querySelector('nav');
-  const menuDropdown = document.getElementById('menuDropdown');
-  
-  if (nav && !document.getElementById('btn-logout')) {
-    const logoutBtn = document.createElement('button');
-    logoutBtn.id = 'btn-logout';
-    logoutBtn.innerHTML = '🚪 Sair';
-    logoutBtn.onclick = logout;
-    logoutBtn.style.marginLeft = 'auto';
-    logoutBtn.style.background = 'rgba(220,38,38,0.8)';
-    logoutBtn.style.padding = '6px 14px';
-    logoutBtn.style.borderRadius = '8px';
-    logoutBtn.style.border = 'none';
-    logoutBtn.style.color = 'white';
-    logoutBtn.style.fontWeight = '600';
-    logoutBtn.style.cursor = 'pointer';
-    logoutBtn.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
-    logoutBtn.style.fontSize = '0.8rem';
-    
-    // Colocar o botão de logout fora do menu dropdown
-    nav.appendChild(logoutBtn);
-  }
 }
 
 function logout() {
@@ -4686,13 +4594,13 @@ function initCircularMenu() {
   
   if (!menuToggle) return;
   
-  // Abrir/fechar menu ao clicar no botão
+  // Abrir/fechar menu
   menuToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     document.body.classList.toggle('menu-open');
   });
   
-  // Fechar menu ao clicar em um item
+  // Fechar menu ao clicar em qualquer item
   const menuItems = document.querySelectorAll('.menu-list li');
   menuItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -4700,7 +4608,7 @@ function initCircularMenu() {
     });
   });
   
-  // Fechar menu ao pressionar ESC
+  // Fechar ao pressionar ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       document.body.classList.remove('menu-open');
