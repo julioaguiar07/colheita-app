@@ -1513,191 +1513,183 @@ input::placeholder, textarea::placeholder {
   text-align: center;
 }  
 
-/* ===================== MENU CIRCULAR OTIMIZADO ===================== */
+/* ===================== MENU MINIMALISTA ===================== */
 
 /* Botão do menu (hambúrguer) */
 .menu-toggle {
-  opacity: 0.9;
-  background-color: transparent;
+  opacity: 0.8;
+  background: transparent;
   position: fixed;
   z-index: 1002;
-  top: 18px;
-  left: 18px;
+  top: 20px;
+  left: 20px;
   border: none;
-  width: 36px;
-  height: 30px;
+  width: 32px;
+  height: 28px;
   outline: none;
   cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.menu-toggle:before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: auto;
-  right: auto;
-  width: 100%;
-  background: linear-gradient(
-    to bottom, 
-    var(--green-500), var(--green-500) 20%, 
-    transparent 20%, transparent 40%, 
-    var(--green-500) 40%, var(--green-500) 60%, 
-    transparent 60%, transparent 80%, 
-    var(--green-500) 80%, var(--green-500) 100%
-  );
-  transition: all 0.3s ease;
-}
-
-.menu-toggle:after {
-  opacity: 0;
-  content: '×';
-  color: white;
-  position: absolute;
-  top: 16px;
-  left: -4px;
-  font-family: Arial, sans-serif;
-  font-size: 76px;
-  line-height: 0;
   transition: all 0.3s ease;
 }
 
 .menu-toggle:hover {
   opacity: 1;
+  transform: scale(1.05);
 }
 
-body.menu-open .menu-toggle:before {
+.menu-toggle span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: white;
+  margin: 6px 0;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+body.menu-open .menu-toggle span:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+body.menu-open .menu-toggle span:nth-child(2) {
   opacity: 0;
-  width: 0;
 }
 
-body.menu-open .menu-toggle:after {
-  opacity: 1;
-  transform: rotate(360deg);
-  transition: transform 0.3s ease, opacity 0.2s ease;
+body.menu-open .menu-toggle span:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
 }
 
-/* Menu de navegação */
-.menu-nav {
-  z-index: 1001;
+/* Overlay do menu */
+.menu-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  background: rgba(5, 46, 16, 0.96);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  opacity: 0;
   visibility: hidden;
-  pointer-events: none;
+  transition: all 0.3s ease;
 }
 
-.menu-nav:before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  width: 0;
-  height: 0;
-  background: rgba(5, 46, 16, 0.98);
-  border-radius: 50%;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.menu-open .menu-nav {
+body.menu-open .menu-overlay {
+  opacity: 1;
   visibility: visible;
-  pointer-events: auto;
 }
 
-body.menu-open .menu-nav:before {
-  width: 200%;
-  height: 200%;
-  transform: translate(-50%, -50%) scale(1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Lista de itens do menu */
-.menu-list {
+/* Container do menu */
+.menu-container {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  transform: translateY(20px);
+}
+
+body.menu-open .menu-container {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Lista do menu */
+.menu-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  z-index: 1002;
-  text-align: center;
-  width: 80%;
-  max-width: 400px;
+  width: 90%;
+  max-width: 500px;
 }
 
 .menu-list li {
   cursor: pointer;
-  padding: 14px 24px;
-  font-size: 1.8rem;
-  text-align: center;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.25s ease;
+  padding: 16px 24px;
+  margin: 8px 0;
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: rgba(255, 255, 255, 0.85);
-  position: relative;
-  margin: 8px 0;
+  text-align: left;
   border-radius: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--green-400);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
 }
 
 .menu-list li:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
-  transform: translateY(-2px);
+  transform: translateX(8px);
 }
 
-body.menu-open .menu-list li {
-  opacity: 1;
-  transform: translateY(0);
+.menu-list li:hover::before {
+  transform: scaleY(1);
 }
 
-body.menu-open .menu-list li:nth-child(1) { transition-delay: 0.05s; }
-body.menu-open .menu-list li:nth-child(2) { transition-delay: 0.1s; }
-body.menu-open .menu-list li:nth-child(3) { transition-delay: 0.15s; }
-body.menu-open .menu-list li:nth-child(4) { transition-delay: 0.2s; }
-body.menu-open .menu-list li:nth-child(5) { transition-delay: 0.25s; }
-body.menu-open .menu-list li:nth-child(6) { transition-delay: 0.3s; }
-body.menu-open .menu-list li:nth-child(7) { transition-delay: 0.35s; }
-
-/* Animação de saída - mais rápida */
-body:not(.menu-open) .menu-list li {
-  transition-delay: 0s !important;
-  transition-duration: 0.15s !important;
+/* Ícones à esquerda */
+.menu-list li .menu-icon {
+  margin-right: 16px;
+  font-size: 1.3rem;
+  display: inline-block;
+  width: 32px;
 }
 
-/* Botão de Logout dentro do menu */
+/* Logout item */
 .menu-list .logout-item {
-  margin-top: 30px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-  padding-top: 20px;
+  margin-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 24px;
   color: rgba(255, 100, 100, 0.9);
 }
 
 .menu-list .logout-item:hover {
-  background: rgba(220, 38, 38, 0.3);
-  color: #ff6b6b;
+  background: rgba(220, 38, 38, 0.2);
+  color: #ff8a8a;
 }
 
 /* Responsivo */
 @media (max-width: 768px) {
   .menu-list li {
-    font-size: 1.4rem;
-    padding: 12px 20px;
+    font-size: 1.3rem;
+    padding: 14px 20px;
+  }
+  
+  .menu-list li .menu-icon {
+    font-size: 1.1rem;
+    width: 28px;
   }
 }
 
 @media (max-width: 480px) {
   .menu-list li {
-    font-size: 1.2rem;
-    padding: 10px 16px;
+    font-size: 1.1rem;
+    padding: 12px 16px;
+  }
+  
+  .menu-list li .menu-icon {
+    font-size: 1rem;
+    width: 24px;
   }
 }
   
@@ -1711,19 +1703,44 @@ body:not(.menu-open) .menu-list li {
       <div class="logo-mark">🌿</div>
       <span class="logo-text">AGRO<span>core</span></span>
     </div>
-      <button class="menu-toggle" id="menuToggle"></button>
-      <nav class="menu-nav" id="menuNav">
-        <ul class="menu-list">
-          <li data-text="📊 Resumo" onclick="showSection('dashboard', this)">📊 Resumo</li>
-          <li data-text="🌱 Produtos" onclick="showSection('produtos', this)">🌱 Produtos</li>
-          <li data-text="🗺️ Áreas" onclick="showSection('areas', this)">🗺️ Áreas</li>
-          <li data-text="🌾 Produção" onclick="showSection('producao', this)">🌾 Produção</li>
-          <li data-text="💰 Vendas" onclick="showSection('vendas', this)">💰 Vendas</li>
-          <li data-text="💸 Gastos" onclick="showSection('gastos', this)">💸 Gastos</li>
-          <li data-text="⚙️ Configurações" onclick="showSection('configuracoes', this)">⚙️ Configurações</li>
-          <li class="logout-item" data-text="🚪 Sair" onclick="logout()">🚪 Sair</li>
-        </ul>
-      </nav>
+    
+    <button class="menu-toggle" id="menuToggle">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    
+    <div class="menu-overlay" id="menuOverlay"></div>
+    
+    <div class="menu-container" id="menuContainer">
+      <ul class="menu-list">
+        <li onclick="showSection('dashboard', this)">
+          <span class="menu-icon">📊</span> Resumo
+        </li>
+        <li onclick="showSection('produtos', this)">
+          <span class="menu-icon">🌱</span> Produtos
+        </li>
+        <li onclick="showSection('areas', this)">
+          <span class="menu-icon">🗺️</span> Áreas
+        </li>
+        <li onclick="showSection('producao', this)">
+          <span class="menu-icon">🌾</span> Produção
+        </li>
+        <li onclick="showSection('vendas', this)">
+          <span class="menu-icon">💰</span> Vendas
+        </li>
+        <li onclick="showSection('gastos', this)">
+          <span class="menu-icon">💸</span> Gastos
+        </li>
+        <li onclick="showSection('configuracoes', this)">
+          <span class="menu-icon">⚙️</span> Configurações
+        </li>
+        <li class="logout-item" onclick="logout()">
+          <span class="menu-icon">🚪</span> Sair
+        </li>
+      </ul>
+    </div>
+    
   </div>
 </header>
 
@@ -2679,7 +2696,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('gasto-data').value = hoje;
   carregarDados();
   carregarConfiguracoesEmail();
-  initCircularMenu(); 
+  initMinimalMenu(); 
 });
 
 
@@ -4586,36 +4603,53 @@ function calcularPontoEquilibrioProduto(produto) {
   
 
 // ============================================
-// MENU CIRCULAR EXPANSIVO
+// MENU
 // ============================================
 
-function initCircularMenu() {
+function initMinimalMenu() {
   const menuToggle = document.getElementById('menuToggle');
+  const menuOverlay = document.getElementById('menuOverlay');
+  const menuContainer = document.getElementById('menuContainer');
   
   if (!menuToggle) return;
   
-  // Abrir/fechar menu
+  function openMenu() {
+    document.body.classList.add('menu-open');
+  }
+  
+  function closeMenu() {
+    document.body.classList.remove('menu-open');
+  }
+  
+  // Abrir/fechar ao clicar no botão
   menuToggle.addEventListener('click', (e) => {
     e.stopPropagation();
-    document.body.classList.toggle('menu-open');
+    if (document.body.classList.contains('menu-open')) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
   });
   
-  // Fechar menu ao clicar em qualquer item
+  // Fechar ao clicar no overlay
+  if (menuOverlay) {
+    menuOverlay.addEventListener('click', closeMenu);
+  }
+  
+  // Fechar ao clicar em qualquer item do menu
   const menuItems = document.querySelectorAll('.menu-list li');
   menuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      document.body.classList.remove('menu-open');
-    });
+    item.addEventListener('click', closeMenu);
   });
   
   // Fechar ao pressionar ESC
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      document.body.classList.remove('menu-open');
+      closeMenu();
     }
   });
   
-  console.log('✅ Menu circular inicializado');
+  console.log('✅ Menu minimalista inicializado');
 }
   
 </script>
