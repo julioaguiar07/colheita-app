@@ -2265,6 +2265,25 @@ let filtrosGasto = { tipo: '', categoria: '', produto: '', area: '' };
 Chart.register(ChartDataLabels);
 
 // ============================================
+// INTERCEPTOR PARA ERROS 401 (COLOQUE AQUI)
+// ============================================
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+  return originalFetch.apply(this, args).then(response => {
+    if (response.status === 401) {
+      console.log('Token expirado ou inválido');
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        logout();
+        toast('Sessão expirada. Faça login novamente.');
+      }
+    }
+    return response;
+  });
+};
+
+  
+// ============================================
 // CHART DEFAULTS
 // ============================================
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
@@ -2301,17 +2320,36 @@ document.addEventListener('DOMContentLoaded', () => {
 // API
 // ============================================
 async function carregarDados() {
+  // Verificar se tem token
+  if (!token) {
+    console.log('Sem token, não carregando dados');
+    return;
+  }
+  
   try {
+    const headers = { 
+      'Authorization': `Bearer ${token}`
+    };
+    
     const [prodRes, vendasRes, gastosRes] = await Promise.all([
-      fetch('/api/producoes'), fetch('/api/vendas'), fetch('/api/gastos')
+      fetch('/api/producoes', { headers }),
+      fetch('/api/vendas', { headers }),
+      fetch('/api/gastos', { headers })
     ]);
+    
     if (prodRes.ok) producoes = await prodRes.json();
     if (vendasRes.ok) vendas = await vendasRes.json();
     if (gastosRes.ok) gastos = await gastosRes.json();
+    
     atualizarTudo();
   } catch (error) {
     console.error('Erro ao carregar:', error);
     toast('Erro ao conectar com o servidor');
+    
+    // Se erro 401, fazer logout
+    if (error.status === 401) {
+      logout();
+    }
   }
 }
 
@@ -2356,13 +2394,53 @@ async function addProducao() {
   const unidade = document.getElementById('prod-unidade').value;
   const qtd = parseFloat(document.getElementById('prod-qtd').value) || 0;
   const valorUnit = parseFloat(document.getElementById('prod-valor').value) || 0;
-  if (!data || !produto || !tipo || !qtd || !valorUnit) { toast('⚠️ Preencha todos os campos!'); return; }
-  const novo = { id: Date.now().toString(36)+Math.random().toString(36).substr(2), data, produto, tipo, area: area||'', unidade, qtd, valorUnit, total: qtd*valorUnit };
+  
+  if (!data || !produto || !tipo || !qtd || !valorUnit) {
+    toast('⚠️ Preencha todos os campos!');
+    return;
+  }
+  
+  const total = qtd * valorUnit;
+  
+  const novo = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+    data,
+    produto,
+    tipo,
+    area: area || '',
+    unidade,
+    qtd,
+    valorUnit,
+    total
+  };
+  
   try {
-    const response = await fetch('/api/producoes', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(novo) });
-    if (response.ok) { producoes.unshift(novo); limparFormProducao(); atualizarTudo(); toast('✅ Custo registrado!'); }
-    else toast('❌ Erro ao salvar no servidor');
-  } catch { toast('❌ Erro ao conectar com o servidor'); }
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await fetch('/api/producoes', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // ← ADICIONE
+      },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      producoes.unshift(novo);
+      limparFormProducao();
+      atualizarTudo();
+      toast('✅ Custo registrado!');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
+    } else {
+      toast('❌ Erro ao salvar no servidor');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    toast('❌ Erro ao conectar com o servidor');
+  }
 }
 
 function limparFormProducao() {
@@ -2395,12 +2473,53 @@ async function addVenda() {
   const unidade = document.getElementById('venda-unidade').value;
   const qtd = parseFloat(document.getElementById('venda-qtd').value);
   const valorUnit = parseFloat(document.getElementById('venda-valor').value);
-  if (!data || !produto || !qtd || !valorUnit) { toast('⚠️ Preencha produto, quantidade e valor!'); return; }
-  const novo = { id: Date.now().toString(36)+Math.random().toString(36).substr(2), data, produto, cliente: cliente||'', area: area||'', unidade, qtd, valorUnit, total: qtd*valorUnit };
+  
+  if (!data || !produto || !qtd || !valorUnit) {
+    toast('⚠️ Preencha produto, quantidade e valor!');
+    return;
+  }
+  
+  const total = qtd * valorUnit;
+  
+  const novo = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+    data,
+    produto,
+    cliente: cliente || '',
+    area: area || '',
+    unidade,
+    qtd,
+    valorUnit,
+    total
+  };
+  
   try {
-    const r = await fetch('/api/vendas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(novo) });
-    if (r.ok) { vendas.unshift(novo); limparFormVenda(); atualizarTudo(); toast('💰 Venda registrada!'); }
-  } catch { toast('❌ Erro ao salvar'); }
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await fetch('/api/vendas', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // ← ADICIONE
+      },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      vendas.unshift(novo);
+      limparFormVenda();
+      atualizarTudo();
+      toast('💰 Venda registrada!');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
+    } else {
+      toast('❌ Erro ao salvar no servidor');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    toast('❌ Erro ao conectar com o servidor');
+  }
 }
 
 function limparFormVenda() {
@@ -2432,13 +2551,52 @@ async function addGasto() {
   const area = document.getElementById('gasto-area').value.trim();
   const obs = document.getElementById('gasto-obs').value.trim();
   const valor = parseFloat(document.getElementById('gasto-valor').value);
-  if (!data || !tipo || !valor) { toast('⚠️ Preencha tipo e valor!'); return; }
-  const novo = { id: Date.now().toString(36)+Math.random().toString(36).substr(2), data, tipo, categoria, produto: produto||'', area: area||'', obs: obs||'', valor };
+  
+  if (!data || !tipo || !valor) {
+    toast('⚠️ Preencha tipo e valor!');
+    return;
+  }
+  
+  const novo = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+    data,
+    tipo,
+    categoria,
+    produto: produto || '',
+    area: area || '',
+    obs: obs || '',
+    valor
+  };
+  
   try {
-    const r = await fetch('/api/gastos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(novo) });
-    if (r.ok) { gastos.unshift(novo); limparFormGasto(); atualizarTudo(); toast('💸 Gasto registrado!'); }
-    else toast('❌ Erro ao salvar no servidor');
-  } catch { toast('❌ Erro ao conectar com o servidor'); }
+    // ⭐ IMPORTANTE: Buscar o token do localStorage
+    const token = localStorage.getItem('auth_token');
+    
+    const response = await fetch('/api/gastos', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // ← LINHA IMPORTANTE
+      },
+      body: JSON.stringify(novo)
+    });
+    
+    if (response.ok) {
+      gastos.unshift(novo);
+      limparFormGasto();
+      atualizarTudo();
+      toast('💸 Gasto registrado!');
+    } else if (response.status === 401) {
+      toast('❌ Sessão expirada. Faça login novamente.');
+      logout();
+    } else {
+      toast('❌ Erro ao salvar no servidor');
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    toast('❌ Erro ao conectar com o servidor');
+  }
+}
 }
 
 function limparFormGasto() {
@@ -3481,34 +3639,6 @@ function logout() {
   if (logoutBtn) logoutBtn.remove();
   
   toast('👋 Logout realizado com sucesso');
-}
-
-// MODIFICAR a função carregarDados para incluir o token
-async function carregarDados() {
-  if (!token) return;
-  
-  try {
-    const headers = { 'Authorization': `Bearer ${token}` };
-    
-    const [prodRes, vendasRes, gastosRes] = await Promise.all([
-      fetch('/api/producoes', { headers }),
-      fetch('/api/vendas', { headers }),
-      fetch('/api/gastos', { headers })
-    ]);
-    
-    if (prodRes.ok) producoes = await prodRes.json();
-    if (vendasRes.ok) vendas = await vendasRes.json();
-    if (gastosRes.ok) gastos = await gastosRes.json();
-    
-    atualizarTudo();
-  } catch (error) {
-    console.error('Erro ao carregar:', error);
-    toast('Erro ao conectar com o servidor');
-    
-    if (error.status === 401) {
-      logout();
-    }
-  }
 }
 
 // MODIFICAR showSection para verificar autenticação
