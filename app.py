@@ -2172,7 +2172,77 @@ def criar_tabelas_consultor():
     except Exception as e:
         return f"❌ Erro ao criar tabelas: {str(e)}"
 
-
+@app.route('/api/consultor/adicionar-cliente', methods=['POST'])
+@token_required
+def adicionar_cliente_existente():
+    """Consultor adiciona um cliente existente (por e-mail e senha)"""
+    if request.usuario_role != 'consultor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    data = request.json
+    email = data.get('email')
+    senha = data.get('senha')
+    
+    if not email or not senha:
+        return jsonify({'error': 'E-mail e senha são obrigatórios'}), 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Buscar cliente pelo e-mail
+    cur.execute('SELECT id, email, nome, senha_hash FROM usuarios WHERE email = %s AND ativo = true', (email,))
+    cliente = cur.fetchone()
+    
+    if not cliente:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Cliente não encontrado. Verifique o e-mail.'}), 404
+    
+    # Verificar senha
+    if not verificar_senha(senha, cliente['senha_hash']):
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Senha incorreta.'}), 401
+    
+    # Verificar se já existe vínculo
+    cur.execute('''
+        SELECT * FROM vinculos_consultor 
+        WHERE consultor_id = %s AND cliente_id = %s
+    ''', (request.usuario_id, cliente['id']))
+    vinculo_existente = cur.fetchone()
+    
+    if vinculo_existente:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Este cliente já está vinculado a você.'}), 400
+    
+    # Criar vínculo
+    cur.execute('''
+        INSERT INTO vinculos_consultor (consultor_id, cliente_id, permissao_escrita)
+        VALUES (%s, %s, true)
+    ''', (request.usuario_id, cliente['id']))
+    
+    conn.commit()
+    
+    # Registrar log de acesso
+    cur.execute('''
+        INSERT INTO logs_acesso_consultor (consultor_id, cliente_id, acao)
+        VALUES (%s, %s, 'adicionou_cliente')
+    ''', (request.usuario_id, cliente['id']))
+    conn.commit()
+    
+    cur.close()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'mensagem': f'✅ Cliente {cliente["nome"] or email} adicionado com sucesso!',
+        'cliente': {
+            'id': cliente['id'],
+            'email': cliente['email'],
+            'nome': cliente['nome'] or email.split('@')[0]
+        }
+    })
 
 
 if __name__ == '__main__':
