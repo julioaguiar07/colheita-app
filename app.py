@@ -48,6 +48,7 @@ def token_required(f):
             payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             request.usuario_id = payload['usuario_id']
             request.usuario_email = payload['email']
+            request.usuario_role = payload.get('role', 'produtor')
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token expirado'}), 401
         except jwt.InvalidTokenError:
@@ -57,7 +58,162 @@ def token_required(f):
     
     return decorated
 
+# ============================================
+# FUNÇÕES DE CONTEXTO COM CACHE PARA CONSULTORES
+# ============================================
 
+from functools import wraps
+from collections import OrderedDict
+import time
+
+# Cache simples em memória
+class SimpleCache:
+    def __init__(self, maxsize=1000, ttl=300):
+        self.cache = OrderedDict()
+        self.maxsize = maxsize
+        self.ttl = ttl
+    
+    def get(self, key):
+        if key in self.cache:
+            value, timestamp = self.cache[key]
+            if time.time() - timestamp < self.ttl:
+                self.cache.move_to_end(key)
+                return value
+            else:
+                del self.cache[key]
+        return None
+    
+    def set(self, key, value):
+        if len(self.cache) >= self.maxsize:
+            self.cache.popitem(last=False)
+        self.cache[key] = (value, time.time())
+    
+    def invalidate(self, key):
+        if key in self.cache:
+            del self.cache[key]
+
+# Cache global
+vinculo_cache = SimpleCache()
+
+def get_target_user_id_cached():
+    """
+    Versão com cache da função get_target_user_id
+    Reduz consultas ao banco de dados
+    """
+    # Se for produtor, retorna próprio ID
+    if request.usuario_role == 'produtor':
+        return request.usuario_id
+    
+    # Se for consultor
+    if request.usuario_role == 'consultor':
+        cliente_id = request.headers.get('X-Selected-Client-ID')
+        if not cliente_id:
+            return request.usuario_id
+        
+        # Gerar chave de cache
+        cache_key = f"vinculo_{request.usuario_id}_{cliente_id}"
+        
+        # Verificar cache
+        cached = vinculo_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        
+        # Buscar no banco
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT * FROM vinculos_consultor 
+            WHERE consultor_id = %s AND cliente_id = %s
+        ''', (request.usuario_id, cliente_id))
+        vinculo = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        # Armazenar em cache
+        resultado = cliente_id if vinculo else request.usuario_id
+        vinculo_cache.set(cache_key, resultado)
+        
+        return resultado
+    
+    return request.usuario_id
+
+def verificar_permissao_escrita_cached(consultor_id, cliente_id):
+    """Versão com cache da verificação de permissão"""
+    cache_key = f"permissao_{consultor_id}_{cliente_id}"
+    
+    cached = vinculo_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT permissao_escrita FROM vinculos_consultor
+        WHERE consultor_id = %s AND cliente_id = %s
+    ''', (consultor_id, cliente_id))
+    resultado = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    permissao = resultado['permissao_escrita'] if resultado else False
+    vinculo_cache.set(cache_key, permissao)
+    
+    return permissao
+
+def registrar_log_acesso(consultor_id, cliente_id, acao):
+    """Registra o acesso do consultor ao cliente"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO logs_acesso_consultor (consultor_id, cliente_id, acao)
+        VALUES (%s, %s, %s)
+    ''', (consultor_id, cliente_id, acao))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def context_required(f):
+    """
+    Decorator que injeta o target_user_id no contexto
+    com cache para máxima performance
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        # Configurar target_user_id no request
+        request.target_user_id = get_target_user_id_cached()
+        
+        # Verificar permissão de escrita se necessário
+        request.tem_permissao_escrita = True
+        if request.usuario_role == 'consultor':
+            cliente_id = request.headers.get('X-Selected-Client-ID')
+            if cliente_id:
+                request.tem_permissao_escrita = verificar_permissao_escrita_cached(
+                    request.usuario_id, cliente_id
+                )
+        
+        return f(*args, **kwargs)
+    return decorated
+
+def require_write_permission(f):
+    """
+    Decorator que verifica se o consultor tem permissão de escrita
+    Apenas para rotas POST, PUT, DELETE
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if request.usuario_role == 'consultor':
+            cliente_id = request.headers.get('X-Selected-Client-ID')
+            if not cliente_id:
+                return jsonify({'error': 'Nenhum cliente selecionado'}), 403
+            
+            if not request.tem_permissao_escrita:
+                return jsonify({
+                    'error': 'Acesso negado. Você tem permissão apenas de leitura para este cliente.'
+                }), 403
+        
+        return f(*args, **kwargs)
+    return decorated
+    
 # ============================================
 # CONFIGURAÇÃO DO E-MAIL
 # ============================================
@@ -175,6 +331,52 @@ def criar_tabelas():
         ''')
         print("✅ Tabela 'gastos' criada/verificada")
         
+        # Tabela de vínculos consultor-cliente
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS vinculos_consultor (
+                id SERIAL PRIMARY KEY,
+                consultor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                cliente_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                permissao_escrita BOOLEAN DEFAULT false,
+                data_vinculo TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(consultor_id, cliente_id)
+            )
+        ''')
+        print("✅ Tabela 'vinculos_consultor' criada/verificada")
+        
+        # Tabela de convites
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS convites_consultor (
+                id SERIAL PRIMARY KEY,
+                codigo VARCHAR(50) UNIQUE NOT NULL,
+                consultor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                email_destino VARCHAR(255) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pendente',
+                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_aceite TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'convites_consultor' criada/verificada")
+        
+        # Tabela de logs de acesso (para consultores)
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS logs_acesso_consultor (
+                id SERIAL PRIMARY KEY,
+                consultor_id INTEGER REFERENCES usuarios(id),
+                cliente_id INTEGER REFERENCES usuarios(id),
+                acao VARCHAR(100),
+                data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'logs_acesso_consultor' criada/verificada")
+        
+        # Adicionar coluna role na tabela usuarios (se não existir)
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='usuarios' AND column_name='role'")
+        if not cur.fetchone():
+            cur.execute('ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) DEFAULT \'produtor\'')
+            print("✅ Coluna 'role' adicionada em usuarios")
+
+        
         conn.commit()
         print("🎉 Todas as tabelas criadas com sucesso!")
         
@@ -217,10 +419,12 @@ def index():
 # ========== API PRODUÇÕES ==========
 @app.route('/api/producoes', methods=['GET'])
 @token_required
+@context_required
 def get_producoes():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM producoes WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
+    cur.execute('SELECT * FROM producoes WHERE usuario_id = %s ORDER BY data DESC', 
+                (request.target_user_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -228,6 +432,8 @@ def get_producoes():
 
 @app.route('/api/producoes', methods=['POST'])
 @token_required
+@context_required
+@require_write_permission
 def create_producao():
     data = request.json
     conn = get_db_connection()
@@ -238,7 +444,7 @@ def create_producao():
     ''', (
         data['id'], data['data'], data['produto'], data['tipo'],
         data.get('area', ''), data.get('qtd', 0), data.get('unidade', ''),
-        data.get('valorUnit', 0), data['total'], request.usuario_id
+        data.get('valorUnit', 0), data['total'], request.target_user_id
     ))
     conn.commit()
     cur.close()
@@ -247,10 +453,13 @@ def create_producao():
 
 @app.route('/api/producoes/<id>', methods=['DELETE'])
 @token_required
+@context_required
+@require_write_permission
 def delete_producao(id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('DELETE FROM producoes WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
+    cur.execute('DELETE FROM producoes WHERE id = %s AND usuario_id = %s', 
+                (id, request.target_user_id))
     conn.commit()
     cur.close()
     conn.close()
@@ -259,10 +468,12 @@ def delete_producao(id):
 # ========== API VENDAS (MODIFICADA) ==========
 @app.route('/api/vendas', methods=['GET'])
 @token_required
+@context_required
 def get_vendas():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM vendas WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
+    cur.execute('SELECT * FROM vendas WHERE usuario_id = %s ORDER BY data DESC', 
+                (request.target_user_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -270,6 +481,8 @@ def get_vendas():
 
 @app.route('/api/vendas', methods=['POST'])
 @token_required
+@context_required
+@require_write_permission
 def create_venda():
     data = request.json
     conn = get_db_connection()
@@ -280,20 +493,36 @@ def create_venda():
     ''', (
         data['id'], data['data'], data['produto'], 
         data.get('cliente', ''), data.get('area', ''), 
-        data['unidade'], data['qtd'], data['valorUnit'], data['total'], request.usuario_id
+        data['unidade'], data['qtd'], data['valorUnit'], data['total'], request.target_user_id
     ))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Venda criada'}), 201
 
+@app.route('/api/vendas/<id>', methods=['DELETE'])
+@token_required
+@context_required
+@require_write_permission
+def delete_venda(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM vendas WHERE id = %s AND usuario_id = %s', 
+                (id, request.target_user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Venda deletada'})
+    
 # ========== API GASTOS (MODIFICADA) ==========
 @app.route('/api/gastos', methods=['GET'])
 @token_required
+@context_required
 def get_gastos():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM gastos WHERE usuario_id = %s ORDER BY data DESC', (request.usuario_id,))
+    cur.execute('SELECT * FROM gastos WHERE usuario_id = %s ORDER BY data DESC', 
+                (request.target_user_id,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -301,6 +530,8 @@ def get_gastos():
 
 @app.route('/api/gastos', methods=['POST'])
 @token_required
+@context_required
+@require_write_permission
 def create_gasto():
     data = request.json
     conn = get_db_connection()
@@ -311,54 +542,28 @@ def create_gasto():
     ''', (
         data['id'], data['data'], data['tipo'], 
         data.get('categoria', 'Outros'), data.get('produto', ''),
-        data.get('area', ''), data.get('obs', ''), data['valor'], request.usuario_id
+        data.get('area', ''), data.get('obs', ''), data['valor'], request.target_user_id
     ))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Gasto criado'}), 201
 
-# Adicione esta rota TEMPORÁRIA no seu app.py
-@app.route('/recriar-tabela-gastos')
-def recriar_tabela_gastos():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        
-        # 1. Renomear a tabela antiga (backup)
-        cur.execute('ALTER TABLE gastos RENAME TO gastos_backup')
-        
-        # 2. Criar nova tabela com a coluna obs
-        cur.execute('''
-            CREATE TABLE gastos (
-                id VARCHAR(50) PRIMARY KEY,
-                data DATE NOT NULL,
-                tipo VARCHAR(255) NOT NULL,
-                categoria VARCHAR(50),
-                area VARCHAR(255),
-                obs TEXT,
-                valor DECIMAL(10,2),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        
-        # 3. Copiar dados da tabela antiga (sem a coluna obs)
-        cur.execute('''
-            INSERT INTO gastos (id, data, tipo, categoria, area, valor, created_at)
-            SELECT id, data, tipo, categoria, area, valor, created_at 
-            FROM gastos_backup
-        ''')
-        
-        # 4. Remover tabela antiga (opcional - comente se quiser manter backup)
-        # cur.execute('DROP TABLE gastos_backup')
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return "✅ Tabela 'gastos' recriada com sucesso! <a href='/'>Voltar</a>"
-    except Exception as e:
-        return f"❌ Erro: {str(e)}"
+@app.route('/api/gastos/<id>', methods=['DELETE'])
+@token_required
+@context_required
+@require_write_permission
+def delete_gasto(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s', 
+                (id, request.target_user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Gasto deletado'})
+
+
 
 @app.route('/add-tipo-column')
 def add_tipo_column():
@@ -1074,12 +1279,16 @@ def login():
         if not usuario or not verificar_senha(senha, usuario['senha_hash']):
             return jsonify({'error': 'E-mail ou senha inválidos'}), 401
         
-        # Gerar token JWT
+        # Garantir que o campo role existe
+        role = usuario.get('role', 'produtor')
+        
+        # Gerar token JWT com role
         token = jwt.encode({
             'usuario_id': usuario['id'],
             'email': usuario['email'],
             'nome': usuario['nome'],
-            'exp': datetime.utcnow() + timedelta(days=7)  # Token válido por 7 dias
+            'role': role,
+            'exp': datetime.utcnow() + timedelta(days=7)
         }, app.config['SECRET_KEY'], algorithm='HS256')
         
         return jsonify({
@@ -1088,7 +1297,8 @@ def login():
             'usuario': {
                 'id': usuario['id'],
                 'email': usuario['email'],
-                'nome': usuario['nome']
+                'nome': usuario['nome'],
+                'role': role
             }
         })
         
@@ -1443,27 +1653,359 @@ def delete_gasto(id):
     </html>
     """
 
-@app.route('/api/gastos/<id>', methods=['DELETE'])
-@token_required
-def delete_gasto(id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({'message': 'Gasto deletado'})
+# ============================================
+# ROTAS EXCLUSIVAS PARA CONSULTORES
+# ============================================
 
-@app.route('/api/vendas/<id>', methods=['DELETE'])
+@app.route('/api/consultor/clientes', methods=['GET'])
 @token_required
-def delete_venda(id):
+def get_clientes_consultor():
+    """Retorna todos os clientes vinculados ao consultor"""
+    if request.usuario_role != 'consultor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('DELETE FROM vendas WHERE id = %s AND usuario_id = %s', (id, request.usuario_id))
+    
+    # Buscar clientes com dados agregados do mês atual
+    cur.execute('''
+        SELECT 
+            u.id, u.email, u.nome, u.created_at,
+            v.permissao_escrita, v.data_vinculo,
+            COALESCE(SUM(vendas.total), 0) as total_vendas_mes,
+            COALESCE(SUM(gastos.valor), 0) as total_gastos_mes,
+            COALESCE(SUM(producoes.total), 0) as total_producoes_mes,
+            (SELECT data FROM vendas WHERE usuario_id = u.id ORDER BY data DESC LIMIT 1) as ultima_venda
+        FROM usuarios u
+        JOIN vinculos_consultor v ON u.id = v.cliente_id
+        LEFT JOIN vendas ON u.id = vendas.usuario_id 
+            AND vendas.data >= date_trunc('month', CURRENT_DATE)
+        LEFT JOIN gastos ON u.id = gastos.usuario_id 
+            AND gastos.data >= date_trunc('month', CURRENT_DATE)
+        LEFT JOIN producoes ON u.id = producoes.usuario_id 
+            AND producoes.data >= date_trunc('month', CURRENT_DATE)
+        WHERE v.consultor_id = %s AND u.ativo = true
+        GROUP BY u.id, u.email, u.nome, u.created_at, v.permissao_escrita, v.data_vinculo
+        ORDER BY v.data_vinculo DESC
+    ''', (request.usuario_id,))
+    
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    # Calcular KPIs adicionais
+    for cliente in rows:
+        lucro = cliente['total_vendas_mes'] - (cliente['total_producoes_mes'] + cliente['total_gastos_mes'])
+        cliente['lucro_mes'] = lucro
+        if cliente['total_vendas_mes'] > 0:
+            cliente['margem_mes'] = (lucro / cliente['total_vendas_mes']) * 100
+        else:
+            cliente['margem_mes'] = 0
+    
+    return jsonify({'success': True, 'clientes': list(rows)})
+
+@app.route('/api/consultor/ranking-culturas', methods=['GET'])
+@token_required
+def get_ranking_culturas():
+    """Ranking das culturas mais lucrativas na carteira do consultor"""
+    if request.usuario_role != 'consultor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Buscar todos os clientes do consultor
+    cur.execute('SELECT cliente_id FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
+    clientes = [row['cliente_id'] for row in cur.fetchall()]
+    
+    if not clientes:
+        return jsonify({'success': True, 'ranking': []})
+    
+    # Query para agregar dados de todos os clientes
+    placeholders = ','.join(['%s'] * len(clientes))
+    
+    cur.execute(f'''
+        SELECT 
+            v.produto,
+            SUM(v.total) as total_vendas,
+            COALESCE(SUM(p.total), 0) as total_custos_producao,
+            COALESCE(SUM(g.valor), 0) as total_gastos,
+            SUM(CASE 
+                WHEN LOWER(v.unidade) = 'kg' THEN v.qtd
+                WHEN LOWER(v.unidade) = 'balde' THEN v.qtd * 20
+                WHEN LOWER(v.unidade) = 'caixa' THEN v.qtd * 15
+                WHEN LOWER(v.unidade) = 'saco' THEN v.qtd * 30
+                ELSE v.qtd * 0.5 
+            END) as total_kg
+        FROM vendas v
+        LEFT JOIN producoes p ON v.produto = p.produto AND p.usuario_id = v.usuario_id
+        LEFT JOIN gastos g ON v.produto = g.produto AND g.usuario_id = v.usuario_id
+        WHERE v.usuario_id IN ({placeholders})
+        GROUP BY v.produto
+        ORDER BY total_vendas DESC
+    ''', clientes)
+    
+    ranking = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    # Calcular margem para cada cultura
+    for item in ranking:
+        custo_total = (item['total_custos_producao'] or 0) + (item['total_gastos'] or 0)
+        lucro = (item['total_vendas'] or 0) - custo_total
+        item['lucro'] = lucro
+        if item['total_vendas'] and item['total_vendas'] > 0:
+            item['margem'] = (lucro / item['total_vendas']) * 100
+        else:
+            item['margem'] = 0
+    
+    return jsonify({'success': True, 'ranking': ranking})
+
+@app.route('/api/consultor/convidar', methods=['POST'])
+@token_required
+def convidar_cliente():
+    """Envia convite para um novo cliente se juntar ao consultor"""
+    if request.usuario_role != 'consultor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    data = request.json
+    email = data.get('email')
+    nome = data.get('nome')
+    
+    if not email:
+        return jsonify({'error': 'E-mail é obrigatório'}), 400
+    
+    import secrets
+    codigo = secrets.token_urlsafe(16)
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Verificar se já existe convite pendente
+    cur.execute('''
+        SELECT * FROM convites_consultor 
+        WHERE consultor_id = %s AND email_destino = %s AND status = 'pendente'
+    ''', (request.usuario_id, email))
+    
+    if cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Convite já enviado para este e-mail'}), 400
+    
+    # Criar convite
+    cur.execute('''
+        INSERT INTO convites_consultor (codigo, consultor_id, email_destino, status)
+        VALUES (%s, %s, %s, 'pendente')
+    ''', (codigo, request.usuario_id, email))
+    
     conn.commit()
     cur.close()
     conn.close()
-    return jsonify({'message': 'Venda deletada'})
+    
+    # Enviar e-mail de convite (opcional)
+    try:
+        resend.api_key = os.environ.get('RESEND_API_KEY')
+        resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": email,
+            "subject": f"🌱 Convite para AGROcore - {request.usuario_email} quer te ajudar!",
+            "html": f"""
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #052e10, #155523); padding: 30px; text-align: center; color: white;">
+                    <h1>🌱 AGROcore</h1>
+                </div>
+                <div style="padding: 30px;">
+                    <h2>Olá, {nome or 'Produtor'}!</h2>
+                    <p>O consultor <strong>{request.usuario_email}</strong> te convidou para usar o AGROcore.</p>
+                    <p>Com o AGROcore você vai:</p>
+                    <ul>
+                        <li>✅ Controlar todos os custos da sua produção</li>
+                        <li>✅ Acompanhar vendas e gastos em tempo real</li>
+                        <li>✅ Receber relatórios automáticos por e-mail</li>
+                        <li>✅ Ter um consultor especialista te ajudando</li>
+                    </ul>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://aguiar.up.railway.app/registrar?convite={codigo}" 
+                           style="background: #2d7a3a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">
+                           Aceitar Convite e Cadastrar
+                        </a>
+                    </div>
+                    <p style="color: #666; font-size: 12px;">Este convite expira em 7 dias.</p>
+                </div>
+            </body>
+            </html>
+            """
+        })
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+    
+    return jsonify({'success': True, 'mensagem': f'Convite enviado para {email}'})
+
+@app.route('/api/consultor/aceitar-convite', methods=['POST'])
+def aceitar_convite():
+    """Aceita convite e cria vínculo consultor-cliente"""
+    data = request.json
+    codigo = data.get('codigo')
+    email = data.get('email')
+    senha = data.get('senha')
+    nome = data.get('nome')
+    
+    if not codigo or not email or not senha:
+        return jsonify({'error': 'Dados incompletos'}), 400
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Buscar convite
+    cur.execute('SELECT * FROM convites_consultor WHERE codigo = %s AND status = \'pendente\'', (codigo,))
+    convite = cur.fetchone()
+    
+    if not convite:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Convite inválido ou expirado'}), 400
+    
+    # Verificar se e-mail corresponde
+    if convite['email_destino'] != email:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'E-mail não corresponde ao convite'}), 400
+    
+    # Verificar se usuário já existe
+    cur.execute('SELECT id FROM usuarios WHERE email = %s', (email,))
+    existente = cur.fetchone()
+    
+    if existente:
+        usuario_id = existente['id']
+    else:
+        senha_hash = gerar_hash_senha(senha)
+        cur.execute('''
+            INSERT INTO usuarios (email, senha_hash, nome, role, ativo)
+            VALUES (%s, %s, %s, 'produtor', true)
+            RETURNING id
+        ''', (email, senha_hash, nome or email.split('@')[0]))
+        usuario_id = cur.fetchone()['id']
+    
+    # Criar vínculo
+    cur.execute('''
+        INSERT INTO vinculos_consultor (consultor_id, cliente_id, permissao_escrita)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (consultor_id, cliente_id) DO NOTHING
+    ''', (convite['consultor_id'], usuario_id, True))
+    
+    # Atualizar status do convite
+    cur.execute('''
+        UPDATE convites_consultor SET status = 'aceito', data_aceite = CURRENT_TIMESTAMP
+        WHERE id = %s
+    ''', (convite['id'],))
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return jsonify({'success': True, 'mensagem': 'Convite aceito! Faça login para começar.'})
+
+@app.route('/api/consultor/benchmark', methods=['POST'])
+@token_required
+def criar_benchmark():
+    """Retorna dados de benchmark com identificadores anônimos (LGPD compliant)"""
+    if request.usuario_role != 'consultor':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    data = request.json
+    tipo = data.get('tipo', 'custo_ha')
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Buscar todos os clientes do consultor
+    cur.execute('SELECT cliente_id FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
+    clientes_ids = [row['cliente_id'] for row in cur.fetchall()]
+    
+    if len(clientes_ids) < 2:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Precisa de pelo menos 2 clientes para benchmarking'}), 400
+    
+    # Buscar nomes dos clientes (apenas para o consultor)
+    cur.execute('SELECT id, nome FROM usuarios WHERE id IN ({})'.format(','.join(['%s'] * len(clientes_ids))), clientes_ids)
+    clientes_nomes = {row['id']: row['nome'] for row in cur.fetchall()}
+    
+    # Calcular métricas para cada cliente
+    resultados = []
+    for idx, cliente_id in enumerate(clientes_ids):
+        if tipo == 'custo_ha':
+            cur.execute('''
+                SELECT 
+                    COALESCE(SUM(g.valor), 0) + COALESCE(SUM(p.total), 0) as custo_total,
+                    COALESCE(SUM(a.hectares), 0) as area_total
+                FROM (
+                    SELECT usuario_id, valor FROM gastos WHERE usuario_id = %s
+                    UNION ALL
+                    SELECT usuario_id, total FROM producoes WHERE usuario_id = %s
+                ) AS custos
+                CROSS JOIN (
+                    SELECT hectares FROM areas WHERE usuario_id = %s
+                ) AS areas
+            ''', (cliente_id, cliente_id, cliente_id))
+            dados = cur.fetchone()
+            custo_ha = dados['custo_total'] / dados['area_total'] if dados['area_total'] > 0 else 0
+            resultados.append({
+                'id_anonimo': idx + 1,
+                'nome_real': clientes_nomes[cliente_id],
+                'valor': custo_ha,
+                'unidade': 'R$/ha'
+            })
+        
+        elif tipo == 'margem':
+            cur.execute('''
+                SELECT 
+                    COALESCE(SUM(v.total), 0) as vendas,
+                    COALESCE(SUM(g.valor), 0) + COALESCE(SUM(p.total), 0) as custos
+                FROM vendas v
+                LEFT JOIN gastos g ON v.usuario_id = g.usuario_id 
+                LEFT JOIN producoes p ON v.usuario_id = p.usuario_id
+                WHERE v.usuario_id = %s AND v.data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+            ''', (cliente_id,))
+            dados = cur.fetchone()
+            lucro = dados['vendas'] - dados['custos']
+            margem = (lucro / dados['vendas'] * 100) if dados['vendas'] > 0 else 0
+            resultados.append({
+                'id_anonimo': idx + 1,
+                'nome_real': clientes_nomes[cliente_id],
+                'valor': margem,
+                'unidade': '%'
+            })
+    
+    cur.close()
+    conn.close()
+    
+    # Ordenar resultados
+    resultados.sort(key=lambda x: x['valor'], reverse=(tipo != 'custo_ha'))
+    
+    # Versão anônima para o frontend
+    benchmark_anonimo = []
+    for r in resultados:
+        benchmark_anonimo.append({
+            'id': r['id_anonimo'],
+            'nome': f"Fazenda {chr(64 + r['id_anonimo'])}",
+            'valor': r['valor'],
+            'unidade': r['unidade']
+        })
+    
+    media_valor = sum(r['valor'] for r in resultados) / len(resultados)
+    
+    return jsonify({
+        'success': True,
+        'benchmark': benchmark_anonimo,
+        'media_carteira': media_valor,
+        'tipo': tipo,
+        'total_clientes': len(resultados)
+    })
+
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
