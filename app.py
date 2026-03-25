@@ -2032,6 +2032,23 @@ def verificar_coluna_role():
     except Exception as e:
         return f"❌ Erro: {str(e)}"
         
+@app.route('/tornar-consultor/<email>')
+def tornar_consultor(email):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('UPDATE usuarios SET role = \'consultor\' WHERE email = %s', (email,))
+        conn.commit()
+        rows = cur.rowcount
+        cur.close()
+        conn.close()
+        
+        if rows > 0:
+            return f"✅ Usuário {email} agora é consultor!"
+        else:
+            return f"⚠️ Usuário {email} não encontrado"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"        
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
