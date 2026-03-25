@@ -2637,95 +2637,103 @@ body.menu-open .menu-container {
       </div>
     </div>
   </section>
-  <!-- ========== CONSULTOR - DASHBOARD ========== -->
-  <section id="consultor-dashboard" class="section">
-    <div class="page-header">
-      <div>
-        <h1 class="section-title">
-          <span class="title-icon">👥</span> 
-          Minha Carteira de Clientes
-        </h1>
-        <p class="section-sub">Visão geral de todos os produtores que você acompanha</p>
-      </div>
-      <button class="btn btn-primary" onclick="abrirModalConvidar()">
-        ➕ Convidar Cliente
-      </button>
+<!-- ========== CONSULTOR - DASHBOARD ========== -->
+<section id="consultor-dashboard" class="section">
+  <div class="page-header">
+    <div>
+      <h1 class="section-title">
+        <span class="title-icon">👥</span> 
+        Minha Carteira de Clientes
+      </h1>
+      <p class="section-sub">Gerencie os produtores que você acompanha</p>
     </div>
-  
-    <!-- Cards de Resumo da Carteira -->
-    <div class="kpi-grid" id="carteira-resumo">
-      <div class="kpi-card">
-        <div class="kpi-icon">👥</div>
-        <div class="kpi-label">Total de Clientes</div>
-        <div class="kpi-value" id="total-clientes">0</div>
+    <button class="btn btn-primary" onclick="abrirModalAdicionarCliente()">
+      ➕ Adicionar Cliente
+    </button>
+  </div>
+
+  <!-- Cards de Resumo da Carteira -->
+  <div class="kpi-grid" id="carteira-resumo">
+    <div class="kpi-card">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-label">Total de Clientes</div>
+      <div class="kpi-value" id="total-clientes">0</div>
+    </div>
+    <div class="kpi-card azul">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Vendas Totais (Mês)</div>
+      <div class="kpi-value" id="total-vendas-carteira">R$ 0</div>
+    </div>
+    <div class="kpi-card vermelho">
+      <div class="kpi-icon">💸</div>
+      <div class="kpi-label">Gastos Totais (Mês)</div>
+      <div class="kpi-value" id="total-gastos-carteira">R$ 0</div>
+    </div>
+    <div class="kpi-card roxo">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Lucro Total (Mês)</div>
+      <div class="kpi-value" id="total-lucro-carteira">R$ 0</div>
+    </div>
+  </div>
+
+  <!-- Ranking de Culturas -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-title">
+      <div class="dot" style="background: var(--purple-600);"></div>
+      Ranking de Culturas da Carteira
+    </div>
+    <div id="ranking-culturas-container">
+      <div class="empty">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- Lista de Clientes -->
+  <div class="card">
+    <div class="card-title">
+      <div class="dot"></div>
+      Meus Clientes
+    </div>
+    <div id="clientes-container"></div>
+  </div>
+
+  <!-- Modal para adicionar cliente existente -->
+  <div id="modal-adicionar-cliente" class="modal-overlay">
+    <div class="modal">
+      <h3>➕ Adicionar Cliente</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+        Informe o e-mail e a senha do produtor para vinculá-lo à sua carteira.
+      </p>
+      
+      <div class="form-group">
+        <label>📧 E-mail do produtor</label>
+        <input type="email" id="cliente-email" placeholder="produtor@fazenda.com">
       </div>
-      <div class="kpi-card azul">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-label">Vendas Totais (Mês)</div>
-        <div class="kpi-value" id="total-vendas-carteira">R$ 0</div>
+      
+      <div class="form-group">
+        <label>🔒 Senha do produtor</label>
+        <input type="password" id="cliente-senha" placeholder="••••••••">
       </div>
-      <div class="kpi-card vermelho">
-        <div class="kpi-icon">💸</div>
-        <div class="kpi-label">Gastos Totais (Mês)</div>
-        <div class="kpi-value" id="total-gastos-carteira">R$ 0</div>
+      
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="fecharModalAdicionarCliente()">Cancelar</button>
+        <button class="btn btn-primary" onclick="adicionarClienteExistente()">✅ Adicionar à Carteira</button>
       </div>
-      <div class="kpi-card roxo">
-        <div class="kpi-icon">📈</div>
-        <div class="kpi-label">Lucro Total (Mês)</div>
-        <div class="kpi-value" id="total-lucro-carteira">R$ 0</div>
+      
+      <div id="status-adicionar" style="margin-top: 16px; padding: 10px; border-radius: 8px; display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Benchmark -->
+  <div id="modal-benchmark" class="modal-overlay">
+    <div class="modal modal-lg" style="max-width: 800px;">
+      <h3>📊 Benchmarking Comparativo</h3>
+      <div id="benchmark-container"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" onclick="fecharModalBenchmark()">Fechar</button>
       </div>
     </div>
-  
-    <!-- Ranking de Culturas -->
-    <div class="card" style="margin-bottom: 24px;">
-      <div class="card-title">
-        <div class="dot" style="background: var(--purple-600);"></div>
-        Ranking de Culturas da Carteira
-      </div>
-      <div id="ranking-culturas-container">
-        <div class="empty">Carregando...</div>
-      </div>
-    </div>
-  
-    <!-- Lista de Clientes -->
-    <div class="card">
-      <div class="card-title">
-        <div class="dot"></div>
-        Meus Clientes
-      </div>
-      <div id="clientes-container"></div>
-    </div>
-  
-    <!-- Modal de Convite -->
-    <div id="modal-convidar" class="modal-overlay">
-      <div class="modal">
-        <h3>➕ Convidar Novo Cliente</h3>
-        <div class="form-group">
-          <label>E-mail do produtor</label>
-          <input type="email" id="convite-email" placeholder="produtor@email.com">
-        </div>
-        <div class="form-group">
-          <label>Nome (opcional)</label>
-          <input type="text" id="convite-nome" placeholder="Nome do produtor">
-        </div>
-        <div class="modal-buttons">
-          <button class="btn btn-secondary" onclick="fecharModalConvidar()">Cancelar</button>
-          <button class="btn btn-primary" onclick="enviarConvite()">Enviar Convite</button>
-        </div>
-      </div>
-    </div>
-  
-    <!-- Modal de Benchmark -->
-    <div id="modal-benchmark" class="modal-overlay">
-      <div class="modal modal-lg" style="max-width: 800px;">
-        <h3>📊 Benchmarking Comparativo</h3>
-        <div id="benchmark-container"></div>
-        <div class="modal-buttons">
-          <button class="btn btn-secondary" onclick="fecharModalBenchmark()">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </section>
+  </div>
+</section>
   
   <!-- ========== MODO CONSULTOR - SELEÇÃO DE CLIENTE ========== -->
   <div id="modo-consultor" style="display: none;">
@@ -4993,54 +5001,6 @@ function recarregarDadosCliente() {
     carregarDados();
 }
 
-function abrirModalConvidar() {
-    document.getElementById('modal-convidar').classList.add('active');
-}
-
-function fecharModalConvidar() {
-    document.getElementById('modal-convidar').classList.remove('active');
-    document.getElementById('convite-email').value = '';
-    document.getElementById('convite-nome').value = '';
-}
-
-async function enviarConvite() {
-    const email = document.getElementById('convite-email').value.trim();
-    const nome = document.getElementById('convite-nome').value.trim();
-    
-    if (!email) {
-        toast('⚠️ Informe o e-mail do produtor');
-        return;
-    }
-    
-    if (!email.includes('@')) {
-        toast('⚠️ E-mail inválido');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/consultor/convidar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ email, nome })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            toast(`✅ Convite enviado para ${email}`);
-            fecharModalConvidar();
-        } else {
-            toast(`❌ ${data.error || 'Erro ao enviar convite'}`);
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        toast('❌ Erro ao conectar com o servidor');
-    }
-}
-
 async function abrirBenchmark() {
     document.getElementById('modal-benchmark').classList.add('active');
     await carregarBenchmark();
@@ -5121,7 +5081,97 @@ async function carregarBenchmark() {
 function fecharModalBenchmark() {
     document.getElementById('modal-benchmark').classList.remove('active');
 }
-  
+// ============================================
+// FUNÇÕES PARA ADICIONAR CLIENTE EXISTENTE
+// ============================================
+
+function abrirModalAdicionarCliente() {
+    document.getElementById('modal-adicionar-cliente').classList.add('active');
+    document.getElementById('cliente-email').value = '';
+    document.getElementById('cliente-senha').value = '';
+    const statusDiv = document.getElementById('status-adicionar');
+    if (statusDiv) statusDiv.style.display = 'none';
+}
+
+function fecharModalAdicionarCliente() {
+    document.getElementById('modal-adicionar-cliente').classList.remove('active');
+}
+
+async function adicionarClienteExistente() {
+    const email = document.getElementById('cliente-email').value.trim();
+    const senha = document.getElementById('cliente-senha').value;
+    const statusDiv = document.getElementById('status-adicionar');
+    
+    if (!email || !senha) {
+        mostrarStatusAdicionar('⚠️ Preencha e-mail e senha', 'erro');
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        mostrarStatusAdicionar('⚠️ E-mail inválido', 'erro');
+        return;
+    }
+    
+    mostrarStatusAdicionar('🔄 Verificando credenciais...', 'info');
+    
+    try {
+        const response = await fetch('/api/consultor/adicionar-cliente', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email, senha })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            mostrarStatusAdicionar(`✅ ${data.mensagem}`, 'sucesso');
+            setTimeout(() => {
+                fecharModalAdicionarCliente();
+                carregarDashboardConsultor(); // Recarregar lista de clientes
+            }, 1500);
+        } else {
+            mostrarStatusAdicionar(`❌ ${data.error || 'Erro ao adicionar cliente'}`, 'erro');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarStatusAdicionar('❌ Erro ao conectar com o servidor', 'erro');
+    }
+}
+
+function mostrarStatusAdicionar(mensagem, tipo) {
+    const statusDiv = document.getElementById('status-adicionar');
+    if (!statusDiv) return;
+    
+    statusDiv.textContent = mensagem;
+    statusDiv.style.display = 'block';
+    
+    if (tipo === 'sucesso') {
+        statusDiv.style.background = '#dcfce7';
+        statusDiv.style.color = '#166534';
+        statusDiv.style.border = '1px solid #bbf7d0';
+    } else if (tipo === 'erro') {
+        statusDiv.style.background = '#fee2e2';
+        statusDiv.style.color = '#b91c1c';
+        statusDiv.style.border = '1px solid #fecaca';
+    } else {
+        statusDiv.style.background = '#dbeafe';
+        statusDiv.style.color = '#1e40af';
+        statusDiv.style.border = '1px solid #bfdbfe';
+    }
+    
+    setTimeout(() => {
+        if (statusDiv.style.display !== 'none') {
+            statusDiv.style.opacity = '0';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+                statusDiv.style.opacity = '1';
+            }, 500);
+        }
+    }, 4000);
+}  
 </script>
 </body>
 </html>
