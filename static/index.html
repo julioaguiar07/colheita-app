@@ -4944,33 +4944,24 @@ function renderizarRankingCulturas(ranking) {
     }
     
     // Garantir que os dados têm as propriedades necessárias
-    const rankingValido = ranking.filter(item => item && item.produto);
+    const rankingValido = ranking.filter(item => item && item.produto && (item.total_vendas > 0 || item.quantidade_vendas > 0));
     
     if (rankingValido.length === 0) {
-        container.innerHTML = '<div class="empty">Nenhum dado de cultura disponível</div>';
+        container.innerHTML = '<div class="empty">Nenhuma venda registrada nos últimos 3 meses</div>';
         return;
     }
     
     // Ordenar por total_vendas (maior para menor)
     rankingValido.sort((a, b) => (b.total_vendas || 0) - (a.total_vendas || 0));
     
-    // Calcular margem se não existir
-    rankingValido.forEach(item => {
-        if (item.margem === undefined || item.margem === null) {
-            // Calcular margem aproximada (exemplo: 30% padrão se não houver dados)
-            item.margem = 30;
-        }
-        if (item.total_vendas === undefined) item.total_vendas = 0;
-    });
-    
     container.innerHTML = `
         <div style="background: var(--surface); border-radius: 16px; padding: 20px; border: 1px solid var(--border);">
             ${rankingValido.slice(0, 5).map((cultura, index) => {
-                const margem = typeof cultura.margem === 'number' ? cultura.margem.toFixed(1) : '0.0';
                 const vendas = typeof cultura.total_vendas === 'number' ? cultura.total_vendas : 0;
+                const margem = typeof cultura.margem === 'number' ? cultura.margem.toFixed(1) : '0.0';
                 
                 return `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: ${index < rankingValido.length - 1 ? '1px solid var(--border)' : 'none'};">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span style="width: 28px; height: 28px; background: var(--green-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: var(--green-700);">${index + 1}</span>
                             <span style="font-weight: 600;">🌱 ${cultura.produto}</span>
