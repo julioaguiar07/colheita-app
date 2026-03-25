@@ -2006,7 +2006,32 @@ def criar_benchmark():
         'total_clientes': len(resultados)
     })
 
-
+@app.route('/verificar-coluna-role')
+def verificar_coluna_role():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='usuarios'")
+        colunas = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        colunas_nomes = [c['column_name'] for c in colunas]
+        
+        if 'role' in colunas_nomes:
+            return "✅ Coluna 'role' já existe na tabela usuarios!"
+        else:
+            # Adicionar coluna
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) DEFAULT \'produtor\'')
+            conn.commit()
+            cur.close()
+            conn.close()
+            return "✅ Coluna 'role' adicionada com sucesso!"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+        
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
