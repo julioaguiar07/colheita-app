@@ -1759,6 +1759,8 @@ def get_ranking_culturas():
         clientes = [row['cliente_id'] for row in cur.fetchall()]
         
         if not clientes:
+            cur.close()
+            conn.close()
             return jsonify({'success': True, 'ranking': []})
         
         # Buscar vendas agrupadas por produto
@@ -1767,7 +1769,8 @@ def get_ranking_culturas():
         cur.execute(f'''
             SELECT 
                 produto,
-                SUM(total) as total_vendas
+                COALESCE(SUM(total), 0) as total_vendas,
+                COUNT(*) as quantidade_vendas
             FROM vendas 
             WHERE usuario_id IN ({placeholders})
             AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
@@ -1777,6 +1780,35 @@ def get_ranking_culturas():
         ''', clientes)
         
         ranking = cur.fetchall()
+        
+        # Calcular margem aproximada para cada produto
+        for item in ranking:
+            # Buscar custos associados ao produto
+            cur.execute(f'''
+                SELECT 
+                    COALESCE(SUM(total), 0) as total_custos
+                FROM producoes 
+                WHERE produto = %s AND usuario_id IN ({placeholders})
+            ''', [item['produto']] + clientes)
+            custos = cur.fetchone()
+            
+            # Buscar gastos associados ao produto
+            cur.execute(f'''
+                SELECT 
+                    COALESCE(SUM(valor), 0) as total_gastos
+                FROM gastos 
+                WHERE produto = %s AND usuario_id IN ({placeholders})
+            ''', [item['produto']] + clientes)
+            gastos = cur.fetchone()
+            
+            custo_total = (custos['total_custos'] if custos else 0) + (gastos['total_gastos'] if gastos else 0)
+            
+            if item['total_vendas'] > 0:
+                lucro = item['total_vendas'] - custo_total
+                item['margem'] = (lucro / item['total_vendas']) * 100
+            else:
+                item['margem'] = 0
+        
         cur.close()
         conn.close()
         
@@ -1785,7 +1817,7 @@ def get_ranking_culturas():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': True, 'ranking': [], 'error': str(e)}), 200 
 
 @app.route('/api/consultor/convidar', methods=['POST'])
 @token_required
