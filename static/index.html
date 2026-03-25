@@ -2637,7 +2637,111 @@ body.menu-open .menu-container {
       </div>
     </div>
   </section>
+  <!-- ========== CONSULTOR - DASHBOARD ========== -->
+  <section id="consultor-dashboard" class="section">
+    <div class="page-header">
+      <div>
+        <h1 class="section-title">
+          <span class="title-icon">👥</span> 
+          Minha Carteira de Clientes
+        </h1>
+        <p class="section-sub">Visão geral de todos os produtores que você acompanha</p>
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalConvidar()">
+        ➕ Convidar Cliente
+      </button>
+    </div>
   
+    <!-- Cards de Resumo da Carteira -->
+    <div class="kpi-grid" id="carteira-resumo">
+      <div class="kpi-card">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-label">Total de Clientes</div>
+        <div class="kpi-value" id="total-clientes">0</div>
+      </div>
+      <div class="kpi-card azul">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">Vendas Totais (Mês)</div>
+        <div class="kpi-value" id="total-vendas-carteira">R$ 0</div>
+      </div>
+      <div class="kpi-card vermelho">
+        <div class="kpi-icon">💸</div>
+        <div class="kpi-label">Gastos Totais (Mês)</div>
+        <div class="kpi-value" id="total-gastos-carteira">R$ 0</div>
+      </div>
+      <div class="kpi-card roxo">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-label">Lucro Total (Mês)</div>
+        <div class="kpi-value" id="total-lucro-carteira">R$ 0</div>
+      </div>
+    </div>
+  
+    <!-- Ranking de Culturas -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-title">
+        <div class="dot" style="background: var(--purple-600);"></div>
+        Ranking de Culturas da Carteira
+      </div>
+      <div id="ranking-culturas-container">
+        <div class="empty">Carregando...</div>
+      </div>
+    </div>
+  
+    <!-- Lista de Clientes -->
+    <div class="card">
+      <div class="card-title">
+        <div class="dot"></div>
+        Meus Clientes
+      </div>
+      <div id="clientes-container"></div>
+    </div>
+  
+    <!-- Modal de Convite -->
+    <div id="modal-convidar" class="modal-overlay">
+      <div class="modal">
+        <h3>➕ Convidar Novo Cliente</h3>
+        <div class="form-group">
+          <label>E-mail do produtor</label>
+          <input type="email" id="convite-email" placeholder="produtor@email.com">
+        </div>
+        <div class="form-group">
+          <label>Nome (opcional)</label>
+          <input type="text" id="convite-nome" placeholder="Nome do produtor">
+        </div>
+        <div class="modal-buttons">
+          <button class="btn btn-secondary" onclick="fecharModalConvidar()">Cancelar</button>
+          <button class="btn btn-primary" onclick="enviarConvite()">Enviar Convite</button>
+        </div>
+      </div>
+    </div>
+  
+    <!-- Modal de Benchmark -->
+    <div id="modal-benchmark" class="modal-overlay">
+      <div class="modal modal-lg" style="max-width: 800px;">
+        <h3>📊 Benchmarking Comparativo</h3>
+        <div id="benchmark-container"></div>
+        <div class="modal-buttons">
+          <button class="btn btn-secondary" onclick="fecharModalBenchmark()">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- ========== MODO CONSULTOR - SELEÇÃO DE CLIENTE ========== -->
+  <div id="modo-consultor" style="display: none;">
+    <div class="cliente-selector" style="background: var(--surface-2); border-radius: 12px; padding: 12px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Visualizando:</span>
+        <span style="font-size: 1rem; font-weight: 700; color: var(--text-primary);" id="cliente-atual-nome">---</span>
+        <span style="font-size: 0.7rem; background: var(--green-100); padding: 2px 8px; border-radius: 20px;" id="cliente-atual-permissao"></span>
+      </div>
+      <div>
+        <button class="btn-voltar" onclick="sairModoCliente()" style="background: var(--surface); border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">
+          ← Voltar para minha carteira
+        </button>
+      </div>
+    </div>
+  </div>
 </main>
 
 <div id="toast"></div>
@@ -2696,9 +2800,29 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prod-data').value = hoje;
   document.getElementById('venda-data').value = hoje;
   document.getElementById('gasto-data').value = hoje;
+  
+  // Verificar se já está em modo consultor
+  const savedModo = localStorage.getItem('consultor_modo_ativo');
+  const savedClienteId = localStorage.getItem('consultor_cliente_id');
+  const savedClienteNome = localStorage.getItem('consultor_cliente_nome');
+  
+  if (savedModo === 'true' && savedClienteId) {
+    modoConsultorAtivo = true;
+    clienteSelecionado = parseInt(savedClienteId);
+    clienteAtualNome = savedClienteNome;
+  }
+  
   carregarDados();
   carregarConfiguracoesEmail();
-  initMinimalMenu(); 
+  initMinimalMenu();
+  
+  // Se for consultor, carregar dashboard do consultor após login
+  const usuarioAtual = JSON.parse(localStorage.getItem('usuario_atual') || '{}');
+  if (usuarioAtual.role === 'consultor') {
+    setTimeout(() => {
+      carregarDashboardConsultor();
+    }, 500);
+  }
 });
 
 
@@ -2716,6 +2840,11 @@ async function carregarDados() {
       'Authorization': `Bearer ${token}`
     };
     
+    // Se estiver em modo consultor, adicionar header do cliente
+    if (modoConsultorAtivo && clienteSelecionado) {
+      headers['X-Selected-Client-ID'] = clienteSelecionado;
+    }
+    
     const [prodRes, vendasRes, gastosRes] = await Promise.all([
       fetch('/api/producoes', { headers }),
       fetch('/api/vendas', { headers }),
@@ -2726,20 +2855,18 @@ async function carregarDados() {
     if (vendasRes.ok) vendas = await vendasRes.json();
     if (gastosRes.ok) gastos = await gastosRes.json();
     
-    // Destruir gráfico antes de atualizar
     if (charts.gastos) {
       charts.gastos.destroy();
       charts.gastos = null;
     }
     
     atualizarTudo();
-    console.log('✅ Dados carregados para o usuário:', token);
+    console.log('✅ Dados carregados');
   } catch (error) {
     console.error('Erro ao carregar:', error);
     toast('Erro ao conectar com o servidor');
   }
 }
-
 
 // Função para sincronizar dados (remover registros órfãos)
 async function sincronizarDados() {
@@ -4100,30 +4227,34 @@ function fazerLogin() {
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      // ATUALIZAR A VARIÁVEL GLOBAL token
       token = data.token;
       usuarioAtual = data.usuario;
       
       localStorage.setItem('auth_token', token);
       localStorage.setItem('usuario_atual', JSON.stringify(usuarioAtual));
-      localStorage.setItem('is_admin', usuarioAtual.is_admin || false);
+      localStorage.setItem('is_admin', usuarioAtual.email === 'admin@agrocore.com');
+      localStorage.setItem('user_role', usuarioAtual.role || 'produtor');
       
       mostrarMensagemLogin('✅ Login realizado! Carregando dados...', 'sucesso');
       
       setTimeout(() => {
-        // Esconder login e mostrar dashboard
         document.getElementById('login').classList.remove('active');
-        document.getElementById('dashboard').classList.add('active');
         
-        // Atualizar cabeçalho com nome do usuário
+        // Redirecionar baseado na role
+        if (usuarioAtual.role === 'consultor') {
+          document.getElementById('consultor-dashboard').classList.add('active');
+          carregarDashboardConsultor();
+        } else {
+          document.getElementById('dashboard').classList.add('active');
+          carregarDados();
+        }
+        
+        // Atualizar cabeçalho
         const headerNav = document.querySelector('.logo-text');
         if (headerNav) {
           headerNav.innerHTML = `AGRO<span>core</span> · ${usuarioAtual.nome || usuarioAtual.email.split('@')[0]}`;
         }
         
-        
-        // ⭐ IMPORTANTE: Chamar carregarDados DEPOIS de definir o token
-        carregarDados();
       }, 1000);
     } else {
       mostrarMensagemLogin('❌ ' + (data.error || 'E-mail ou senha inválidos'), 'erro');
@@ -4652,6 +4783,343 @@ function initMinimalMenu() {
   });
   
   console.log('✅ Menu minimalista inicializado');
+}
+// ============================================
+// MÓDULO DO CONSULTOR
+// ============================================
+
+let modoConsultorAtivo = false;
+let clienteSelecionado = null;
+let clienteAtualNome = '';
+
+// Carregar dados do consultor
+async function carregarDashboardConsultor() {
+    if (!token) return;
+    
+    try {
+        const response = await fetch('/api/consultor/clientes', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                renderizarClientes(data.clientes);
+                atualizarResumoCarteira(data.clientes);
+            }
+        }
+        
+        const rankingResponse = await fetch('/api/consultor/ranking-culturas', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (rankingResponse.ok) {
+            const rankingData = await rankingResponse.json();
+            if (rankingData.success) {
+                renderizarRankingCulturas(rankingData.ranking);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        toast('❌ Erro ao carregar dados');
+    }
+}
+
+function renderizarClientes(clientes) {
+    const container = document.getElementById('clientes-container');
+    const totalClientes = document.getElementById('total-clientes');
+    
+    if (totalClientes) totalClientes.textContent = clientes.length;
+    
+    if (!clientes || clientes.length === 0) {
+        container.innerHTML = `
+            <div class="empty" style="padding: 60px;">
+                <span class="empty-icon">👥</span>
+                <h3>Nenhum cliente ainda</h3>
+                <p>Clique em "Convidar Cliente" para começar</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = clientes.map(cliente => {
+        const progressoPE = Math.min(100, Math.max(0, (cliente.total_vendas_mes / (cliente.total_producoes_mes + cliente.total_gastos_mes + 1)) * 100));
+        const statusClass = cliente.lucro_mes >= 0 ? 'status-lucro' : 'status-prejuizo';
+        const statusText = cliente.lucro_mes >= 0 ? '💰 Lucrativo' : '⚠️ Em prejuízo';
+        const alertClass = cliente.lucro_mes < 0 ? 'alerta' : (progressoPE > 70 ? 'warning' : '');
+        const ultimaAtualizacao = cliente.ultima_venda ? formatarDataRelativa(cliente.ultima_venda) : 'nunca';
+        
+        return `
+            <div class="cliente-card" style="background: var(--surface); border-radius: 20px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); transition: all 0.2s ease; cursor: pointer; position: relative; overflow: hidden; border-left: 4px solid ${cliente.lucro_mes >= 0 ? 'var(--green-500)' : 'var(--red-600)'};" onclick="entrarModoCliente(${cliente.id}, '${cliente.nome || cliente.email.split('@')[0]}')">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-primary);">${cliente.nome || cliente.email.split('@')[0]}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">${cliente.email}</div>
+                    </div>
+                    <div style="padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; background: ${cliente.lucro_mes >= 0 ? 'var(--green-100)' : 'var(--red-100)'}; color: ${cliente.lucro_mes >= 0 ? 'var(--green-700)' : 'var(--red-600)'};">${statusText}</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">💰 Vendas</div>
+                        <div style="font-size: 1rem; font-weight: 800; font-family: 'DM Mono', monospace; margin-top: 4px;">${formatMoney(cliente.total_vendas_mes)}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">💸 Gastos</div>
+                        <div style="font-size: 1rem; font-weight: 800; font-family: 'DM Mono', monospace; margin-top: 4px;">${formatMoney(cliente.total_producoes_mes + cliente.total_gastos_mes)}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">📈 Lucro</div>
+                        <div style="font-size: 1rem; font-weight: 800; font-family: 'DM Mono', monospace; margin-top: 4px; color: ${cliente.lucro_mes >= 0 ? 'var(--green-600)' : 'var(--red-600)'};">${formatMoney(cliente.lucro_mes)}</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.7rem; color: var(--text-muted);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>🎯 Ponto de Equilíbrio</span>
+                        <div style="width: 100px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;">
+                            <div style="width: ${progressoPE}%; height: 100%; background: var(--green-500); border-radius: 2px;"></div>
+                        </div>
+                        <span>${Math.round(progressoPE)}%</span>
+                    </div>
+                    <div>🕐 Última atualização: ${ultimaAtualizacao}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    if (clientes.length >= 2) {
+        container.innerHTML += `
+            <div style="margin-top: 16px; text-align: center;">
+                <button class="btn btn-secondary" onclick="abrirBenchmark()">
+                    📊 Comparar Clientes (Benchmarking)
+                </button>
+            </div>
+        `;
+    }
+}
+
+function atualizarResumoCarteira(clientes) {
+    const totalVendas = clientes.reduce((s, c) => s + c.total_vendas_mes, 0);
+    const totalGastos = clientes.reduce((s, c) => s + c.total_producoes_mes + c.total_gastos_mes, 0);
+    const totalLucro = clientes.reduce((s, c) => s + c.lucro_mes, 0);
+    
+    document.getElementById('total-vendas-carteira').textContent = formatMoney(totalVendas);
+    document.getElementById('total-gastos-carteira').textContent = formatMoney(totalGastos);
+    document.getElementById('total-lucro-carteira').textContent = formatMoney(totalLucro);
+    
+    const lucroElement = document.getElementById('total-lucro-carteira');
+    if (lucroElement) lucroElement.style.color = totalLucro >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+}
+
+function renderizarRankingCulturas(ranking) {
+    const container = document.getElementById('ranking-culturas-container');
+    
+    if (!ranking || ranking.length === 0) {
+        container.innerHTML = '<div class="empty">Nenhum dado de cultura disponível</div>';
+        return;
+    }
+    
+    ranking.sort((a, b) => b.margem - a.margem);
+    
+    container.innerHTML = `
+        <div style="background: var(--surface); border-radius: 16px; padding: 20px; border: 1px solid var(--border);">
+            ${ranking.slice(0, 5).map((cultura, index) => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="width: 28px; height: 28px; background: var(--green-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: var(--green-700);">${index + 1}</span>
+                        <span style="font-weight: 600;">🌱 ${cultura.produto}</span>
+                    </div>
+                    <div>
+                        <span style="font-weight: 700; font-family: 'DM Mono', monospace; color: var(--green-600);">${formatMoney(cultura.total_vendas)}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);"> (${cultura.margem.toFixed(1)}%)</span>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function entrarModoCliente(clienteId, clienteNome) {
+    clienteSelecionado = clienteId;
+    clienteAtualNome = clienteNome;
+    modoConsultorAtivo = true;
+    
+    localStorage.setItem('consultor_modo_ativo', 'true');
+    localStorage.setItem('consultor_cliente_id', clienteId);
+    localStorage.setItem('consultor_cliente_nome', clienteNome);
+    
+    const modoBarra = document.getElementById('modo-consultor');
+    if (modoBarra) {
+        modoBarra.style.display = 'block';
+        document.getElementById('cliente-atual-nome').textContent = clienteNome;
+        document.getElementById('cliente-atual-permissao').textContent = '✏️ Editável';
+    }
+    
+    const consultorDashboard = document.getElementById('consultor-dashboard');
+    if (consultorDashboard) consultorDashboard.classList.remove('active');
+    
+    const dashboardProdutor = document.getElementById('dashboard');
+    if (dashboardProdutor) dashboardProdutor.classList.add('active');
+    
+    recarregarDadosCliente();
+    toast(`📊 Visualizando ${clienteNome}`);
+}
+
+function sairModoCliente() {
+    modoConsultorAtivo = false;
+    clienteSelecionado = null;
+    clienteAtualNome = '';
+    
+    localStorage.removeItem('consultor_modo_ativo');
+    localStorage.removeItem('consultor_cliente_id');
+    localStorage.removeItem('consultor_cliente_nome');
+    
+    const modoBarra = document.getElementById('modo-consultor');
+    if (modoBarra) modoBarra.style.display = 'none';
+    
+    const dashboardProdutor = document.getElementById('dashboard');
+    if (dashboardProdutor) dashboardProdutor.classList.remove('active');
+    
+    const consultorDashboard = document.getElementById('consultor-dashboard');
+    if (consultorDashboard) consultorDashboard.classList.add('active');
+    
+    carregarDashboardConsultor();
+    toast(`👥 Voltando para sua carteira`);
+}
+
+function recarregarDadosCliente() {
+    carregarDados();
+}
+
+function abrirModalConvidar() {
+    document.getElementById('modal-convidar').classList.add('active');
+}
+
+function fecharModalConvidar() {
+    document.getElementById('modal-convidar').classList.remove('active');
+    document.getElementById('convite-email').value = '';
+    document.getElementById('convite-nome').value = '';
+}
+
+async function enviarConvite() {
+    const email = document.getElementById('convite-email').value.trim();
+    const nome = document.getElementById('convite-nome').value.trim();
+    
+    if (!email) {
+        toast('⚠️ Informe o e-mail do produtor');
+        return;
+    }
+    
+    if (!email.includes('@')) {
+        toast('⚠️ E-mail inválido');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/consultor/convidar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email, nome })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            toast(`✅ Convite enviado para ${email}`);
+            fecharModalConvidar();
+        } else {
+            toast(`❌ ${data.error || 'Erro ao enviar convite'}`);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        toast('❌ Erro ao conectar com o servidor');
+    }
+}
+
+async function abrirBenchmark() {
+    document.getElementById('modal-benchmark').classList.add('active');
+    await carregarBenchmark();
+}
+
+async function carregarBenchmark() {
+    const tipo = 'custo_ha';
+    const resultadoDiv = document.getElementById('benchmark-container');
+    
+    resultadoDiv.innerHTML = '<div class="empty">Carregando...</div>';
+    
+    try {
+        const response = await fetch('/api/consultor/benchmark', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ tipo })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.benchmark) {
+            const valores = data.benchmark.map(b => b.valor);
+            const maxValor = Math.max(...valores);
+            const minValor = Math.min(...valores);
+            
+            resultadoDiv.innerHTML = `
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label>Comparar indicador:</label>
+                    <select id="benchmark-tipo" onchange="carregarBenchmark()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
+                        <option value="custo_ha">Custo por Hectare (R$/ha)</option>
+                        <option value="margem">Margem de Lucro (%)</option>
+                    </select>
+                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--surface-2);">
+                            <th style="padding: 12px; text-align: left;">Fazenda</th>
+                            <th style="padding: 12px; text-align: left;">Valor</th>
+                            <th style="padding: 12px; text-align: left;">Comparativo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.benchmark.map(b => {
+                            const isMax = b.valor === maxValor;
+                            const isMin = b.valor === minValor;
+                            const comparativo = tipo === 'custo_ha' 
+                                ? (isMax ? '⚠️ Mais alto' : (isMin ? '✅ Mais eficiente' : 'Médio'))
+                                : (isMax ? '✅ Melhor margem' : (isMin ? '⚠️ Menor margem' : 'Médio'));
+                            const cor = isMax ? (tipo === 'custo_ha' ? 'var(--red-600)' : 'var(--green-600)') : (isMin ? (tipo === 'custo_ha' ? 'var(--green-600)' : 'var(--red-600)') : 'inherit');
+                            
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 12px;"><strong>${b.nome}</strong></td>
+                                    <td style="padding: 12px; font-weight: 700; color: ${cor};">${b.valor.toFixed(2)} ${b.unidade}</td>
+                                    <td style="padding: 12px;">${comparativo}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px;">
+                    <strong>📊 Média da Carteira:</strong> ${data.media_carteira.toFixed(2)} ${data.benchmark[0]?.unidade || ''}
+                </div>
+                <div class="benchmark-aviso" style="margin-top: 12px; padding: 8px; background: #fef3c7; border-radius: 8px; font-size: 0.7rem; color: #92400e;">
+                    🔒 Os nomes das fazendas são exibidos de forma anônima para proteger a privacidade dos produtores.
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        resultadoDiv.innerHTML = '<div class="empty">Erro ao carregar dados</div>';
+    }
+}
+
+function fecharModalBenchmark() {
+    document.getElementById('modal-benchmark').classList.remove('active');
 }
   
 </script>
