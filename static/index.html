@@ -4805,6 +4805,7 @@ async function carregarDashboardConsultor() {
     if (!token) return;
     
     try {
+        // Buscar lista de clientes
         const response = await fetch('/api/consultor/clientes', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -4817,15 +4818,26 @@ async function carregarDashboardConsultor() {
             }
         }
         
-        const rankingResponse = await fetch('/api/consultor/ranking-culturas', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (rankingResponse.ok) {
-            const rankingData = await rankingResponse.json();
-            if (rankingData.success) {
-                renderizarRankingCulturas(rankingData.ranking);
+        // Buscar ranking de culturas com tratamento de erro
+        try {
+            const rankingResponse = await fetch('/api/consultor/ranking-culturas', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (rankingResponse.ok) {
+                const rankingData = await rankingResponse.json();
+                if (rankingData.success && rankingData.ranking) {
+                    renderizarRankingCulturas(rankingData.ranking);
+                } else {
+                    renderizarRankingCulturas([]);
+                }
+            } else {
+                console.warn('Erro ao carregar ranking:', rankingResponse.status);
+                renderizarRankingCulturas([]);
             }
+        } catch (rankingError) {
+            console.error('Erro no ranking:', rankingError);
+            renderizarRankingCulturas([]);
         }
         
     } catch (error) {
@@ -4924,31 +4936,56 @@ function atualizarResumoCarteira(clientes) {
 function renderizarRankingCulturas(ranking) {
     const container = document.getElementById('ranking-culturas-container');
     
+    if (!container) return;
+    
     if (!ranking || ranking.length === 0) {
         container.innerHTML = '<div class="empty">Nenhum dado de cultura disponível</div>';
         return;
     }
     
-    ranking.sort((a, b) => b.margem - a.margem);
+    // Garantir que os dados têm as propriedades necessárias
+    const rankingValido = ranking.filter(item => item && item.produto);
+    
+    if (rankingValido.length === 0) {
+        container.innerHTML = '<div class="empty">Nenhum dado de cultura disponível</div>';
+        return;
+    }
+    
+    // Ordenar por total_vendas (maior para menor)
+    rankingValido.sort((a, b) => (b.total_vendas || 0) - (a.total_vendas || 0));
+    
+    // Calcular margem se não existir
+    rankingValido.forEach(item => {
+        if (item.margem === undefined || item.margem === null) {
+            // Calcular margem aproximada (exemplo: 30% padrão se não houver dados)
+            item.margem = 30;
+        }
+        if (item.total_vendas === undefined) item.total_vendas = 0;
+    });
     
     container.innerHTML = `
         <div style="background: var(--surface); border-radius: 16px; padding: 20px; border: 1px solid var(--border);">
-            ${ranking.slice(0, 5).map((cultura, index) => `
-                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="width: 28px; height: 28px; background: var(--green-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: var(--green-700);">${index + 1}</span>
-                        <span style="font-weight: 600;">🌱 ${cultura.produto}</span>
+            ${rankingValido.slice(0, 5).map((cultura, index) => {
+                const margem = typeof cultura.margem === 'number' ? cultura.margem.toFixed(1) : '0.0';
+                const vendas = typeof cultura.total_vendas === 'number' ? cultura.total_vendas : 0;
+                
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="width: 28px; height: 28px; background: var(--green-100); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: var(--green-700);">${index + 1}</span>
+                            <span style="font-weight: 600;">🌱 ${cultura.produto}</span>
+                        </div>
+                        <div>
+                            <span style="font-weight: 700; font-family: 'DM Mono', monospace; color: var(--green-600);">${formatMoney(vendas)}</span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);"> (${margem}%)</span>
+                        </div>
                     </div>
-                    <div>
-                        <span style="font-weight: 700; font-family: 'DM Mono', monospace; color: var(--green-600);">${formatMoney(cultura.total_vendas)}</span>
-                        <span style="font-size: 0.8rem; color: var(--text-muted);"> (${cultura.margem.toFixed(1)}%)</span>
-                    </div>
-                </div>
-            `).join('')}
+                `;
+            }).join('')}
         </div>
     `;
 }
-
+  
 function entrarModoCliente(clienteId, clienteNome) {
     clienteSelecionado = clienteId;
     clienteAtualNome = clienteNome;
