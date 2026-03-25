@@ -1746,7 +1746,7 @@ def get_clientes_consultor():
 @app.route('/api/consultor/ranking-culturas', methods=['GET'])
 @token_required
 def get_ranking_culturas():
-    """Ranking simplificado das culturas na carteira"""
+    """Ranking das culturas mais vendidas na carteira"""
     if request.usuario_role != 'consultor':
         return jsonify({'error': 'Acesso negado'}), 403
     
@@ -1781,33 +1781,34 @@ def get_ranking_culturas():
         
         ranking = cur.fetchall()
         
-        # Calcular margem aproximada para cada produto
+        # Calcular margem para cada produto (agora com busca mais abrangente)
         for item in ranking:
-            # Buscar custos associados ao produto
+            # Buscar custos de produção para este produto em TODOS os clientes
             cur.execute(f'''
-                SELECT 
-                    COALESCE(SUM(total), 0) as total_custos
+                SELECT COALESCE(SUM(total), 0) as total
                 FROM producoes 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
             ''', [item['produto']] + clientes)
             custos = cur.fetchone()
             
-            # Buscar gastos associados ao produto
+            # Buscar gastos específicos para este produto
             cur.execute(f'''
-                SELECT 
-                    COALESCE(SUM(valor), 0) as total_gastos
+                SELECT COALESCE(SUM(valor), 0) as total
                 FROM gastos 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
             ''', [item['produto']] + clientes)
             gastos = cur.fetchone()
             
-            custo_total = (custos['total_custos'] if custos else 0) + (gastos['total_gastos'] if gastos else 0)
+            custo_total = (custos['total'] if custos else 0) + (gastos['total'] if gastos else 0)
             
             if item['total_vendas'] > 0:
                 lucro = item['total_vendas'] - custo_total
                 item['margem'] = (lucro / item['total_vendas']) * 100
             else:
                 item['margem'] = 0
+            
+            # Debug: imprimir no console do servidor
+            print(f"Produto: {item['produto']}, Vendas: {item['total_vendas']}, Custos: {custo_total}, Margem: {item['margem']:.2f}%")
         
         cur.close()
         conn.close()
@@ -1817,7 +1818,7 @@ def get_ranking_culturas():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'success': True, 'ranking': [], 'error': str(e)}), 200 
+        return jsonify({'success': True, 'ranking': [], 'error': str(e)}), 200
 
 @app.route('/api/consultor/convidar', methods=['POST'])
 @token_required
@@ -2275,7 +2276,87 @@ def adicionar_cliente_existente():
             'nome': cliente['nome'] or email.split('@')[0]
         }
     })
-
+@app.route('/diagnostico-ranking')
+def diagnostico_ranking():
+    """Diagnostica os dados de vendas e custos"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Verificar se há vendas
+        cur.execute('SELECT COUNT(*) as total FROM vendas')
+        vendas_total = cur.fetchone()['total']
+        
+        cur.execute('SELECT produto, COUNT(*) as qtd, SUM(total) as valor FROM vendas GROUP BY produto')
+        vendas_por_produto = cur.fetchall()
+        
+        cur.execute('SELECT produto, COUNT(*) as qtd, SUM(total) as valor FROM producoes GROUP BY produto')
+        producoes_por_produto = cur.fetchall()
+        
+        cur.execute('SELECT produto, COUNT(*) as qtd, SUM(valor) as valor FROM gastos WHERE produto IS NOT NULL AND produto != \'\' GROUP BY produto')
+        gastos_por_produto = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head><title>Diagnóstico Ranking</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h1>📊 Diagnóstico do Ranking</h1>
+            
+            <h2>Vendas por Produto</h2>
+            <table border="1" cellpadding="8">
+                <tr><th>Produto</th><th>Quantidade</th><th>Valor Total</th></tr>
+        """
+        
+        for v in vendas_por_produto:
+            html += f"<tr><td>{v['produto']}</td><td>{v['qtd']}</td><td>R$ {v['valor']:.2f}</td></tr>"
+        
+        if not vendas_por_produto:
+            html += "<tr><td colspan='3'>Nenhuma venda encontrada</td></tr>"
+        
+        html += """
+            </table>
+            
+            <h2>Produções por Produto</h2>
+            <table border="1" cellpadding="8">
+                <tr><th>Produto</th><th>Quantidade</th><th>Valor Total</th></tr>
+        """
+        
+        for p in producoes_por_produto:
+            html += f"<tr><td>{p['produto']}</td><td>{p['qtd']}</td><td>R$ {p['valor']:.2f}</td></tr>"
+        
+        if not producoes_por_produto:
+            html += "<tr><td colspan='3'>Nenhuma produção encontrada</td></tr>"
+        
+        html += """
+            </table>
+            
+            <h2>Gastos por Produto</h2>
+            <table border="1" cellpadding="8">
+                <tr><th>Produto</th><th>Quantidade</th><th>Valor Total</th></tr>
+        """
+        
+        for g in gastos_por_produto:
+            html += f"<tr><td>{g['produto']}</td><td>{g['qtd']}</td><td>R$ {g['valor']:.2f}</td></tr>"
+        
+        if not gastos_por_produto:
+            html += "<tr><td colspan='3'>Nenhum gasto vinculado a produto</td></tr>"
+        
+        html += """
+            </table>
+            
+            <p><strong>Total de vendas no sistema:</strong> """ + str(vendas_total) + """</p>
+            <p><a href="/">← Voltar</a></p>
+        </body>
+        </html>
+        """
+        
+        return html
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
 
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
