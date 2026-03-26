@@ -5056,16 +5056,21 @@ function recarregarDadosCliente() {
     carregarDados();
 }
 
-async function abrirBenchmark() {
-    document.getElementById('modal-benchmark').classList.add('active');
-    await carregarBenchmark();
+function abrirBenchmark() {
+    const modal = document.getElementById('modal-benchmark');
+    if (modal) {
+        modal.classList.add('active');
+        carregarBenchmark();
+    }
 }
 
 async function carregarBenchmark() {
-    const tipo = 'custo_ha';
+    const tipo = document.getElementById('benchmark-tipo')?.value || 'custo_ha';
     const resultadoDiv = document.getElementById('benchmark-container');
     
-    resultadoDiv.innerHTML = '<div class="empty">Carregando...</div>';
+    if (!resultadoDiv) return;
+    
+    resultadoDiv.innerHTML = '<div class="empty">Carregando dados...</div>';
     
     try {
         const response = await fetch('/api/consultor/benchmark', {
@@ -5077,9 +5082,13 @@ async function carregarBenchmark() {
             body: JSON.stringify({ tipo })
         });
         
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const data = await response.json();
         
-        if (data.success && data.benchmark) {
+        if (data.success && data.benchmark && data.benchmark.length > 0) {
             const valores = data.benchmark.map(b => b.valor);
             const maxValor = Math.max(...valores);
             const minValor = Math.min(...valores);
@@ -5088,53 +5097,92 @@ async function carregarBenchmark() {
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label>Comparar indicador:</label>
                     <select id="benchmark-tipo" onchange="carregarBenchmark()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
-                        <option value="custo_ha">Custo por Hectare (R$/ha)</option>
-                        <option value="margem">Margem de Lucro (%)</option>
+                        <option value="custo_ha" ${tipo === 'custo_ha' ? 'selected' : ''}>Custo por Hectare (R$/ha)</option>
+                        <option value="margem" ${tipo === 'margem' ? 'selected' : ''}>Margem de Lucro (%)</option>
                     </select>
                 </div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: var(--surface-2);">
-                            <th style="padding: 12px; text-align: left;">Fazenda</th>
-                            <th style="padding: 12px; text-align: left;">Valor</th>
-                            <th style="padding: 12px; text-align: left;">Comparativo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.benchmark.map(b => {
-                            const isMax = b.valor === maxValor;
-                            const isMin = b.valor === minValor;
-                            const comparativo = tipo === 'custo_ha' 
-                                ? (isMax ? '⚠️ Mais alto' : (isMin ? '✅ Mais eficiente' : 'Médio'))
-                                : (isMax ? '✅ Melhor margem' : (isMin ? '⚠️ Menor margem' : 'Médio'));
-                            const cor = isMax ? (tipo === 'custo_ha' ? 'var(--red-600)' : 'var(--green-600)') : (isMin ? (tipo === 'custo_ha' ? 'var(--green-600)' : 'var(--red-600)') : 'inherit');
-                            
-                            return `
-                                <tr style="border-bottom: 1px solid var(--border);">
-                                    <td style="padding: 12px;"><strong>${b.nome}</strong></td>
-                                    <td style="padding: 12px; font-weight: 700; color: ${cor};">${b.valor.toFixed(2)} ${b.unidade}</td>
-                                    <td style="padding: 12px;">${comparativo}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--surface-2);">
+                                <th style="padding: 12px; text-align: left;">Fazenda</th>
+                                <th style="padding: 12px; text-align: left;">Valor</th>
+                                <th style="padding: 12px; text-align: left;">Comparativo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.benchmark.map(b => {
+                                const isMax = b.valor === maxValor;
+                                const isMin = b.valor === minValor;
+                                let comparativo = 'Médio';
+                                let cor = 'inherit';
+                                
+                                if (tipo === 'custo_ha') {
+                                    if (isMin) {
+                                        comparativo = '✅ Mais eficiente';
+                                        cor = 'var(--green-600)';
+                                    } else if (isMax) {
+                                        comparativo = '⚠️ Mais alto';
+                                        cor = 'var(--red-600)';
+                                    }
+                                } else {
+                                    if (isMax) {
+                                        comparativo = '✅ Melhor margem';
+                                        cor = 'var(--green-600)';
+                                    } else if (isMin) {
+                                        comparativo = '⚠️ Menor margem';
+                                        cor = 'var(--red-600)';
+                                    }
+                                }
+                                
+                                const valorFormatado = tipo === 'custo_ha' 
+                                    ? `R$ ${b.valor.toFixed(2)}/ha`
+                                    : `${b.valor.toFixed(1)}%`;
+                                
+                                return `
+                                    <tr style="border-bottom: 1px solid var(--border);">
+                                        <td style="padding: 12px;"><strong>${b.nome}</strong></td>
+                                        <td style="padding: 12px; font-weight: 700; color: ${cor};">${valorFormatado}</td>
+                                        <td style="padding: 12px;">${comparativo}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
                 <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px;">
-                    <strong>📊 Média da Carteira:</strong> ${data.media_carteira.toFixed(2)} ${data.benchmark[0]?.unidade || ''}
+                    <strong>📊 Média da Carteira:</strong> ${tipo === 'custo_ha' ? `R$ ${data.media_carteira.toFixed(2)}/ha` : `${data.media_carteira.toFixed(1)}%`}
                 </div>
                 <div class="benchmark-aviso" style="margin-top: 12px; padding: 8px; background: #fef3c7; border-radius: 8px; font-size: 0.7rem; color: #92400e;">
                     🔒 Os nomes das fazendas são exibidos de forma anônima para proteger a privacidade dos produtores.
                 </div>
             `;
+        } else {
+            resultadoDiv.innerHTML = `
+                <div class="empty">
+                    <span class="empty-icon">📊</span>
+                    <h3>Dados insuficientes</h3>
+                    <p>Adicione pelo menos 2 clientes com dados para fazer benchmarking.</p>
+                </div>
+            `;
         }
     } catch (error) {
-        console.error('Erro:', error);
-        resultadoDiv.innerHTML = '<div class="empty">Erro ao carregar dados</div>';
+        console.error('Erro no benchmark:', error);
+        resultadoDiv.innerHTML = `
+            <div class="empty">
+                <span class="empty-icon">⚠️</span>
+                <h3>Erro ao carregar dados</h3>
+                <p>${error.message || 'Tente novamente mais tarde'}</p>
+            </div>
+        `;
     }
 }
 
 function fecharModalBenchmark() {
-    document.getElementById('modal-benchmark').classList.remove('active');
+    const modal = document.getElementById('modal-benchmark');
+    if (modal) {
+        modal.classList.remove('active');
+    }
 }
 // ============================================
 // FUNÇÕES PARA ADICIONAR CLIENTE EXISTENTE
