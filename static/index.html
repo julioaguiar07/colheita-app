@@ -4802,23 +4802,28 @@ let clienteAtualNome = '';
 
 // Carregar dados do consultor
 async function carregarDashboardConsultor() {
-    if (!token) return;
+    if (!token) {
+        console.log('Sem token, não carregando dados do consultor');
+        return;
+    }
     
     try {
         // Buscar lista de clientes
-        const response = await fetch('/api/consultor/clientes', {
+        const clientesResponse = await fetch('/api/consultor/clientes', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (response.ok) {
-            const data = await response.json();
+        if (clientesResponse.ok) {
+            const data = await clientesResponse.json();
             if (data.success) {
                 renderizarClientes(data.clientes);
                 atualizarResumoCarteira(data.clientes);
             }
+        } else {
+            console.error('Erro ao carregar clientes:', clientesResponse.status);
         }
         
-        // Buscar ranking de culturas com tratamento de erro
+        // Buscar ranking de culturas
         try {
             const rankingResponse = await fetch('/api/consultor/ranking-culturas', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -4826,13 +4831,14 @@ async function carregarDashboardConsultor() {
             
             if (rankingResponse.ok) {
                 const rankingData = await rankingResponse.json();
+                console.log('Ranking recebido:', rankingData);
                 if (rankingData.success && rankingData.ranking) {
                     renderizarRankingCulturas(rankingData.ranking);
                 } else {
                     renderizarRankingCulturas([]);
                 }
             } else {
-                console.warn('Erro ao carregar ranking:', rankingResponse.status);
+                console.error('Erro ao carregar ranking:', rankingResponse.status);
                 renderizarRankingCulturas([]);
             }
         } catch (rankingError) {
@@ -4841,11 +4847,10 @@ async function carregarDashboardConsultor() {
         }
         
     } catch (error) {
-        console.error('Erro:', error);
-        toast('❌ Erro ao carregar dados');
+        console.error('Erro geral:', error);
+        toast('❌ Erro ao carregar dados do consultor');
     }
 }
-
 function renderizarClientes(clientes) {
     const container = document.getElementById('clientes-container');
     const totalClientes = document.getElementById('total-clientes');
@@ -4938,28 +4943,44 @@ function renderizarRankingCulturas(ranking) {
     
     if (!container) return;
     
+    console.log('Dados recebidos para ranking:', ranking);
+    
     if (!ranking || ranking.length === 0) {
         container.innerHTML = '<div class="empty">Nenhum dado de cultura disponível</div>';
         return;
     }
     
-    // Filtrar produtos com vendas
-    const rankingValido = ranking.filter(item => item && item.produto && (item.total_vendas > 0));
+    // Filtrar produtos com vendas e garantir que os valores são números
+    const rankingValido = ranking.filter(item => {
+        if (!item || !item.produto) return false;
+        // Garantir que total_vendas é número
+        if (typeof item.total_vendas !== 'number') item.total_vendas = Number(item.total_vendas) || 0;
+        if (typeof item.margem !== 'number') item.margem = Number(item.margem) || 0;
+        if (typeof item.custo_total !== 'number') item.custo_total = Number(item.custo_total) || 0;
+        return item.total_vendas > 0;
+    });
     
     if (rankingValido.length === 0) {
         container.innerHTML = '<div class="empty">Nenhuma venda registrada</div>';
         return;
     }
     
+    // Ordenar por total_vendas
+    rankingValido.sort((a, b) => (b.total_vendas || 0) - (a.total_vendas || 0));
+    
     container.innerHTML = `
         <div style="background: var(--surface); border-radius: 16px; padding: 20px; border: 1px solid var(--border);">
             ${rankingValido.slice(0, 5).map((cultura, index) => {
                 const vendas = cultura.total_vendas || 0;
-                const margem = cultura.margem || 0;
+                const margem = typeof cultura.margem === 'number' ? cultura.margem : 0;
                 const custoTotal = cultura.custo_total || 0;
                 
                 // Cor da margem
-                const margemColor = margem >= 30 ? 'var(--green-600)' : (margem >= 15 ? 'var(--amber-500)' : 'var(--red-600)');
+                let margemColor = 'var(--text-muted)';
+                if (margem >= 30) margemColor = 'var(--green-600)';
+                else if (margem >= 15) margemColor = 'var(--amber-500)';
+                else if (margem > 0) margemColor = 'var(--orange-500)';
+                else if (margem < 0) margemColor = 'var(--red-600)';
                 
                 return `
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: ${index < rankingValido.length - 1 ? '1px solid var(--border)' : 'none'};">
