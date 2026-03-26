@@ -1746,7 +1746,7 @@ def get_clientes_consultor():
 @app.route('/api/consultor/ranking-culturas', methods=['GET'])
 @token_required
 def get_ranking_culturas():
-    """Ranking das culturas mais vendidas na carteira"""
+    """Ranking das culturas mais lucrativas na carteira"""
     if request.usuario_role != 'consultor':
         return jsonify({'error': 'Acesso negado'}), 403
     
@@ -1763,52 +1763,75 @@ def get_ranking_culturas():
             conn.close()
             return jsonify({'success': True, 'ranking': []})
         
-        # Buscar vendas agrupadas por produto
         placeholders = ','.join(['%s'] * len(clientes))
         
+        # Buscar todos os produtos com vendas
         cur.execute(f'''
-            SELECT 
-                produto,
-                COALESCE(SUM(total), 0) as total_vendas,
-                COUNT(*) as quantidade_vendas
-            FROM vendas 
+            SELECT DISTINCT produto FROM vendas 
             WHERE usuario_id IN ({placeholders})
-            AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
-            GROUP BY produto
-            ORDER BY total_vendas DESC
-            LIMIT 10
         ''', clientes)
         
-        ranking = cur.fetchall()
+        produtos = [row['produto'] for row in cur.fetchall()]
         
-        # Calcular margem para cada produto (agora com busca mais abrangente)
-        for item in ranking:
-            # Buscar custos de produção para este produto em TODOS os clientes
+        if not produtos:
+            cur.close()
+            conn.close()
+            return jsonify({'success': True, 'ranking': []})
+        
+        ranking = []
+        
+        for produto in produtos:
+            # Total de vendas
+            cur.execute(f'''
+                SELECT COALESCE(SUM(total), 0) as total_vendas,
+                       COUNT(*) as qtd_vendas
+                FROM vendas 
+                WHERE produto = %s AND usuario_id IN ({placeholders})
+            ''', [produto] + clientes)
+            vendas = cur.fetchone()
+            
+            # Total de custos de produção
             cur.execute(f'''
                 SELECT COALESCE(SUM(total), 0) as total
                 FROM producoes 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
-            ''', [item['produto']] + clientes)
-            custos = cur.fetchone()
+            ''', [produto] + clientes)
+            producoes = cur.fetchone()
             
-            # Buscar gastos específicos para este produto
+            # Total de gastos específicos
             cur.execute(f'''
                 SELECT COALESCE(SUM(valor), 0) as total
                 FROM gastos 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
-            ''', [item['produto']] + clientes)
+            ''', [produto] + clientes)
             gastos = cur.fetchone()
             
-            custo_total = (custos['total'] if custos else 0) + (gastos['total'] if gastos else 0)
+            total_vendas = vendas['total_vendas'] if vendas else 0
+            custo_total = (producoes['total'] if producoes else 0) + (gastos['total'] if gastos else 0)
             
-            if item['total_vendas'] > 0:
-                lucro = item['total_vendas'] - custo_total
-                item['margem'] = (lucro / item['total_vendas']) * 100
+            if total_vendas > 0:
+                lucro = total_vendas - custo_total
+                margem = (lucro / total_vendas) * 100
             else:
-                item['margem'] = 0
+                lucro = 0
+                margem = 0
             
-            # Debug: imprimir no console do servidor
-            print(f"Produto: {item['produto']}, Vendas: {item['total_vendas']}, Custos: {custo_total}, Margem: {item['margem']:.2f}%")
+            ranking.append({
+                'produto': produto,
+                'total_vendas': total_vendas,
+                'custo_total': custo_total,
+                'lucro': lucro,
+                'margem': margem,
+                'quantidade_vendas': vendas['qtd_vendas'] if vendas else 0
+            })
+        
+        # Ordenar por total_vendas (maior para menor)
+        ranking.sort(key=lambda x: x['total_vendas'], reverse=True)
+        
+        # Debug no servidor
+        print("=== RANKING CALCULADO ===")
+        for r in ranking[:5]:
+            print(f"{r['produto']}: Vendas R${r['total_vendas']:.2f}, Custos R${r['custo_total']:.2f}, Margem {r['margem']:.1f}%")
         
         cur.close()
         conn.close()
