@@ -1765,49 +1765,51 @@ def get_ranking_culturas():
         
         placeholders = ','.join(['%s'] * len(clientes))
         
-        # Buscar todos os produtos com vendas
+        # Buscar todos os produtos com vendas nos últimos 3 meses
         cur.execute(f'''
-            SELECT DISTINCT produto FROM vendas 
+            SELECT 
+                produto,
+                COALESCE(SUM(total), 0) as total_vendas,
+                COUNT(*) as qtd_vendas
+            FROM vendas 
             WHERE usuario_id IN ({placeholders})
+            AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+            GROUP BY produto
+            ORDER BY total_vendas DESC
         ''', clientes)
         
-        produtos = [row['produto'] for row in cur.fetchall()]
+        vendas_por_produto = cur.fetchall()
         
-        if not produtos:
+        if not vendas_por_produto:
             cur.close()
             conn.close()
             return jsonify({'success': True, 'ranking': []})
         
         ranking = []
         
-        for produto in produtos:
-            # Total de vendas
-            cur.execute(f'''
-                SELECT COALESCE(SUM(total), 0) as total_vendas,
-                       COUNT(*) as qtd_vendas
-                FROM vendas 
-                WHERE produto = %s AND usuario_id IN ({placeholders})
-            ''', [produto] + clientes)
-            vendas = cur.fetchone()
+        for venda in vendas_por_produto:
+            produto = venda['produto']
+            total_vendas = float(venda['total_vendas'] or 0)
             
-            # Total de custos de produção
+            # Buscar custos de produção
             cur.execute(f'''
                 SELECT COALESCE(SUM(total), 0) as total
                 FROM producoes 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
             ''', [produto] + clientes)
             producoes = cur.fetchone()
+            custo_producao = float(producoes['total'] or 0)
             
-            # Total de gastos específicos
+            # Buscar gastos específicos
             cur.execute(f'''
                 SELECT COALESCE(SUM(valor), 0) as total
                 FROM gastos 
                 WHERE produto = %s AND usuario_id IN ({placeholders})
             ''', [produto] + clientes)
             gastos = cur.fetchone()
+            custo_gastos = float(gastos['total'] or 0)
             
-            total_vendas = vendas['total_vendas'] if vendas else 0
-            custo_total = (producoes['total'] if producoes else 0) + (gastos['total'] if gastos else 0)
+            custo_total = custo_producao + custo_gastos
             
             if total_vendas > 0:
                 lucro = total_vendas - custo_total
@@ -1822,16 +1824,11 @@ def get_ranking_culturas():
                 'custo_total': custo_total,
                 'lucro': lucro,
                 'margem': margem,
-                'quantidade_vendas': vendas['qtd_vendas'] if vendas else 0
+                'quantidade_vendas': venda['qtd_vendas']
             })
         
-        # Ordenar por total_vendas (maior para menor)
+        # Ordenar por total_vendas
         ranking.sort(key=lambda x: x['total_vendas'], reverse=True)
-        
-        # Debug no servidor
-        print("=== RANKING CALCULADO ===")
-        for r in ranking[:5]:
-            print(f"{r['produto']}: Vendas R${r['total_vendas']:.2f}, Custos R${r['custo_total']:.2f}, Margem {r['margem']:.1f}%")
         
         cur.close()
         conn.close()
