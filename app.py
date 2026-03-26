@@ -2434,7 +2434,78 @@ def diagnostico_ranking():
         return html
     except Exception as e:
         return f"❌ Erro: {str(e)}"
-
+@app.route('/diagnostico-clientes-consultor')
+def diagnostico_clientes_consultor():
+    """Mostra quantos clientes cada consultor tem"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Buscar todos os consultores e seus clientes
+        cur.execute('''
+            SELECT u.id, u.email, u.nome, u.role,
+                   COUNT(v.cliente_id) as total_clientes
+            FROM usuarios u
+            LEFT JOIN vinculos_consultor v ON u.id = v.consultor_id
+            WHERE u.role = 'consultor'
+            GROUP BY u.id, u.email, u.nome, u.role
+        ''')
+        
+        consultores = cur.fetchall()
+        
+        cur.execute('''
+            SELECT v.*, 
+                   c.email as consultor_email,
+                   cl.email as cliente_email
+            FROM vinculos_consultor v
+            JOIN usuarios c ON v.consultor_id = c.id
+            JOIN usuarios cl ON v.cliente_id = cl.id
+        ''')
+        
+        vinculos = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head><title>Diagnóstico Clientes</title></head>
+        <body style="font-family: Arial; padding: 20px;">
+            <h1>👥 Clientes por Consultor</h1>
+            
+            <h2>Consultores</h2>
+            <table border="1" cellpadding="8">
+                <tr><th>ID</th><th>Email</th><th>Nome</th><th>Total Clientes</th></tr>
+        """
+        
+        for c in consultores:
+            html += f"<tr><td>{c['id']}</td><td>{c['email']}</td><td>{c['nome'] or '-'}</td><td>{c['total_clientes']}</td></tr>"
+        
+        html += """
+            </table>
+            
+            <h2>Vínculos Existentes</h2>
+            <table border="1" cellpadding="8">
+                <tr><th>Consultor</th><th>Cliente</th><th>Permissão Escrita</th></tr>
+        """
+        
+        for v in vinculos:
+            html += f"<tr><td>{v['consultor_email']}</td><td>{v['cliente_email']}</td><td>{'✅ Sim' if v['permissao_escrita'] else '❌ Não'}</td></tr>"
+        
+        html += """
+            </table>
+            
+            <p><strong>Dica:</strong> Para fazer benchmarking, o consultor precisa ter pelo menos 2 clientes vinculados.</p>
+            <p><a href="/criar-vinculo-manual">➕ Criar vínculo manual</a> | <a href="/">← Voltar</a></p>
+        </body>
+        </html>
+        """
+        
+        return html
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+        
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
