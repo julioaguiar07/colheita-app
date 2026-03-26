@@ -1990,100 +1990,157 @@ def aceitar_convite():
 @app.route('/api/consultor/benchmark', methods=['POST'])
 @token_required
 def criar_benchmark():
-    """Retorna dados de benchmark com identificadores anônimos (LGPD compliant)"""
+    """Retorna dados de benchmark com identificadores anônimos"""
     if request.usuario_role != 'consultor':
         return jsonify({'error': 'Acesso negado'}), 403
     
-    data = request.json
-    tipo = data.get('tipo', 'custo_ha')
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
-    # Buscar todos os clientes do consultor
-    cur.execute('SELECT cliente_id FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
-    clientes_ids = [row['cliente_id'] for row in cur.fetchall()]
-    
-    if len(clientes_ids) < 2:
+    try:
+        data = request.json
+        tipo = data.get('tipo', 'custo_ha')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Buscar todos os clientes do consultor
+        cur.execute('SELECT cliente_id, permissao_escrita FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
+        vinculos = cur.fetchall()
+        
+        if len(vinculos) < 2:
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Precisa de pelo menos 2 clientes para benchmarking'}), 400
+        
+        resultados = []
+        
+        for idx, vinculo in enumerate(vinculos):
+            cliente_id = vinculo['cliente_id']
+            
+            # Buscar nome do cliente
+            cur.execute('SELECT nome, email FROM usuarios WHERE id = %s', (cliente_id,))
+            cliente = cur.fetchone()
+            nome_cliente = cliente['nome'] or cliente['email'].split('@')[0]
+            
+            if tipo == 'custo_ha':
+                # Buscar área total do cliente
+                cur.execute('''
+                    SELECT COALESCE(SUM(hectares), 0) as area_total
+                    FROM areas 
+                    WHERE usuario_id = %s
+                ''', (cliente_id,))
+                area = cur.fetchone()
+                area_total = float(area['area_total'] or 0)
+                
+                # Buscar custos totais do mês
+                cur.execute('''
+                    SELECT COALESCE(SUM(valor), 0) as total
+                    FROM gastos 
+                    WHERE usuario_id = %s 
+                    AND data >= date_trunc('month', CURRENT_DATE)
+                ''', (cliente_id,))
+                gastos = cur.fetchone()
+                
+                cur.execute('''
+                    SELECT COALESCE(SUM(total), 0) as total
+                    FROM producoes 
+                    WHERE usuario_id = %s 
+                    AND data >= date_trunc('month', CURRENT_DATE)
+                ''', (cliente_id,))
+                producoes = cur.fetchone()
+                
+                custo_total = float(gastos['total'] or 0) + float(producoes['total'] or 0)
+                
+                if area_total > 0:
+                    valor = custo_total / area_total
+                else:
+                    valor = 0
+                
+                resultados.append({
+                    'id_anonimo': idx + 1,
+                    'nome_real': nome_cliente,
+                    'valor': valor,
+                    'unidade': 'R$/ha'
+                })
+            
+            elif tipo == 'margem':
+                # Buscar vendas e custos dos últimos 3 meses
+                cur.execute('''
+                    SELECT 
+                        COALESCE(SUM(total), 0) as vendas
+                    FROM vendas 
+                    WHERE usuario_id = %s 
+                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+                ''', (cliente_id,))
+                vendas = cur.fetchone()
+                
+                cur.execute('''
+                    SELECT COALESCE(SUM(valor), 0) as total
+                    FROM gastos 
+                    WHERE usuario_id = %s 
+                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+                ''', (cliente_id,))
+                gastos = cur.fetchone()
+                
+                cur.execute('''
+                    SELECT COALESCE(SUM(total), 0) as total
+                    FROM producoes 
+                    WHERE usuario_id = %s 
+                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+                ''', (cliente_id,))
+                producoes = cur.fetchone()
+                
+                total_vendas = float(vendas['vendas'] or 0)
+                total_custos = float(gastos['total'] or 0) + float(producoes['total'] or 0)
+                
+                if total_vendas > 0:
+                    lucro = total_vendas - total_custos
+                    valor = (lucro / total_vendas) * 100
+                else:
+                    valor = 0
+                
+                resultados.append({
+                    'id_anonimo': idx + 1,
+                    'nome_real': nome_cliente,
+                    'valor': valor,
+                    'unidade': '%'
+                })
+        
         cur.close()
         conn.close()
-        return jsonify({'error': 'Precisa de pelo menos 2 clientes para benchmarking'}), 400
-    
-    # Buscar nomes dos clientes (apenas para o consultor)
-    cur.execute('SELECT id, nome FROM usuarios WHERE id IN ({})'.format(','.join(['%s'] * len(clientes_ids))), clientes_ids)
-    clientes_nomes = {row['id']: row['nome'] for row in cur.fetchall()}
-    
-    # Calcular métricas para cada cliente
-    resultados = []
-    for idx, cliente_id in enumerate(clientes_ids):
+        
+        # Ordenar resultados
         if tipo == 'custo_ha':
-            cur.execute('''
-                SELECT 
-                    COALESCE(SUM(g.valor), 0) + COALESCE(SUM(p.total), 0) as custo_total,
-                    COALESCE(SUM(a.hectares), 0) as area_total
-                FROM (
-                    SELECT usuario_id, valor FROM gastos WHERE usuario_id = %s
-                    UNION ALL
-                    SELECT usuario_id, total FROM producoes WHERE usuario_id = %s
-                ) AS custos
-                CROSS JOIN (
-                    SELECT hectares FROM areas WHERE usuario_id = %s
-                ) AS areas
-            ''', (cliente_id, cliente_id, cliente_id))
-            dados = cur.fetchone()
-            custo_ha = dados['custo_total'] / dados['area_total'] if dados['area_total'] > 0 else 0
-            resultados.append({
-                'id_anonimo': idx + 1,
-                'nome_real': clientes_nomes[cliente_id],
-                'valor': custo_ha,
-                'unidade': 'R$/ha'
+            resultados.sort(key=lambda x: x['valor'])
+        else:
+            resultados.sort(key=lambda x: x['valor'], reverse=True)
+        
+        # Calcular média
+        if resultados:
+            media_valor = sum(r['valor'] for r in resultados) / len(resultados)
+        else:
+            media_valor = 0
+        
+        # Versão anônima para o frontend
+        benchmark_anonimo = []
+        for r in resultados:
+            benchmark_anonimo.append({
+                'id': r['id_anonimo'],
+                'nome': f"Fazenda {chr(64 + r['id_anonimo'])}",
+                'valor': r['valor'],
+                'unidade': r['unidade']
             })
         
-        elif tipo == 'margem':
-            cur.execute('''
-                SELECT 
-                    COALESCE(SUM(v.total), 0) as vendas,
-                    COALESCE(SUM(g.valor), 0) + COALESCE(SUM(p.total), 0) as custos
-                FROM vendas v
-                LEFT JOIN gastos g ON v.usuario_id = g.usuario_id 
-                LEFT JOIN producoes p ON v.usuario_id = p.usuario_id
-                WHERE v.usuario_id = %s AND v.data >= date_trunc('month', CURRENT_DATE - interval '3 months')
-            ''', (cliente_id,))
-            dados = cur.fetchone()
-            lucro = dados['vendas'] - dados['custos']
-            margem = (lucro / dados['vendas'] * 100) if dados['vendas'] > 0 else 0
-            resultados.append({
-                'id_anonimo': idx + 1,
-                'nome_real': clientes_nomes[cliente_id],
-                'valor': margem,
-                'unidade': '%'
-            })
-    
-    cur.close()
-    conn.close()
-    
-    # Ordenar resultados
-    resultados.sort(key=lambda x: x['valor'], reverse=(tipo != 'custo_ha'))
-    
-    # Versão anônima para o frontend
-    benchmark_anonimo = []
-    for r in resultados:
-        benchmark_anonimo.append({
-            'id': r['id_anonimo'],
-            'nome': f"Fazenda {chr(64 + r['id_anonimo'])}",
-            'valor': r['valor'],
-            'unidade': r['unidade']
+        return jsonify({
+            'success': True,
+            'benchmark': benchmark_anonimo,
+            'media_carteira': media_valor,
+            'tipo': tipo,
+            'total_clientes': len(resultados)
         })
-    
-    media_valor = sum(r['valor'] for r in resultados) / len(resultados)
-    
-    return jsonify({
-        'success': True,
-        'benchmark': benchmark_anonimo,
-        'media_carteira': media_valor,
-        'tipo': tipo,
-        'total_clientes': len(resultados)
-    })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 200
 
 @app.route('/verificar-coluna-role')
 def verificar_coluna_role():
