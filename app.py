@@ -2972,6 +2972,8 @@ def get_livro_caixa_dados():
         data = request.json
         inicio = data.get('inicio')
         fim = data.get('fim')
+        
+        # Usar target_user_id se disponível (modo consultor)
         usuario_id = request.target_user_id if hasattr(request, 'target_user_id') else request.usuario_id
         
         dados = buscar_dados_financeiros(usuario_id, inicio, fim)
@@ -2979,13 +2981,18 @@ def get_livro_caixa_dados():
         return jsonify({
             'success': True,
             'livro_caixa': dados['livro_caixa'],
-            'totais': dados['totais']
+            'totais': {
+                'total_receita': dados['totais']['total_vendas'],
+                'total_despesas': dados['totais']['total_gastos'],
+                'total_custos_producao': dados['totais']['total_producoes'],
+                'saldo': dados['totais']['saldo']
+            }
         })
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
+        return jsonify({'success': False, 'error': str(e)}), 500
+        
 @app.route('/api/consultor/meu-consultor', methods=['GET'])
 @token_required
 def get_meu_consultor():
