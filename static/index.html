@@ -5431,6 +5431,227 @@ function mostrarStatusAdicionar(mensagem, tipo) {
         }
     }, 4000);
 }  
+
+// ============================================
+// DOSSIÊ AGROcore - FUNÇÕES PARA TODOS OS PERFIS
+// ============================================
+
+async function gerarRelatorioCredito() {
+    // Definir período (últimos 12 meses)
+    const hoje = new Date();
+    const inicio = new Date(hoje.getFullYear() - 1, hoje.getMonth(), 1);
+    const fim = hoje;
+    
+    const periodo_inicio = inicio.toISOString().split('T')[0];
+    const periodo_fim = fim.toISOString().split('T')[0];
+    
+    // Nome do consultor (se for consultor, usa seu nome; se for produtor, usa "Sistema AGROcore")
+    let consultor_nome = 'Sistema AGROcore';
+    if (usuarioAtual?.role === 'consultor') {
+        consultor_nome = usuarioAtual.nome || usuarioAtual.email.split('@')[0];
+    } else if (usuarioAtual?.role === 'produtor') {
+        // Se for produtor, tenta buscar o nome do consultor vinculado (se houver)
+        try {
+            const response = await fetch('/api/consultor/meu-consultor', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.consultor_nome) {
+                    consultor_nome = data.consultor_nome;
+                }
+            }
+        } catch (e) {
+            console.log('Produtor sem consultor vinculado');
+        }
+    }
+    
+    toast('📄 Gerando relatório... Isso pode levar alguns segundos.');
+    
+    try {
+        const response = await fetch('/api/exportar-relatorio-completo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                periodo_inicio,
+                periodo_fim,
+                consultor_nome
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dossie_agrocore_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            toast('✅ Relatório gerado com sucesso! Verifique seus downloads.');
+        } else {
+            const error = await response.json();
+            toast('❌ Erro ao gerar relatório: ' + (error.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        toast('❌ Erro ao gerar relatório');
+    }
+}
+
+async function verificarDocumento() {
+    const hash = document.getElementById('hash-verificacao').value.trim();
+    const resultadoDiv = document.getElementById('resultado-verificacao');
+    
+    if (!hash) {
+        resultadoDiv.innerHTML = '<span style="color: orange;">⚠️ Informe o código de verificação</span>';
+        return;
+    }
+    
+    resultadoDiv.innerHTML = '<span>🔍 Verificando...</span>';
+    
+    try {
+        const response = await fetch('/api/verificar-hash', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ hash })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.valida) {
+            resultadoDiv.innerHTML = `
+                <span style="color: green;">✅ ${data.mensagem}</span><br/>
+                <span style="font-size: 0.7rem;">Gerado em: ${new Date(data.data_geracao).toLocaleString()}</span>
+            `;
+        } else {
+            resultadoDiv.innerHTML = `<span style="color: red;">❌ ${data.mensagem}</span>`;
+        }
+    } catch (error) {
+        resultadoDiv.innerHTML = '<span style="color: red;">❌ Erro ao verificar documento</span>';
+    }
+}
+
+// ============================================
+// LIVRO CAIXA - FUNÇÕES PARA TODOS OS PERFIS
+// ============================================
+
+async function carregarLivroCaixa() {
+    const ano = document.getElementById('filtro-ano-caixa').value;
+    const tbody = document.getElementById('corpo-tabela-livro-caixa');
+    
+    if (!token) return;
+    
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Carregando...</td></tr>';
+    
+    try {
+        // Buscar dados do livro caixa via API
+        const inicio = `${ano}-01-01`;
+        const fim = `${ano}-12-31`;
+        
+        const response = await fetch('/api/livro-caixa-dados', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ inicio, fim })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.livro_caixa) {
+                renderizarTabelaLivroCaixa(data.livro_caixa);
+                atualizarKPIsLivroCaixa(data.totais);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum dado encontrado para este ano</td></tr>';
+            }
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar dados</td></tr>';
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar dados</td></tr>';
+    }
+}
+
+function renderizarTabelaLivroCaixa(livroCaixa) {
+    const tbody = document.getElementById('corpo-tabela-livro-caixa');
+    
+    if (!livroCaixa || livroCaixa.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum dado encontrado</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = livroCaixa.map(mes => {
+        const saldoClass = mes.saldo >= 0 ? 'color: var(--green-600);' : 'color: var(--red-600);';
+        return `
+            <tr>
+                <td>${mes.mes}</td>
+                <td style="font-family: 'DM Mono';">${formatMoney(mes.receita)}</td>
+                <td style="font-family: 'DM Mono';">${formatMoney(mes.despesas)}</td>
+                <td style="font-family: 'DM Mono';">${formatMoney(mes.custos_producao)}</td>
+                <td style="font-family: 'DM Mono'; ${saldoClass}">${formatMoney(mes.saldo)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function atualizarKPIsLivroCaixa(totais) {
+    document.getElementById('kpi-receita-livro').textContent = formatMoney(totais?.total_receita || 0);
+    document.getElementById('kpi-despesas-livro').textContent = formatMoney(totais?.total_despesas || 0);
+    document.getElementById('kpi-custos-livro').textContent = formatMoney(totais?.total_custos_producao || 0);
+    const saldoElement = document.getElementById('kpi-saldo-livro');
+    const saldo = totais?.saldo || 0;
+    saldoElement.textContent = formatMoney(saldo);
+    saldoElement.style.color = saldo >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+}
+
+async function exportarLivroCaixa() {
+    const ano = document.getElementById('filtro-ano-caixa').value;
+    
+    toast('📎 Gerando PDF do Livro Caixa...');
+    
+    try {
+        const response = await fetch('/api/exportar-livro-caixa', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ ano })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `livro_caixa_${ano}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            toast('✅ Livro Caixa exportado com sucesso!');
+        } else {
+            const error = await response.json();
+            toast('❌ Erro ao exportar: ' + (error.error || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        toast('❌ Erro ao exportar Livro Caixa');
+    }
+}
+  
 </script>
 </body>
 </html>
