@@ -3016,6 +3016,57 @@ def get_meu_consultor():
     except Exception as e:
         return jsonify({'consultor_nome': None}), 200
         
+@app.route('/criar-tabelas-relatorio')
+def criar_tabelas_relatorio():
+    """Cria as tabelas necessárias para os relatórios"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Tabela de assinaturas digitais (Hash)
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS assinaturas_relatorio (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                consultor_id INTEGER REFERENCES usuarios(id),
+                periodo_inicio DATE NOT NULL,
+                periodo_fim DATE NOT NULL,
+                hash_assinatura VARCHAR(128) UNIQUE NOT NULL,
+                data_geracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                conteudo_hash TEXT,
+                verificada BOOLEAN DEFAULT true
+            )
+        ''')
+        
+        # Tabela de logs de auditoria
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS logs_auditoria (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                acao VARCHAR(50),
+                detalhes TEXT,
+                data_acao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return """
+        <html>
+        <head><title>Tabelas Criadas</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Tabelas criadas com sucesso!</h1>
+            <p>assinaturas_relatorio e logs_auditoria foram criadas.</p>
+            <p><a href="/">← Voltar ao sistema</a></p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+
+
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
