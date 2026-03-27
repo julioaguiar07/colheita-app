@@ -1692,7 +1692,100 @@ body.menu-open .menu-container {
     width: 24px;
   }
 }
-  
+/* ===================== CORREÇÕES DE LAYOUT ===================== */
+
+/* Cards do Livro Caixa */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.kpi-card .kpi-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    word-break: break-word;
+}
+
+/* Listas de últimos registros */
+.ultimos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.registro-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border);
+}
+
+.registro-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.registro-desc {
+    font-weight: 600;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.registro-valor {
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Responsivo para mobile */
+@media (max-width: 768px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .ultimos-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .kpi-value {
+        font-size: 1.2rem;
+    }
+    
+    .registro-item {
+        padding: 8px 12px;
+    }
+    
+    .registro-desc {
+        font-size: 0.75rem;
+    }
+    
+    .registro-valor {
+        font-size: 0.75rem;
+    }
+}  
 </style>
 </head>
 <body>
@@ -5544,16 +5637,22 @@ async function verificarDocumento() {
 // LIVRO CAIXA - FUNÇÕES PARA TODOS OS PERFIS
 // ============================================
 
+// ============================================
+// LIVRO CAIXA - VERSÃO CORRIGIDA
+// ============================================
+
 async function carregarLivroCaixa() {
     const ano = document.getElementById('filtro-ano-caixa').value;
     const tbody = document.getElementById('corpo-tabela-livro-caixa');
     
-    if (!token) return;
+    if (!token) {
+        console.log('Sem token');
+        return;
+    }
     
     tbody.innerHTML = '<tr><td colspan="5" class="empty">Carregando...</td></tr>';
     
     try {
-        // Buscar dados do livro caixa via API
         const inicio = `${ano}-01-01`;
         const fim = `${ano}-12-31`;
         
@@ -5568,19 +5667,51 @@ async function carregarLivroCaixa() {
         
         if (response.ok) {
             const data = await response.json();
+            console.log('Dados do livro caixa:', data);
+            
             if (data.success && data.livro_caixa) {
                 renderizarTabelaLivroCaixa(data.livro_caixa);
                 atualizarKPIsLivroCaixa(data.totais);
             } else {
                 tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhum dado encontrado para este ano</td></tr>';
+                zerarKPIsLivroCaixa();
             }
         } else {
             tbody.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar dados</td></tr>';
+            zerarKPIsLivroCaixa();
         }
     } catch (error) {
         console.error('Erro:', error);
         tbody.innerHTML = '<tr><td colspan="5" class="empty">Erro ao carregar dados</td></tr>';
+        zerarKPIsLivroCaixa();
     }
+}
+
+function zerarKPIsLivroCaixa() {
+    document.getElementById('kpi-receita-livro').textContent = 'R$ 0,00';
+    document.getElementById('kpi-despesas-livro').textContent = 'R$ 0,00';
+    document.getElementById('kpi-custos-livro').textContent = 'R$ 0,00';
+    document.getElementById('kpi-saldo-livro').textContent = 'R$ 0,00';
+}
+
+function atualizarKPIsLivroCaixa(totais) {
+    if (!totais) {
+        zerarKPIsLivroCaixa();
+        return;
+    }
+    
+    const receita = totais.total_receita || 0;
+    const despesas = totais.total_despesas || 0;
+    const custos = totais.total_custos_producao || 0;
+    const saldo = totais.saldo || 0;
+    
+    document.getElementById('kpi-receita-livro').textContent = formatMoney(receita);
+    document.getElementById('kpi-despesas-livro').textContent = formatMoney(despesas);
+    document.getElementById('kpi-custos-livro').textContent = formatMoney(custos);
+    
+    const saldoElement = document.getElementById('kpi-saldo-livro');
+    saldoElement.textContent = formatMoney(saldo);
+    saldoElement.style.color = saldo >= 0 ? 'var(--green-700)' : 'var(--red-600)';
 }
 
 function renderizarTabelaLivroCaixa(livroCaixa) {
