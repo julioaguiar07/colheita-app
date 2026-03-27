@@ -1660,7 +1660,7 @@ def delete_gasto(id):
 @app.route('/api/consultor/clientes', methods=['GET'])
 @token_required
 def get_clientes_consultor():
-    """Retorna todos os clientes vinculados ao consultor - versão simplificada"""
+    """Retorna todos os clientes vinculados ao consultor com KPIs"""
     if request.usuario_role != 'consultor':
         return jsonify({'error': 'Acesso negado'}), 403
     
@@ -1668,7 +1668,7 @@ def get_clientes_consultor():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Buscar clientes
+        # Buscar todos os clientes
         cur.execute('''
             SELECT u.id, u.email, u.nome, u.created_at,
                    v.permissao_escrita, v.data_vinculo
@@ -1680,37 +1680,43 @@ def get_clientes_consultor():
         
         rows = cur.fetchall()
         
-        # Para cada cliente, calcular dados do mês atual
         resultado = []
+        total_vendas_carteira = 0
+        total_gastos_carteira = 0
+        total_producoes_carteira = 0
+        
         for cliente in rows:
-            # Calcular vendas do mês
+            # Vendas do mês
             cur.execute('''
                 SELECT COALESCE(SUM(total), 0) as total 
                 FROM vendas 
                 WHERE usuario_id = %s 
                 AND data >= date_trunc('month', CURRENT_DATE)
             ''', (cliente['id'],))
-            vendas = cur.fetchone()['total']
+            vendas = cur.fetchone()
+            total_vendas = float(vendas['total'] or 0)
             
-            # Calcular custos de produção do mês
+            # Produções do mês
             cur.execute('''
                 SELECT COALESCE(SUM(total), 0) as total 
                 FROM producoes 
                 WHERE usuario_id = %s 
                 AND data >= date_trunc('month', CURRENT_DATE)
             ''', (cliente['id'],))
-            producoes = cur.fetchone()['total']
+            producoes = cur.fetchone()
+            total_producoes = float(producoes['total'] or 0)
             
-            # Calcular gastos do mês
+            # Gastos do mês
             cur.execute('''
                 SELECT COALESCE(SUM(valor), 0) as total 
                 FROM gastos 
                 WHERE usuario_id = %s 
                 AND data >= date_trunc('month', CURRENT_DATE)
             ''', (cliente['id'],))
-            gastos = cur.fetchone()['total']
+            gastos = cur.fetchone()
+            total_gastos = float(gastos['total'] or 0)
             
-            # Buscar última venda
+            # Última venda
             cur.execute('''
                 SELECT data FROM vendas 
                 WHERE usuario_id = %s 
@@ -1718,7 +1724,12 @@ def get_clientes_consultor():
             ''', (cliente['id'],))
             ultima = cur.fetchone()
             
-            lucro = vendas - (producoes + gastos)
+            # Acumular totais da carteira
+            total_vendas_carteira += total_vendas
+            total_gastos_carteira += total_gastos
+            total_producoes_carteira += total_producoes
+            
+            lucro = total_vendas - (total_producoes + total_gastos)
             
             resultado.append({
                 'id': cliente['id'],
@@ -1726,9 +1737,9 @@ def get_clientes_consultor():
                 'nome': cliente['nome'] or cliente['email'].split('@')[0],
                 'permissao_escrita': cliente['permissao_escrita'],
                 'data_vinculo': cliente['data_vinculo'],
-                'total_vendas_mes': vendas,
-                'total_producoes_mes': producoes,
-                'total_gastos_mes': gastos,
+                'total_vendas_mes': total_vendas,
+                'total_producoes_mes': total_producoes,
+                'total_gastos_mes': total_gastos,
                 'lucro_mes': lucro,
                 'ultima_venda': ultima['data'] if ultima else None
             })
@@ -1736,7 +1747,20 @@ def get_clientes_consultor():
         cur.close()
         conn.close()
         
-        return jsonify({'success': True, 'clientes': resultado})
+        # Calcular total da carteira
+        total_custos_carteira = total_producoes_carteira + total_gastos_carteira
+        total_lucro_carteira = total_vendas_carteira - total_custos_carteira
+        
+        return jsonify({
+            'success': True, 
+            'clientes': resultado,
+            'resumo_carteira': {
+                'total_vendas': total_vendas_carteira,
+                'total_gastos': total_custos_carteira,
+                'total_lucro': total_lucro_carteira,
+                'total_clientes': len(resultado)
+            }
+        })
         
     except Exception as e:
         import traceback
