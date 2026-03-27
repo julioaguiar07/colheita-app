@@ -1990,27 +1990,25 @@ def aceitar_convite():
 @app.route('/api/consultor/benchmark', methods=['POST'])
 @token_required
 def criar_benchmark():
-    """Retorna dados de benchmark com identificadores anônimos"""
+    """Retorna dados de benchmark baseado em margem de lucro"""
     if request.usuario_role != 'consultor':
         return jsonify({'error': 'Acesso negado'}), 403
     
     try:
-        data = request.json
-        tipo = data.get('tipo', 'custo_ha')
-        
         conn = get_db_connection()
         cur = conn.cursor()
         
         # Buscar todos os clientes do consultor
-        cur.execute('SELECT cliente_id, permissao_escrita FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
+        cur.execute('SELECT cliente_id FROM vinculos_consultor WHERE consultor_id = %s', (request.usuario_id,))
         vinculos = cur.fetchall()
         
         if len(vinculos) < 2:
             cur.close()
             conn.close()
-            return jsonify({'error': 'Precisa de pelo menos 2 clientes para benchmarking'}), 400
+            return jsonify({'success': False, 'error': 'Precisa de pelo menos 2 clientes vinculados'}), 200
         
         resultados = []
+        clientes_com_vendas = 0
         
         for idx, vinculo in enumerate(vinculos):
             cliente_id = vinculo['cliente_id']
@@ -2020,104 +2018,64 @@ def criar_benchmark():
             cliente = cur.fetchone()
             nome_cliente = cliente['nome'] or cliente['email'].split('@')[0]
             
-            if tipo == 'custo_ha':
-                # Buscar área total do cliente
-                cur.execute('''
-                    SELECT COALESCE(SUM(hectares), 0) as area_total
-                    FROM areas 
-                    WHERE usuario_id = %s
-                ''', (cliente_id,))
-                area = cur.fetchone()
-                area_total = float(area['area_total'] or 0)
-                
-                # Buscar custos totais do mês
-                cur.execute('''
-                    SELECT COALESCE(SUM(valor), 0) as total
-                    FROM gastos 
-                    WHERE usuario_id = %s 
-                    AND data >= date_trunc('month', CURRENT_DATE)
-                ''', (cliente_id,))
-                gastos = cur.fetchone()
-                
-                cur.execute('''
-                    SELECT COALESCE(SUM(total), 0) as total
-                    FROM producoes 
-                    WHERE usuario_id = %s 
-                    AND data >= date_trunc('month', CURRENT_DATE)
-                ''', (cliente_id,))
-                producoes = cur.fetchone()
-                
-                custo_total = float(gastos['total'] or 0) + float(producoes['total'] or 0)
-                
-                if area_total > 0:
-                    valor = custo_total / area_total
-                else:
-                    valor = 0
-                
-                resultados.append({
-                    'id_anonimo': idx + 1,
-                    'nome_real': nome_cliente,
-                    'valor': valor,
-                    'unidade': 'R$/ha'
-                })
+            # Buscar vendas dos últimos 3 meses
+            cur.execute('''
+                SELECT COALESCE(SUM(total), 0) as vendas
+                FROM vendas 
+                WHERE usuario_id = %s 
+                AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+            ''', (cliente_id,))
+            vendas = cur.fetchone()
+            total_vendas = float(vendas['vendas'] or 0)
             
-            elif tipo == 'margem':
-                # Buscar vendas e custos dos últimos 3 meses
-                cur.execute('''
-                    SELECT 
-                        COALESCE(SUM(total), 0) as vendas
-                    FROM vendas 
-                    WHERE usuario_id = %s 
-                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
-                ''', (cliente_id,))
-                vendas = cur.fetchone()
-                
-                cur.execute('''
-                    SELECT COALESCE(SUM(valor), 0) as total
-                    FROM gastos 
-                    WHERE usuario_id = %s 
-                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
-                ''', (cliente_id,))
-                gastos = cur.fetchone()
-                
-                cur.execute('''
-                    SELECT COALESCE(SUM(total), 0) as total
-                    FROM producoes 
-                    WHERE usuario_id = %s 
-                    AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
-                ''', (cliente_id,))
-                producoes = cur.fetchone()
-                
-                total_vendas = float(vendas['vendas'] or 0)
-                total_custos = float(gastos['total'] or 0) + float(producoes['total'] or 0)
-                
-                if total_vendas > 0:
-                    lucro = total_vendas - total_custos
-                    valor = (lucro / total_vendas) * 100
-                else:
-                    valor = 0
+            # Buscar custos (produções + gastos) dos últimos 3 meses
+            cur.execute('''
+                SELECT COALESCE(SUM(valor), 0) as total
+                FROM gastos 
+                WHERE usuario_id = %s 
+                AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+            ''', (cliente_id,))
+            gastos = cur.fetchone()
+            
+            cur.execute('''
+                SELECT COALESCE(SUM(total), 0) as total
+                FROM producoes 
+                WHERE usuario_id = %s 
+                AND data >= date_trunc('month', CURRENT_DATE - interval '3 months')
+            ''', (cliente_id,))
+            producoes = cur.fetchone()
+            
+            total_custos = float(gastos['total'] or 0) + float(producoes['total'] or 0)
+            
+            # Só adiciona se tiver vendas
+            if total_vendas > 0:
+                clientes_com_vendas += 1
+                lucro = total_vendas - total_custos
+                margem = (lucro / total_vendas) * 100
                 
                 resultados.append({
                     'id_anonimo': idx + 1,
                     'nome_real': nome_cliente,
-                    'valor': valor,
-                    'unidade': '%'
+                    'valor': margem,
+                    'unidade': '%',
+                    'total_vendas': total_vendas,
+                    'total_custos': total_custos
                 })
         
         cur.close()
         conn.close()
         
-        # Ordenar resultados
-        if tipo == 'custo_ha':
-            resultados.sort(key=lambda x: x['valor'])
-        else:
-            resultados.sort(key=lambda x: x['valor'], reverse=True)
+        if len(resultados) < 2:
+            return jsonify({
+                'success': False, 
+                'error': f'Apenas {clientes_com_vendas} cliente(s) com vendas. Adicione vendas para pelo menos 2 clientes.'
+            }), 200
+        
+        # Ordenar por margem (maior para menor)
+        resultados.sort(key=lambda x: x['valor'], reverse=True)
         
         # Calcular média
-        if resultados:
-            media_valor = sum(r['valor'] for r in resultados) / len(resultados)
-        else:
-            media_valor = 0
+        media_valor = sum(r['valor'] for r in resultados) / len(resultados)
         
         # Versão anônima para o frontend
         benchmark_anonimo = []
@@ -2133,7 +2091,7 @@ def criar_benchmark():
             'success': True,
             'benchmark': benchmark_anonimo,
             'media_carteira': media_valor,
-            'tipo': tipo,
+            'tipo': 'margem',
             'total_clientes': len(resultados)
         })
         
