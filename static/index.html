@@ -1922,7 +1922,7 @@ body.menu-open .menu-container {
           <a href="#" onclick="showSection('vendas', document.querySelectorAll('nav button')[5]); return false;" style="color: var(--blue-600); text-decoration: none; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;">Ver todas →</a>
         </div>
       </div>
-      
+            
       <!-- Últimos Gastos -->
       <div style="background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
         <div style="padding: 16px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;">
@@ -1937,6 +1937,101 @@ body.menu-open .menu-container {
         </div>
       </div>
 
+
+      
+      <!-- ========== DOSSIÊ AGROcore - SEÇÃO NO DASHBOARD ========== -->
+      <div class="card" style="margin-top: 24px;">
+          <div class="card-title">
+              <div class="dot" style="background: var(--purple-600);"></div>
+              📄 Dossiê AGROcore - Rastreabilidade Financeira
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <!-- Lado esquerdo: Selo de Validação -->
+              <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px; padding: 20px; text-align: center;">
+                  <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+                  <h3 style="margin-bottom: 8px;">Validar Dados para Crédito</h3>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                      Gere um relatório auditado com assinatura digital. Ideal para solicitar crédito rural em bancos e cooperativas.
+                  </p>
+                  <button class="btn btn-primary" onclick="gerarRelatorioCredito()" style="width: 100%;">
+                      📊 Gerar Relatório para Crédito
+                  </button>
+              </div>
+              
+              <!-- Lado direito: Verificação de Documento -->
+              <div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px; padding: 20px; text-align: center;">
+                  <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                  <h3 style="margin-bottom: 8px;">Verificar Autenticidade</h3>
+                  <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                      Insira o código de verificação do documento para confirmar sua autenticidade.
+                  </p>
+                  <div style="display: flex; gap: 8px;">
+                      <input type="text" id="hash-verificacao" placeholder="Código de verificação..." style="flex: 1;">
+                      <button class="btn btn-secondary" onclick="verificarDocumento()">🔍 Verificar</button>
+                  </div>
+                  <div id="resultado-verificacao" style="margin-top: 12px; font-size: 0.8rem;"></div>
+              </div>
+          </div>
+      </div>
+
+      <!-- ========== LIVRO CAIXA - SEÇÃO NO DASHBOARD ========== -->
+      <div class="card" style="margin-top: 24px;">
+          <div class="card-title">
+              <div class="dot" style="background: var(--blue-600);"></div>
+              📒 Livro Caixa
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                  <label style="font-size: 0.75rem;">Filtrar por ano:</label>
+                  <select id="filtro-ano-caixa" onchange="carregarLivroCaixa()" style="padding: 6px 12px; border-radius: 8px;">
+                      <option value="2024">2024</option>
+                      <option value="2025" selected>2025</option>
+                      <option value="2026">2026</option>
+                  </select>
+              </div>
+              <button class="btn btn-primary" onclick="exportarLivroCaixa()">
+                  📎 Exportar Livro Caixa (PDF)
+              </button>
+          </div>
+          
+          <!-- KPIs do Livro Caixa -->
+          <div class="kpi-grid" style="margin-bottom: 20px;">
+              <div class="kpi-card">
+                  <div class="kpi-icon">💰</div>
+                  <div class="kpi-label">Receita da Atividade</div>
+                  <div class="kpi-value" id="kpi-receita-livro">R$ 0</div>
+              </div>
+              <div class="kpi-card vermelho">
+                  <div class="kpi-icon">💸</div>
+                  <div class="kpi-label">Despesas</div>
+                  <div class="kpi-value" id="kpi-despesas-livro">R$ 0</div>
+              </div>
+              <div class="kpi-card">
+                  <div class="kpi-icon">🌾</div>
+                  <div class="kpi-label">Custos de Produção</div>
+                  <div class="kpi-value" id="kpi-custos-livro">R$ 0</div>
+              </div>
+              <div class="kpi-card roxo">
+                  <div class="kpi-icon">📊</div>
+                  <div class="kpi-label">Saldo</div>
+                  <div class="kpi-value" id="kpi-saldo-livro">R$ 0</div>
+              </div>
+          </div>
+          
+          <!-- Tabela do Livro Caixa -->
+          <div class="table-wrap">
+              <table id="tabela-livro-caixa">
+                  <thead>
+                      <tr><th>Mês</th><th>Receita da Atividade</th><th>Despesas</th><th>Custos de Produção</th><th>Saldo</th></tr>
+                  </thead>
+                  <tbody id="corpo-tabela-livro-caixa">
+                      <tr><td colspan="5" class="empty">Selecione um ano para visualizar</td></tr>
+                  </tbody>
+              </table>
+          </div>
+      </div>
     </div>
   </section>
 
