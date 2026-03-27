@@ -2964,7 +2964,58 @@ def exportar_relatorio_completo():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/livro-caixa-dados', methods=['POST'])
+@token_required
+def get_livro_caixa_dados():
+    """Retorna os dados do livro caixa para o frontend"""
+    try:
+        data = request.json
+        inicio = data.get('inicio')
+        fim = data.get('fim')
+        usuario_id = request.target_user_id if hasattr(request, 'target_user_id') else request.usuario_id
+        
+        dados = buscar_dados_financeiros(usuario_id, inicio, fim)
+        
+        return jsonify({
+            'success': True,
+            'livro_caixa': dados['livro_caixa'],
+            'totais': dados['totais']
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
+@app.route('/api/consultor/meu-consultor', methods=['GET'])
+@token_required
+def get_meu_consultor():
+    """Retorna o consultor vinculado ao produtor (se houver)"""
+    try:
+        if request.usuario_role != 'produtor':
+            return jsonify({'consultor_nome': None}), 200
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT u.nome, u.email FROM vinculos_consultor v
+            JOIN usuarios u ON v.consultor_id = u.id
+            WHERE v.cliente_id = %s
+            LIMIT 1
+        ''', (request.usuario_id,))
+        
+        consultor = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if consultor:
+            return jsonify({
+                'consultor_nome': consultor['nome'] or consultor['email'].split('@')[0]
+            })
+        else:
+            return jsonify({'consultor_nome': None})
+    except Exception as e:
+        return jsonify({'consultor_nome': None}), 200
+        
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
