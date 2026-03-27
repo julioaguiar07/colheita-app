@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -15,7 +15,15 @@ import bcrypt
 import jwt
 from functools import wraps
 from datetime import datetime, timedelta
-    
+import hashlib
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+import io
+
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
@@ -376,6 +384,33 @@ def criar_tabelas():
             cur.execute('ALTER TABLE usuarios ADD COLUMN role VARCHAR(20) DEFAULT \'produtor\'')
             print("✅ Coluna 'role' adicionada em usuarios")
 
+        # Tabela de assinaturas digitais (Hash)
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS assinaturas_relatorio (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                consultor_id INTEGER REFERENCES usuarios(id),
+                periodo_inicio DATE NOT NULL,
+                periodo_fim DATE NOT NULL,
+                hash_assinatura VARCHAR(128) UNIQUE NOT NULL,
+                data_geracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                conteudo_hash TEXT,
+                verificada BOOLEAN DEFAULT true
+            )
+        ''')
+        print("✅ Tabela 'assinaturas_relatorio' criada/verificada")
+        
+        # Tabela de logs de auditoria
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS logs_auditoria (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                acao VARCHAR(50),
+                detalhes TEXT,
+                data_acao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'logs_auditoria' criada/verificada")
         
         conn.commit()
         print("🎉 Todas as tabelas criadas com sucesso!")
@@ -2487,7 +2522,449 @@ def diagnostico_clientes_consultor():
         return html
     except Exception as e:
         return f"❌ Erro: {str(e)}"
+
+
+# ============================================
+# DOSSIÊ AGROcore - RELATÓRIO FINANCEIRO
+# ============================================
+
+@app.route('/api/gerar-hash-relatorio', methods=['POST'])
+@token_required
+def gerar_hash_relatorio():
+    """Gera assinatura digital para o relatório financeiro"""
+    try:
+        data = request.json
+        periodo_inicio = data.get('periodo_inicio')
+        periodo_fim = data.get('periodo_fim')
+        consultor_id = data.get('consultor_id')  # pode ser None se for o próprio produtor
         
+        usuario_id = request.target_user_id if hasattr(request, 'target_user_id') else request.usuario_id
+        
+        # Buscar dados financeiros
+        dados = buscar_dados_financeiros(usuario_id, periodo_inicio, periodo_fim)
+        
+        # Criar conteúdo para hash
+        conteudo = {
+            'usuario_id': usuario_id,
+            'consultor_id': consultor_id,
+            'periodo_inicio': periodo_inicio,
+            'periodo_fim': periodo_fim,
+            'data_geracao': datetime.now().isoformat(),
+            'resumo': dados['resumo'],
+            'totais': dados['totais']
+        }
+        
+        conteudo_str = json.dumps(conteudo, sort_keys=True, default=str)
+        
+        # Gerar hash SHA-256
+        hash_assinatura = hashlib.sha256(conteudo_str.encode()).hexdigest()
+        
+        # Salvar no banco
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO assinaturas_relatorio (usuario_id, consultor_id, periodo_inicio, periodo_fim, hash_assinatura, conteudo_hash)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        ''', (usuario_id, consultor_id, periodo_inicio, periodo_fim, hash_assinatura, conteudo_str))
+        
+        # Registrar log de auditoria
+        cur.execute('''
+            INSERT INTO logs_auditoria (usuario_id, acao, detalhes)
+            VALUES (%s, %s, %s)
+        ''', (usuario_id, 'gerou_hash', f'Período: {periodo_inicio} a {periodo_fim}'))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'hash': hash_assinatura,
+            'data_geracao': datetime.now().isoformat(),
+            'mensagem': 'Assinatura digital gerada com sucesso!'
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+def buscar_dados_financeiros(usuario_id, inicio, fim):
+    """Busca todos os dados financeiros do período"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Vendas
+    cur.execute('''
+        SELECT data, produto, total as valor, 'venda' as tipo
+        FROM vendas 
+        WHERE usuario_id = %s AND data BETWEEN %s AND %s
+        ORDER BY data
+    ''', (usuario_id, inicio, fim))
+    vendas = cur.fetchall()
+    
+    # Produções (custos)
+    cur.execute('''
+        SELECT data, produto, total as valor, 'producao' as tipo
+        FROM producoes 
+        WHERE usuario_id = %s AND data BETWEEN %s AND %s
+        ORDER BY data
+    ''', (usuario_id, inicio, fim))
+    producoes = cur.fetchall()
+    
+    # Gastos
+    cur.execute('''
+        SELECT data, tipo as produto, valor, categoria, 'gasto' as tipo
+        FROM gastos 
+        WHERE usuario_id = %s AND data BETWEEN %s AND %s
+        ORDER BY data
+    ''', (usuario_id, inicio, fim))
+    gastos = cur.fetchall()
+    
+    # Dados mensais para o livro caixa
+    cur.execute('''
+        SELECT 
+            DATE_TRUNC('month', data) as mes,
+            COALESCE(SUM(CASE WHEN tipo = 'venda' THEN valor ELSE 0 END), 0) as receita,
+            COALESCE(SUM(CASE WHEN tipo = 'producao' THEN valor ELSE 0 END), 0) as custos_producao,
+            COALESCE(SUM(CASE WHEN tipo = 'gasto' THEN valor ELSE 0 END), 0) as despesas
+        FROM (
+            SELECT data, total as valor, 'venda' as tipo FROM vendas WHERE usuario_id = %s AND data BETWEEN %s AND %s
+            UNION ALL
+            SELECT data, total as valor, 'producao' as tipo FROM producoes WHERE usuario_id = %s AND data BETWEEN %s AND %s
+            UNION ALL
+            SELECT data, valor, 'gasto' as tipo FROM gastos WHERE usuario_id = %s AND data BETWEEN %s AND %s
+        ) AS todos
+        GROUP BY DATE_TRUNC('month', data)
+        ORDER BY mes
+    ''', (usuario_id, inicio, fim, usuario_id, inicio, fim, usuario_id, inicio, fim))
+    
+    dados_mensais = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    # Calcular totais
+    total_vendas = sum(float(v['valor']) for v in vendas) if vendas else 0
+    total_producoes = sum(float(p['valor']) for p in producoes) if producoes else 0
+    total_gastos = sum(float(g['valor']) for g in gastos) if gastos else 0
+    total_custos = total_producoes + total_gastos
+    saldo = total_vendas - total_custos
+    
+    # Preparar dados mensais para o livro caixa
+    livro_caixa = []
+    for mes in dados_mensais:
+        receita = float(mes['receita'])
+        custos_producao = float(mes['custos_producao'])
+        despesas = float(mes['despesas'])
+        custos_totais = custos_producao + despesas
+        saldo_mes = receita - custos_totais
+        
+        livro_caixa.append({
+            'mes': mes['mes'].strftime('%Y-%m'),
+            'receita': receita,
+            'custos_producao': custos_producao,
+            'despesas': despesas,
+            'custos_totais': custos_totais,
+            'saldo': saldo_mes
+        })
+    
+    return {
+        'vendas': list(vendas),
+        'producoes': list(producoes),
+        'gastos': list(gastos),
+        'livro_caixa': livro_caixa,
+        'totais': {
+            'total_vendas': total_vendas,
+            'total_producoes': total_producoes,
+            'total_gastos': total_gastos,
+            'total_custos': total_custos,
+            'saldo': saldo
+        },
+        'resumo': {
+            'periodo': f"{inicio} a {fim}",
+            'total_vendas': total_vendas,
+            'total_custos': total_custos,
+            'saldo': saldo,
+            'quantidade_vendas': len(vendas),
+            'quantidade_producoes': len(producoes),
+            'quantidade_gastos': len(gastos)
+        }
+    }
+
+@app.route('/api/verificar-hash', methods=['POST'])
+@token_required
+def verificar_hash():
+    """Verifica se um hash é válido"""
+    try:
+        data = request.json
+        hash_assinatura = data.get('hash')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT * FROM assinaturas_relatorio 
+            WHERE hash_assinatura = %s AND verificada = true
+        ''', (hash_assinatura,))
+        assinatura = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if assinatura:
+            return jsonify({
+                'success': True,
+                'valida': True,
+                'data_geracao': assinatura['data_geracao'],
+                'mensagem': 'Documento autêntico e auditado pelo AGROcore'
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'valida': False,
+                'mensagem': 'Documento não encontrado na base de dados do AGROcore'
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exportar-livro-caixa', methods=['POST'])
+@token_required
+def exportar_livro_caixa():
+    """Exporta livro caixa em PDF"""
+    try:
+        data = request.json
+        ano = data.get('ano', datetime.now().year)
+        usuario_id = request.target_user_id if hasattr(request, 'target_user_id') else request.usuario_id
+        
+        inicio = f"{ano}-01-01"
+        fim = f"{ano}-12-31"
+        
+        dados = buscar_dados_financeiros(usuario_id, inicio, fim)
+        
+        # Criar PDF
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], alignment=TA_CENTER, fontSize=18, spaceAfter=20)
+        subtitle_style = ParagraphStyle('SubtitleStyle', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10, textColor=colors.grey)
+        
+        elementos = []
+        
+        # Título
+        elementos.append(Paragraph("📊 LIVRO CAIXA AGROcore", title_style))
+        elementos.append(Paragraph(f"Ano: {ano}", subtitle_style))
+        elementos.append(Spacer(1, 20))
+        
+        # Resumo
+        total_receita = dados['totais']['total_vendas']
+        total_custos = dados['totais']['total_custos']
+        total_saldo = dados['totais']['saldo']
+        
+        resumo_data = [
+            ['Receita Total', f"R$ {total_receita:,.2f}"],
+            ['Custos Totais', f"R$ {total_custos:,.2f}"],
+            ['Saldo', f"R$ {total_saldo:,.2f}"]
+        ]
+        
+        resumo_table = Table(resumo_data, colWidths=[8*cm, 8*cm])
+        resumo_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.whitesmoke),
+            ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('TEXTCOLOR', (1, 2), (1, 2), colors.green if total_saldo >= 0 else colors.red),
+        ]))
+        elementos.append(resumo_table)
+        elementos.append(Spacer(1, 20))
+        
+        # Tabela do Livro Caixa
+        if dados['livro_caixa']:
+            cabecalho = ['Mês', 'Receita', 'Custos Produção', 'Despesas', 'Custos Totais', 'Saldo']
+            dados_tabela = [cabecalho]
+            
+            for mes in dados['livro_caixa']:
+                dados_tabela.append([
+                    mes['mes'],
+                    f"R$ {mes['receita']:,.2f}",
+                    f"R$ {mes['custos_producao']:,.2f}",
+                    f"R$ {mes['despesas']:,.2f}",
+                    f"R$ {mes['custos_totais']:,.2f}",
+                    f"R$ {mes['saldo']:,.2f}"
+                ])
+            
+            tabela = Table(dados_tabela, colWidths=[3*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm])
+            tabela.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d7a3a')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            elementos.append(tabela)
+        else:
+            elementos.append(Paragraph("Nenhum dado registrado para este período.", styles['Normal']))
+        
+        # Rodapé com selo
+        elementos.append(Spacer(1, 30))
+        selo = Paragraph(
+            f"<font size=8 color='#2d7a3a'>🔒 Documento gerado pelo AGROcore - Sistema de Gestão Agrícola<br/>"
+            f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/>"
+            f"Este documento tem validade de rastreabilidade financeira</font>",
+            styles['Normal']
+        )
+        elementos.append(selo)
+        
+        doc.build(elementos)
+        buffer.seek(0)
+        
+        return send_file(buffer, as_attachment=True, download_name=f'livro_caixa_{ano}.pdf', mimetype='application/pdf')
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/exportar-relatorio-completo', methods=['POST'])
+@token_required
+def exportar_relatorio_completo():
+    """Exporta relatório financeiro completo com selo de auditoria"""
+    try:
+        data = request.json
+        periodo_inicio = data.get('periodo_inicio')
+        periodo_fim = data.get('periodo_fim')
+        consultor_nome = data.get('consultor_nome', 'Sistema AGROcore')
+        usuario_id = request.target_user_id if hasattr(request, 'target_user_id') else request.usuario_id
+        
+        # Buscar dados
+        dados = buscar_dados_financeiros(usuario_id, periodo_inicio, periodo_fim)
+        
+        # Gerar hash
+        conteudo = {
+            'usuario_id': usuario_id,
+            'consultor_nome': consultor_nome,
+            'periodo_inicio': periodo_inicio,
+            'periodo_fim': periodo_fim,
+            'data_geracao': datetime.now().isoformat(),
+            'resumo': dados['resumo']
+        }
+        hash_assinatura = hashlib.sha256(json.dumps(conteudo, sort_keys=True, default=str).encode()).hexdigest()
+        
+        # Salvar no banco
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            INSERT INTO assinaturas_relatorio (usuario_id, periodo_inicio, periodo_fim, hash_assinatura, conteudo_hash)
+            VALUES (%s, %s, %s, %s, %s)
+        ''', (usuario_id, periodo_inicio, periodo_fim, hash_assinatura, json.dumps(conteudo)))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Criar PDF
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+        
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], alignment=TA_CENTER, fontSize=20, spaceAfter=10)
+        subtitle_style = ParagraphStyle('SubtitleStyle', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10, textColor=colors.grey)
+        
+        elementos = []
+        
+        # Título e selo
+        elementos.append(Paragraph("🌾 DOSSIÊ AGROcore", title_style))
+        elementos.append(Paragraph("Relatório de Saúde Financeira", subtitle_style))
+        elementos.append(Spacer(1, 10))
+        
+        # Selo de auditoria
+        selo_auditoria = Paragraph(
+            f"""<font size=9 color='#2d7a3a'>🔒 <b>DOCUMENTO AUDITADO</b><br/>
+            Auditado via AGROcore por <b>{consultor_nome}</b><br/>
+            Hash de autenticidade: <b>{hash_assinatura[:20]}...</b><br/>
+            Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}</font>""",
+            styles['Normal']
+        )
+        elementos.append(selo_auditoria)
+        elementos.append(Spacer(1, 20))
+        
+        # Período
+        elementos.append(Paragraph(f"<b>Período analisado:</b> {periodo_inicio} a {periodo_fim}", styles['Normal']))
+        elementos.append(Spacer(1, 20))
+        
+        # KPIs
+        total_vendas = dados['totais']['total_vendas']
+        total_custos = dados['totais']['total_custos']
+        saldo = dados['totais']['saldo']
+        
+        kpi_data = [
+            ['Indicador', 'Valor', 'Status'],
+            ['Receita Total', f"R$ {total_vendas:,.2f}", '💰'],
+            ['Custos Totais', f"R$ {total_custos:,.2f}", '📦'],
+            ['Saldo', f"R$ {saldo:,.2f}", '✅' if saldo >= 0 else '⚠️']
+        ]
+        
+        kpi_table = Table(kpi_data, colWidths=[6*cm, 6*cm, 3*cm])
+        kpi_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d7a3a')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('FONTSIZE', (0, 1), (-1, -1), 11),
+            ('TEXTCOLOR', (1, 3), (1, 3), colors.green if saldo >= 0 else colors.red),
+            ('FONTNAME', (1, 3), (1, 3), 'Helvetica-Bold'),
+        ]))
+        elementos.append(kpi_table)
+        elementos.append(Spacer(1, 20))
+        
+        # Tabela de Livro Caixa
+        if dados['livro_caixa']:
+            elementos.append(Paragraph("<b>📊 Evolução Mensal</b>", styles['Heading4']))
+            elementos.append(Spacer(1, 10))
+            
+            cabecalho = ['Mês', 'Receita', 'Custos', 'Saldo']
+            dados_tabela = [cabecalho]
+            
+            for mes in dados['livro_caixa']:
+                dados_tabela.append([
+                    mes['mes'],
+                    f"R$ {mes['receita']:,.2f}",
+                    f"R$ {mes['custos_totais']:,.2f}",
+                    f"R$ {mes['saldo']:,.2f}"
+                ])
+            
+            tabela = Table(dados_tabela, colWidths=[4*cm, 4.5*cm, 4.5*cm, 4.5*cm])
+            tabela.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d7a3a')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.lightgrey),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ]))
+            elementos.append(tabela)
+        
+        # Rodapé com código de verificação
+        elementos.append(Spacer(1, 30))
+        elementos.append(Paragraph(
+            f"<font size=7 color='#666666'>🔗 Para verificar a autenticidade deste documento, acesse: https://aguiar.up.railway.app/verificar-documento?hash={hash_assinatura}</font>",
+            styles['Normal']
+        ))
+        
+        doc.build(elementos)
+        buffer.seek(0)
+        
+        return send_file(buffer, as_attachment=True, download_name=f'dossie_agrocore_{datetime.now().strftime("%Y%m%d")}.pdf', mimetype='application/pdf')
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("🔄 Inicializando banco de dados...")
     criar_tabelas()
