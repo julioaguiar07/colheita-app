@@ -5065,7 +5065,6 @@ function abrirBenchmark() {
 }
 
 async function carregarBenchmark() {
-    const tipo = document.getElementById('benchmark-tipo')?.value || 'custo_ha';
     const resultadoDiv = document.getElementById('benchmark-container');
     
     if (!resultadoDiv) return;
@@ -5079,7 +5078,7 @@ async function carregarBenchmark() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ tipo })
+            body: JSON.stringify({ tipo: 'margem' })
         });
         
         if (!response.ok) {
@@ -5088,70 +5087,92 @@ async function carregarBenchmark() {
         
         const data = await response.json();
         
-        if (data.success && data.benchmark && data.benchmark.length > 0) {
+        if (!data.success) {
+            resultadoDiv.innerHTML = `
+                <div class="empty">
+                    <span class="empty-icon">⚠️</span>
+                    <h3>Dados insuficientes</h3>
+                    <p>${data.error || 'Adicione vendas para pelo menos 2 clientes.'}</p>
+                    <p style="margin-top: 16px;">
+                        <a href="/" style="color: var(--green-600);">← Voltar</a>
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        if (data.benchmark && data.benchmark.length >= 2) {
             const valores = data.benchmark.map(b => b.valor);
             const maxValor = Math.max(...valores);
             const minValor = Math.min(...valores);
             
             resultadoDiv.innerHTML = `
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label>Comparar indicador:</label>
-                    <select id="benchmark-tipo" onchange="carregarBenchmark()" style="width: 100%; padding: 8px; border-radius: 8px; border: 1px solid var(--border);">
-                        <option value="custo_ha" ${tipo === 'custo_ha' ? 'selected' : ''}>Custo por Hectare (R$/ha)</option>
-                        <option value="margem" ${tipo === 'margem' ? 'selected' : ''}>Margem de Lucro (%)</option>
-                    </select>
+                <div style="margin-bottom: 20px; padding: 12px; background: var(--surface-2); border-radius: 8px;">
+                    <strong>📊 Margem de Lucro (%)</strong>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        Quanto maior a margem, mais rentável é a operação do produtor.
+                    </p>
                 </div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: var(--surface-2);">
                                 <th style="padding: 12px; text-align: left;">Fazenda</th>
-                                <th style="padding: 12px; text-align: left;">Valor</th>
-                                <th style="padding: 12px; text-align: left;">Comparativo</th>
-                            </tr>
+                                <th style="padding: 12px; text-align: left;">Margem de Lucro</th>
+                                <th style="padding: 12px; text-align: left;">Situação</th>
+                             </tr>
                         </thead>
                         <tbody>
                             ${data.benchmark.map(b => {
                                 const isMax = b.valor === maxValor;
                                 const isMin = b.valor === minValor;
-                                let comparativo = 'Médio';
-                                let cor = 'inherit';
                                 
-                                if (tipo === 'custo_ha') {
-                                    if (isMin) {
-                                        comparativo = '✅ Mais eficiente';
-                                        cor = 'var(--green-600)';
-                                    } else if (isMax) {
-                                        comparativo = '⚠️ Mais alto';
-                                        cor = 'var(--red-600)';
-                                    }
-                                } else {
-                                    if (isMax) {
-                                        comparativo = '✅ Melhor margem';
-                                        cor = 'var(--green-600)';
-                                    } else if (isMin) {
-                                        comparativo = '⚠️ Menor margem';
-                                        cor = 'var(--red-600)';
-                                    }
+                                let situacao = 'Na média';
+                                let cor = 'var(--text-muted)';
+                                let icone = '📊';
+                                
+                                if (isMax) {
+                                    situacao = '🏆 Melhor rentabilidade';
+                                    cor = 'var(--green-600)';
+                                    icone = '🥇';
+                                } else if (isMin) {
+                                    situacao = '⚠️ Menor rentabilidade';
+                                    cor = 'var(--red-600)';
+                                    icone = '⚠️';
                                 }
                                 
-                                const valorFormatado = tipo === 'custo_ha' 
-                                    ? `R$ ${b.valor.toFixed(2)}/ha`
-                                    : `${b.valor.toFixed(1)}%`;
+                                let margemClass = '';
+                                let margemIcone = '';
+                                if (b.valor >= 30) {
+                                    margemClass = 'var(--green-600)';
+                                    margemIcone = '🚀';
+                                } else if (b.valor >= 15) {
+                                    margemClass = 'var(--green-500)';
+                                    margemIcone = '📈';
+                                } else if (b.valor >= 0) {
+                                    margemClass = 'var(--amber-500)';
+                                    margemIcone = '📊';
+                                } else {
+                                    margemClass = 'var(--red-600)';
+                                    margemIcone = '📉';
+                                }
                                 
                                 return `
                                     <tr style="border-bottom: 1px solid var(--border);">
-                                        <td style="padding: 12px;"><strong>${b.nome}</strong></td>
-                                        <td style="padding: 12px; font-weight: 700; color: ${cor};">${valorFormatado}</td>
-                                        <td style="padding: 12px;">${comparativo}</td>
-                                    </tr>
+                                        <td style="padding: 12px;"><strong>${icone} ${b.nome}</strong></td>
+                                        <td style="padding: 12px; font-weight: 700; color: ${margemClass};">${margemIcone} ${b.valor.toFixed(1)}%</td>
+                                        <td style="padding: 12px; color: ${cor};">${situacao}</td>
+                                     </tr>
                                 `;
                             }).join('')}
                         </tbody>
                     </table>
                 </div>
                 <div style="margin-top: 16px; padding: 12px; background: var(--surface-2); border-radius: 8px;">
-                    <strong>📊 Média da Carteira:</strong> ${tipo === 'custo_ha' ? `R$ ${data.media_carteira.toFixed(2)}/ha` : `${data.media_carteira.toFixed(1)}%`}
+                    <strong>📊 Média da Carteira:</strong> ${data.media_carteira.toFixed(1)}%
+                    <div style="margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);">
+                        ${data.media_carteira >= 20 ? '✅ Carteira saudável!' : (data.media_carteira >= 10 ? '📈 Carteira com potencial de melhoria' : '⚠️ Atenção: margens abaixo do ideal')}
+                    </div>
                 </div>
                 <div class="benchmark-aviso" style="margin-top: 12px; padding: 8px; background: #fef3c7; border-radius: 8px; font-size: 0.7rem; color: #92400e;">
                     🔒 Os nomes das fazendas são exibidos de forma anônima para proteger a privacidade dos produtores.
@@ -5162,7 +5183,10 @@ async function carregarBenchmark() {
                 <div class="empty">
                     <span class="empty-icon">📊</span>
                     <h3>Dados insuficientes</h3>
-                    <p>Adicione pelo menos 2 clientes com dados para fazer benchmarking.</p>
+                    <p>Você precisa de pelo menos 2 clientes com vendas registradas.</p>
+                    <p style="margin-top: 16px;">
+                        <a href="/" style="color: var(--green-600);">← Voltar</a>
+                    </p>
                 </div>
             `;
         }
