@@ -4817,7 +4817,12 @@ async function carregarDashboardConsultor() {
             const data = await clientesResponse.json();
             if (data.success) {
                 renderizarClientes(data.clientes);
-                atualizarResumoCarteira(data.clientes);
+                // Usar o resumo da carteira se existir, senão calcular
+                if (data.resumo_carteira) {
+                    atualizarResumoCarteiraComDados(data.resumo_carteira);
+                } else {
+                    atualizarResumoCarteira(data.clientes);
+                }
             }
         } else {
             console.error('Erro ao carregar clientes:', clientesResponse.status);
@@ -4851,6 +4856,22 @@ async function carregarDashboardConsultor() {
         toast('❌ Erro ao carregar dados do consultor');
     }
 }
+
+function atualizarResumoCarteiraComDados(resumo) {
+    const vendasElement = document.getElementById('total-vendas-carteira');
+    const gastosElement = document.getElementById('total-gastos-carteira');
+    const lucroElement = document.getElementById('total-lucro-carteira');
+    const clientesElement = document.getElementById('total-clientes');
+    
+    if (vendasElement) vendasElement.textContent = formatMoney(resumo.total_vendas || 0);
+    if (gastosElement) gastosElement.textContent = formatMoney(resumo.total_gastos || 0);
+    if (lucroElement) {
+        lucroElement.textContent = formatMoney(resumo.total_lucro || 0);
+        lucroElement.style.color = (resumo.total_lucro || 0) >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+    }
+    if (clientesElement) clientesElement.textContent = resumo.total_clientes || 0;
+}
+  
 function renderizarClientes(clientes) {
     const container = document.getElementById('clientes-container');
     const totalClientes = document.getElementById('total-clientes');
@@ -4926,18 +4947,34 @@ function renderizarClientes(clientes) {
 }
 
 function atualizarResumoCarteira(clientes) {
-    const totalVendas = clientes.reduce((s, c) => s + c.total_vendas_mes, 0);
-    const totalGastos = clientes.reduce((s, c) => s + c.total_producoes_mes + c.total_gastos_mes, 0);
-    const totalLucro = clientes.reduce((s, c) => s + c.lucro_mes, 0);
+    // Calcular os totais a partir da lista de clientes
+    const totalVendas = clientes.reduce((s, c) => s + (c.total_vendas_mes || 0), 0);
+    const totalGastos = clientes.reduce((s, c) => s + (c.total_producoes_mes || 0) + (c.total_gastos_mes || 0), 0);
+    const totalLucro = clientes.reduce((s, c) => s + (c.lucro_mes || 0), 0);
     
-    document.getElementById('total-vendas-carteira').textContent = formatMoney(totalVendas);
-    document.getElementById('total-gastos-carteira').textContent = formatMoney(totalGastos);
-    document.getElementById('total-lucro-carteira').textContent = formatMoney(totalLucro);
-    
+    // Atualizar os elementos HTML
+    const vendasElement = document.getElementById('total-vendas-carteira');
+    const gastosElement = document.getElementById('total-gastos-carteira');
     const lucroElement = document.getElementById('total-lucro-carteira');
-    if (lucroElement) lucroElement.style.color = totalLucro >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+    const clientesElement = document.getElementById('total-clientes');
+    
+    if (vendasElement) vendasElement.textContent = formatMoney(totalVendas);
+    if (gastosElement) gastosElement.textContent = formatMoney(totalGastos);
+    if (lucroElement) {
+        lucroElement.textContent = formatMoney(totalLucro);
+        lucroElement.style.color = totalLucro >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+    }
+    if (clientesElement) clientesElement.textContent = clientes.length;
+    
+    console.log('Resumo da carteira:', {
+        totalVendas: formatMoney(totalVendas),
+        totalGastos: formatMoney(totalGastos),
+        totalLucro: formatMoney(totalLucro),
+        totalClientes: clientes.length
+    });
 }
 
+  
 function renderizarRankingCulturas(ranking) {
     const container = document.getElementById('ranking-culturas-container');
     
