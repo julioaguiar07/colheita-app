@@ -3099,6 +3099,33 @@ def get_meu_consultor():
     except Exception as e:
         return jsonify({'consultor_nome': None}), 200
         
+@app.route('/criar-tabela-estoque')
+def criar_tabela_estoque():
+    """Cria a tabela de estoque (execute uma vez após o deploy, se necessário)"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS estoque_movimentacoes (
+                id VARCHAR(50) PRIMARY KEY,
+                data DATE NOT NULL,
+                produto VARCHAR(255) NOT NULL,
+                unidade VARCHAR(50) NOT NULL,
+                tipo VARCHAR(10) NOT NULL,
+                qtd DECIMAL(10,2) NOT NULL,
+                obs TEXT,
+                venda_id VARCHAR(50) REFERENCES vendas(id) ON DELETE CASCADE,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        cur.close()
+        conn.close()
+        return "✅ Tabela 'estoque_movimentacoes' criada/verificada com sucesso! <a href='/'>Voltar</a>"
+    except Exception as e:
+        return f"❌ Erro: {str(e)}"
+
 @app.route('/criar-tabelas-relatorio')
 def criar_tabelas_relatorio():
     """Cria as tabelas necessárias para os relatórios"""
