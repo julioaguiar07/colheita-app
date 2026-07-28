@@ -339,6 +339,11 @@ main {
   font-weight: 500;
 }
 
+.kpi-spark {
+  height: 28px;
+  margin-top: 10px;
+}
+
 /* ===================== CHARTS GRID ===================== */
 .charts-grid {
   display: grid;
@@ -1906,24 +1911,28 @@ body.menu-open .menu-container {
         <div class="kpi-label">Custos de Colheita</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
         <div class="kpi-sub" id="kpi-producao-sub">Total de custos produtivos</div>
+        <div class="kpi-spark"><canvas id="spark-producao"></canvas></div>
       </div>
       <div class="kpi-card azul">
         <div class="kpi-icon">💰</div>
         <div class="kpi-label">Receita de Vendas</div>
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
         <div class="kpi-sub" id="kpi-vendas-sub">Total faturado</div>
+        <div class="kpi-spark"><canvas id="spark-vendas"></canvas></div>
       </div>
       <div class="kpi-card vermelho">
         <div class="kpi-icon">💸</div>
         <div class="kpi-label">Despesas Gerais</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
         <div class="kpi-sub" id="kpi-gastos-sub">Total de gastos operacionais</div>
+        <div class="kpi-spark"><canvas id="spark-gastos"></canvas></div>
       </div>
       <div class="kpi-card roxo">
         <div class="kpi-icon">📈</div>
         <div class="kpi-label">Lucro Líquido</div>
         <div class="kpi-value" id="kpi-lucro">R$ 0</div>
         <div class="kpi-sub" id="kpi-lucro-sub">Resultado final</div>
+        <div class="kpi-spark"><canvas id="spark-lucro"></canvas></div>
       </div>
     </div>
 
@@ -2202,24 +2211,28 @@ body.menu-open .menu-container {
           <div class="kpi-label">Custos de Produção</div>
           <div class="kpi-value" id="kpi-prod-custos">R$ 0</div>
           <div class="kpi-sub" id="kpi-prod-custos-qtd">0 registros</div>
+          <div class="kpi-spark"><canvas id="spark-prod-custos"></canvas></div>
         </div>
         <div class="kpi-card azul">
           <div class="kpi-icon">💰</div>
           <div class="kpi-label">Vendas</div>
           <div class="kpi-value" id="kpi-prod-vendas">R$ 0</div>
           <div class="kpi-sub" id="kpi-prod-vendas-qtd">0 vendas</div>
+          <div class="kpi-spark"><canvas id="spark-prod-vendas"></canvas></div>
         </div>
         <div class="kpi-card vermelho">
           <div class="kpi-icon">💸</div>
           <div class="kpi-label">Gastos Específicos</div>
           <div class="kpi-value" id="kpi-prod-gastos">R$ 0</div>
           <div class="kpi-sub" id="kpi-prod-gastos-qtd">0 gastos</div>
+          <div class="kpi-spark"><canvas id="spark-prod-gastos"></canvas></div>
         </div>
         <div class="kpi-card roxo">
           <div class="kpi-icon">⚖️</div>
           <div class="kpi-label">Custo Médio / KG</div>
           <div class="kpi-value" id="kpi-prod-custo-kg">R$ 0,00</div>
           <div class="kpi-sub" id="kpi-prod-kg-vendidos">0 kg vendidos</div>
+          <div class="kpi-spark"><canvas id="spark-prod-custokg"></canvas></div>
         </div>
       </div>
 
@@ -2277,10 +2290,17 @@ body.menu-open .menu-container {
         </div>
       </div>
 
+      <!-- ========== MARGEM POR KG MÊS A MÊS ========== -->
+      <div class="chart-card" id="card-margem-kg" style="display: none; margin-bottom: 24px;">
+        <div class="chart-title"><div class="chart-title-badge" style="background: var(--purple-600);"></div> Margem por Kg vs. Equilíbrio — mês a mês</div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin: -8px 0 14px; font-weight: 500;">Verde = vendeu acima do preço mínimo (lucro). Vermelho = vendeu abaixo (prejuízo por kg).</p>
+        <div class="chart-container" style="height: 220px;"><canvas id="chartMargemKg"></canvas></div>
+      </div>
+
       <!-- ========== DESEMPENHO POR ÁREA ========== -->
       <div class="card" id="card-desempenho-area" style="display: none;">
         <div class="card-title"><div class="dot" style="background: var(--blue-600);"></div> Desempenho por Área</div>
-        <div class="cultura-rows" id="desempenho-area-lista"></div>
+        <div class="chart-container" id="desempenho-area-container" style="height: 160px;"><canvas id="chartDesempenhoArea"></canvas></div>
       </div>
 
       <div class="card" style="margin-bottom: 24px;">
@@ -2930,6 +2950,20 @@ Chart.defaults.color = '#7a9485';
 
 const CHART_COLORS = ['#22883a','#2563eb','#dc2626','#7c3aed','#f59e0b','#0891b2','#db2777','#65a30d'];
 
+// Cores fixas por papel (não por ranking) — usadas em todo gráfico financeiro
+// pra manter o mesmo significado visual em qualquer tela do sistema.
+const COR_RECEITA = '#2563eb';   // azul — dinheiro entrando
+const COR_CUSTOS = '#dc2626';    // vermelho — dinheiro saindo
+const COR_LUCRO = '#7c3aed';     // roxo — resultado
+const COR_POSITIVO = '#22883a';  // verde — acima da meta/equilíbrio
+const COR_NEGATIVO = '#dc2626';  // vermelho — abaixo da meta/equilíbrio
+const COR_NEUTRA = '#64748b';    // cinza-azulado — categorias sem ordem natural
+
+// Categorias sem ordem natural (tipo de gasto, categoria) levam UMA cor só —
+// nunca um arco-íris, que inventaria uma identidade que os dados não têm.
+// A barra já mostra a magnitude pela altura/posição (ordenada por valor).
+const COR_MAGNITUDE = 'rgba(37,99,235,0.75)';
+
 function chartOptions(extraOptions = {}) {
   return {
     responsive: true,
@@ -3513,34 +3547,29 @@ function atualizarTudo() {
 
 function formatarDataBR(dataStr) {
   if (!dataStr) return '';
-  
+
   // Se já estiver no formato dd/mm/aaaa, retorna como está
-  if (typeof dataStr === 'string' && dataStr.includes('/')) {
+  if (typeof dataStr === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dataStr)) {
     return dataStr;
   }
-  
-  // Se for uma string ISO (yyyy-mm-dd)
-  if (typeof dataStr === 'string' && dataStr.includes('-')) {
-    const partes = dataStr.split('-');
-    if (partes.length === 3) {
-      // Retorna dd/mm/aaaa sem passar pelo objeto Date
-      return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
+
+  // Se for uma string ISO (yyyy-mm-dd), extrair sem passar pelo objeto Date
+  // (evita qualquer deslocamento de fuso horário em datas "puras")
+  if (typeof dataStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dataStr)) {
+    const partes = dataStr.split('T')[0].split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
   }
-  
-  // Tentar converter outros formatos
-  try {
-    // Remover qualquer informação de fuso horário
-    const dataLimpa = dataStr.replace(/\s.*$/, '').split('T')[0];
-    
-    if (dataLimpa.includes('-')) {
-      const partes = dataLimpa.split('-');
-      return `${partes[2]}/${partes[1]}/${partes[0]}`;
-    }
-  } catch (e) {
-    console.error('Erro ao formatar data:', e);
+
+  // Qualquer outro formato (ex: o Flask serializa datas como
+  // "Wed, 15 Jul 2026 00:00:00 GMT" via jsonify) — deixar o Date parsear
+  // e ler em UTC, já que é uma data "pura" sem hora real.
+  const d = new Date(dataStr);
+  if (!isNaN(d.getTime())) {
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getUTCFullYear()}`;
   }
-  
+
   return dataStr;
 }
 
@@ -3588,39 +3617,80 @@ function atualizarDashboard() {
   criarGraficoEvolucaoNegocio();
   atualizarInsightsGerais();
 
+  const evolucao = calcularEvolucaoMensal(producoes, vendas, gastos, 6);
+  const mesesSpark = ultimosNMeses(6);
+  const producaoMensal = mesesSpark.map(m => producoes.filter(p=>ymDeData(p?.data)===m.ym).reduce((s,p)=>s+(Number(p?.total)||0),0));
+  const gastosMensal = mesesSpark.map(m => gastos.filter(g=>ymDeData(g?.data)===m.ym).reduce((s,g)=>s+(Number(g?.valor)||0),0));
+  criarSparkline('spark-producao', producaoMensal, COR_CUSTOS);
+  criarSparkline('spark-vendas', evolucao.map(d=>d.receita), COR_RECEITA);
+  criarSparkline('spark-gastos', gastosMensal, COR_CUSTOS);
+  criarSparkline('spark-lucro', evolucao.map(d=>d.lucro), lucro>=0 ? COR_POSITIVO : COR_NEGATIVO);
+
   atualizarMargemCultura();
   atualizarUltimosRegistrosNovo();
 }
 
 let chartEvolucaoNegocio = null;
-function criarGraficoEvolucaoNegocio() {
-  const canvas = document.getElementById('chartEvolucaoNegocio');
+// Gráfico de evolução mensal (Receita / Custos / Lucro) reaproveitado no
+// Resumo e na página de Produto — mesmo desenho, mesmas cores fixas por papel.
+// Sparkline: mini gráfico de tendência dentro do stat-tile (12pt, sem eixos).
+const _sparklines = {};
+function criarSparkline(canvasId, valores, cor) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  const dados = calcularEvolucaoMensal(producoes, vendas, gastos, 6);
-  const ctx = canvas.getContext('2d');
-  if (chartEvolucaoNegocio) chartEvolucaoNegocio.destroy();
-  chartEvolucaoNegocio = new Chart(ctx, {
+  if (_sparklines[canvasId]) { _sparklines[canvasId].destroy(); delete _sparklines[canvasId]; }
+  if (!valores || valores.every(v => v === 0 || v === null)) return;
+  _sparklines[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: valores.map((_,i)=>i),
+      datasets: [{
+        data: valores,
+        borderColor: cor, backgroundColor: cor + '1a',
+        borderWidth: 2, pointRadius: 0, tension: 0.35, fill: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      elements: { line: { capBezierPoints: true } }
+    }
+  });
+}
+
+function graficoEvolucaoConfig(dados) {
+  return {
+    type: 'bar',
     data: {
       labels: dados.map(d=>d.label),
       datasets: [
-        { type: 'bar', label: 'Receita', data: dados.map(d=>d.receita), backgroundColor: 'rgba(37,99,235,0.75)', borderRadius: 6, order: 2 },
-        { type: 'bar', label: 'Custos', data: dados.map(d=>d.custos), backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 6, order: 2 },
-        { type: 'line', label: 'Lucro', data: dados.map(d=>d.lucro), borderColor: '#22883a', backgroundColor: '#22883a', tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#22883a', order: 1 }
+        { label: 'Receita', data: dados.map(d=>d.receita), backgroundColor: COR_RECEITA, borderRadius: 4, maxBarThickness: 22 },
+        { label: 'Custos', data: dados.map(d=>d.custos), backgroundColor: COR_CUSTOS, borderRadius: 4, maxBarThickness: 22 },
+        { label: 'Lucro', data: dados.map(d=>d.lucro), backgroundColor: COR_LUCRO, borderRadius: 4, maxBarThickness: 22 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } } },
         tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatMoney(c.parsed.y)}` } },
         datalabels: { display: false }
       },
       scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
-        x: { grid: { display: false }, ticks: { font: {size:11} } }
+        y: { grid: { color: 'rgba(0,0,0,0.06)', drawTicks: false }, border: { display: false }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: {size:11} } }
       }
     }
-  });
+  };
+}
+
+function criarGraficoEvolucaoNegocio() {
+  const canvas = document.getElementById('chartEvolucaoNegocio');
+  if (!canvas) return;
+  const dados = calcularEvolucaoMensal(producoes, vendas, gastos, 6);
+  if (chartEvolucaoNegocio) chartEvolucaoNegocio.destroy();
+  chartEvolucaoNegocio = new Chart(canvas.getContext('2d'), graficoEvolucaoConfig(dados));
 }
 
 function atualizarInsightsGerais() {
@@ -3719,7 +3789,7 @@ function criarGraficos() {
       type: 'bar',
       data: {
         labels: sorted.map(([k])=>k),
-        datasets: [{ label: 'Valor', data: sorted.map(([,v])=>v), backgroundColor: CHART_COLORS, borderRadius: 8, barPercentage: 0.65 }]
+        datasets: [{ label: 'Valor', data: sorted.map(([,v])=>v), backgroundColor: COR_MAGNITUDE, borderRadius: 4, maxBarThickness: 24, barPercentage: 0.65 }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -3996,9 +4066,12 @@ function ultimosNMeses(n) {
   const hoje = new Date();
   const meses = [];
   for (let i = n-1; i >= 0; i--) {
-    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
-    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const label = d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
+    // Ancora em UTC pra bater exatamente com ymDeData(), que também lê em UTC
+    // (datas "puras" do backend não têm hora real, então UTC evita qualquer
+    // deslocamento de fuso horário do navegador perto da virada do mês).
+    const d = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth() - i, 1));
+    const ym = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' }).replace('.', '');
     meses.push({ ym, label });
   }
   return meses;
@@ -4006,9 +4079,16 @@ function ultimosNMeses(n) {
 
 function ymDeData(dataStr) {
   if (!dataStr) return '';
-  const limpa = String(dataStr).replace(/\s.*$/, '').split('T')[0];
-  const partes = limpa.split('-');
-  return partes.length >= 2 ? `${partes[0]}-${partes[1]}` : '';
+  // ISO puro (yyyy-mm-dd...) — extrai direto, sem passar pelo Date.
+  if (typeof dataStr === 'string' && /^\d{4}-\d{2}/.test(dataStr)) {
+    return dataStr.slice(0, 7);
+  }
+  // Qualquer outro formato que o backend mandar (ex: Flask serializa datas
+  // como "Wed, 15 Jul 2026 00:00:00 GMT" via jsonify) — deixa o Date parsear
+  // e lê em UTC, já que é uma data "pura" sem hora real.
+  const d = new Date(dataStr);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
 }
 
 function calcularEvolucaoMensal(custosArr, vendasArr, gastosArr, n = 6) {
@@ -4273,11 +4353,73 @@ function atualizarDashboardProduto() {
   atualizarTabelaProduto('todos', custosProd, vendasProd, gastosProd);
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
-  calcularPrecoEquilibrioProduto(produtoSelecionado);
+  const equilibrio = calcularPrecoEquilibrioProduto(produtoSelecionado);
   criarGraficoEvolucaoProduto(custosProd, vendasProd, gastosProd);
+  criarGraficoMargemKg(produtoSelecionado, vendasProd, equilibrio);
   atualizarDesempenhoPorAreaUI(produtoSelecionado);
   atualizarEstoqueChipProduto(produtoSelecionado);
   atualizarInsightProdutoUI(produtoSelecionado);
+
+  const mesesSparkProd = ultimosNMeses(6);
+  const custosMensal = mesesSparkProd.map(m => custosProd.filter(p=>ymDeData(p?.data)===m.ym).reduce((s,p)=>s+(Number(p?.total)||0),0));
+  const vendasMensal = mesesSparkProd.map(m => vendasProd.filter(v=>ymDeData(v?.data)===m.ym).reduce((s,v)=>s+(Number(v?.total)||0),0));
+  const gastosProdMensal = mesesSparkProd.map(m => gastosProd.filter(g=>ymDeData(g?.data)===m.ym).reduce((s,g)=>s+(Number(g?.valor)||0),0));
+  const custoKgMensal = mesesSparkProd.map(m => {
+    const vMes = vendasProd.filter(v=>ymDeData(v?.data)===m.ym);
+    let kg = 0; vMes.forEach(v=>{ kg += unidadeParaKg(v?.qtd, v?.unidade); });
+    const custoMes = custosProd.filter(p=>ymDeData(p?.data)===m.ym).reduce((s,p)=>s+(Number(p?.total)||0),0)
+      + gastosProd.filter(g=>ymDeData(g?.data)===m.ym).reduce((s,g)=>s+(Number(g?.valor)||0),0);
+    return kg>0 ? custoMes/kg : null;
+  });
+  criarSparkline('spark-prod-custos', custosMensal, COR_CUSTOS);
+  criarSparkline('spark-prod-vendas', vendasMensal, COR_RECEITA);
+  criarSparkline('spark-prod-gastos', gastosProdMensal, COR_CUSTOS);
+  criarSparkline('spark-prod-custokg', custoKgMensal, COR_LUCRO);
+}
+
+let chartMargemKg = null;
+function criarGraficoMargemKg(produto, vendasProd, equilibrio) {
+  const canvas = document.getElementById('chartMargemKg');
+  if (!canvas) return;
+  const card = document.getElementById('card-margem-kg');
+  if (!equilibrio || equilibrio.precoMinimoKg <= 0) { if (card) card.style.display = 'none'; return; }
+  if (card) card.style.display = 'block';
+
+  const meses = ultimosNMeses(6);
+  const dados = meses.map(m => {
+    const vendasMes = (vendasProd||[]).filter(v=>ymDeData(v?.data)===m.ym);
+    let kg = 0, receita = 0;
+    vendasMes.forEach(v => { kg += unidadeParaKg(v?.qtd, v?.unidade); receita += Number(v?.total)||0; });
+    if (kg === 0) return { label: m.label, margem: null };
+    const precoMedioMes = receita / kg;
+    return { label: m.label, margem: precoMedioMes - equilibrio.precoMinimoKg };
+  });
+
+  if (chartMargemKg) chartMargemKg.destroy();
+  chartMargemKg = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: dados.map(d=>d.label),
+      datasets: [{
+        label: 'Margem por kg',
+        data: dados.map(d=>d.margem),
+        backgroundColor: dados.map(d=> d.margem===null ? 'rgba(148,163,184,0.25)' : (d.margem>=0 ? COR_POSITIVO : COR_NEGATIVO)),
+        borderRadius: 4, maxBarThickness: 28
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => c.raw===null ? 'Sem vendas no mês' : `${c.raw>=0?'+':''}${formatMoney(c.raw)}/kg vs. equilíbrio` } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y: { grid: { color: 'rgba(0,0,0,0.06)' }, border: { display: false }, ticks: { callback: v => `${v>=0?'+':''}${formatMoney(v)}`, font: {size:10} } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: {size:11} } }
+      }
+    }
+  });
 }
 
 let chartEvolucaoProduto = null;
@@ -4285,49 +4427,48 @@ function criarGraficoEvolucaoProduto(custosProd, vendasProd, gastosProd) {
   const canvas = document.getElementById('chartEvolucaoProduto');
   if (!canvas) return;
   const dados = calcularEvolucaoMensal(custosProd, vendasProd, gastosProd, 6);
-  const ctx = canvas.getContext('2d');
   if (chartEvolucaoProduto) chartEvolucaoProduto.destroy();
-  chartEvolucaoProduto = new Chart(ctx, {
-    data: {
-      labels: dados.map(d=>d.label),
-      datasets: [
-        { type: 'bar', label: 'Receita', data: dados.map(d=>d.receita), backgroundColor: 'rgba(37,99,235,0.75)', borderRadius: 6, order: 2 },
-        { type: 'bar', label: 'Custos', data: dados.map(d=>d.custos), backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 6, order: 2 },
-        { type: 'line', label: 'Lucro', data: dados.map(d=>d.lucro), borderColor: '#22883a', backgroundColor: '#22883a', tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#22883a', order: 1 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatMoney(c.parsed.y)}` } },
-        datalabels: { display: false }
-      },
-      scales: {
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
-        x: { grid: { display: false }, ticks: { font: {size:11} } }
-      }
-    }
-  });
+  chartEvolucaoProduto = new Chart(canvas.getContext('2d'), graficoEvolucaoConfig(dados));
 }
 
+let chartDesempenhoArea = null;
 function atualizarDesempenhoPorAreaUI(produto) {
   const card = document.getElementById('card-desempenho-area');
-  const container = document.getElementById('desempenho-area-lista');
-  if (!card || !container) return;
+  const container = document.getElementById('desempenho-area-container');
+  const canvas = document.getElementById('chartDesempenhoArea');
+  if (!card || !container || !canvas) return;
   const areas = calcularDesempenhoPorArea(produto);
   if (areas.length < 2) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  const maxAbs = Math.max(...areas.map(a=>Math.abs(a.lucro)), 1);
-  container.innerHTML = areas.map(a => `
-    <div class="cultura-row">
-      <span class="cultura-nome" style="width: 140px;">${a.area}</span>
-      <div class="cultura-bar-wrap">
-        <div class="cultura-bar-fill" style="width:${Math.max(5,Math.abs(a.lucro)/maxAbs*100)}%; background:${a.lucro>=0?'var(--green-600)':'var(--red-600)'};"></div>
-      </div>
-      <span class="cultura-pct ${a.lucro>=0?'positivo':'negativo'}">${formatMoney(a.lucro)}</span>
-    </div>
-  `).join('');
+  // Altura acompanha o nº de áreas — evita cortar a faixa de eixo (barra
+  // deitada precisa de ~44px por categoria + espaço pro eixo).
+  container.style.height = `${Math.max(120, areas.length * 44 + 40)}px`;
+
+  if (chartDesempenhoArea) chartDesempenhoArea.destroy();
+  chartDesempenhoArea = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: areas.map(a=>a.area),
+      datasets: [{
+        data: areas.map(a=>a.lucro),
+        backgroundColor: areas.map(a=> a.lucro>=0 ? COR_POSITIVO : COR_NEGATIVO),
+        borderRadius: 4, maxBarThickness: 24
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.raw>=0?'Lucro':'Prejuízo'}: ${formatMoney(Math.abs(c.raw))}` } },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.06)' }, border: { display: false }, ticks: { callback: v => formatMoney(v), font: {size:10} } },
+        y: { grid: { display: false }, border: { display: false }, ticks: { font: {size:12, weight:600} } }
+      }
+    }
+  });
 }
 
 function atualizarEstoqueChipProduto(produto) {
@@ -4400,11 +4541,11 @@ function criarGraficosProduto(custos, vends, gastsArr) {
     if(chartsProduto.gastos) chartsProduto.gastos.destroy();
     chartsProduto.gastos = new Chart(ctx1, {
       type: 'bar',
-      data: { labels: sorted.map(([k])=>k), datasets: [{ data: sorted.map(([,v])=>v), backgroundColor: CHART_COLORS, borderRadius: 8, barPercentage: 0.65 }] },
+      data: { labels: sorted.map(([k])=>k), datasets: [{ data: sorted.map(([,v])=>v), backgroundColor: COR_MAGNITUDE, borderRadius: 4, maxBarThickness: 24, barPercentage: 0.65 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>formatMoney(c.parsed.y)}}, datalabels:{display:false} },
-        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`,font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}} }
+        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.06)'},border:{display:false},ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`,font:{size:11}}},x:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}} }
       }
     });
   }
@@ -4421,11 +4562,11 @@ function criarGraficoProdutoCategorias(custos, vends, gastsArr) {
     if(chartsProduto.categorias) chartsProduto.categorias.destroy();
     chartsProduto.categorias = new Chart(ctx2, {
       type: 'bar',
-      data: { labels: sorted.map(([k])=>k), datasets: [{ data: sorted.map(([,v])=>v), backgroundColor: CHART_COLORS, borderRadius: 8, barPercentage: 0.65 }] },
+      data: { labels: sorted.map(([k])=>k), datasets: [{ data: sorted.map(([,v])=>v), backgroundColor: COR_MAGNITUDE, borderRadius: 4, maxBarThickness: 24, barPercentage: 0.65 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>formatMoney(c.parsed.y)}}, datalabels:{display:false} },
-        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`,font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}} }
+        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.06)'},border:{display:false},ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`,font:{size:11}}},x:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}} }
       }
     });
   }
@@ -4448,11 +4589,11 @@ function criarGraficoComparativo() {
     if(chartsProduto.comparativo) chartsProduto.comparativo.destroy();
     chartsProduto.comparativo = new Chart(ctx, {
       type: 'bar',
-      data: { labels: prods, datasets: [{ data: lucros, backgroundColor: lucros.map(l=>l>=0?'#22883a':'#dc2626'), borderRadius: 8, barPercentage: 0.6 }] },
+      data: { labels: prods, datasets: [{ data: lucros, backgroundColor: lucros.map(l=>l>=0?COR_POSITIVO:COR_NEGATIVO), borderRadius: 4, maxBarThickness: 32, barPercentage: 0.6 }] },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>formatMoney(c.parsed.y)}}, datalabels:{display:false} },
-        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)'},ticks:{callback:v=>formatMoney(v),font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}} }
+        scales: { y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.06)'},border:{display:false},ticks:{callback:v=>formatMoney(v),font:{size:11}}},x:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}} }
       }
     });
   }
