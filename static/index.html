@@ -1893,31 +1893,43 @@ body.menu-open .menu-container {
       </div>
     </div>
 
+    <div class="card" id="insights-gerais-card" style="border-left: 4px solid var(--green-600);">
+      <div class="card-title"><div class="dot"></div> 🧭 Como está o seu negócio</div>
+      <div id="insights-gerais-lista" style="display:flex; flex-direction:column; gap:10px;">
+        <div class="empty" style="padding: 12px; font-size: 0.82rem;">Carregando...</div>
+      </div>
+    </div>
+
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-icon">🌾</div>
         <div class="kpi-label">Custos de Colheita</div>
         <div class="kpi-value" id="kpi-producao">R$ 0</div>
-        <div class="kpi-sub">Total de custos produtivos</div>
+        <div class="kpi-sub" id="kpi-producao-sub">Total de custos produtivos</div>
       </div>
       <div class="kpi-card azul">
         <div class="kpi-icon">💰</div>
         <div class="kpi-label">Receita de Vendas</div>
         <div class="kpi-value" id="kpi-vendas">R$ 0</div>
-        <div class="kpi-sub">Total faturado</div>
+        <div class="kpi-sub" id="kpi-vendas-sub">Total faturado</div>
       </div>
       <div class="kpi-card vermelho">
         <div class="kpi-icon">💸</div>
         <div class="kpi-label">Despesas Gerais</div>
         <div class="kpi-value" id="kpi-gastos">R$ 0</div>
-        <div class="kpi-sub">Total de gastos operacionais</div>
+        <div class="kpi-sub" id="kpi-gastos-sub">Total de gastos operacionais</div>
       </div>
       <div class="kpi-card roxo">
         <div class="kpi-icon">📈</div>
         <div class="kpi-label">Lucro Líquido</div>
         <div class="kpi-value" id="kpi-lucro">R$ 0</div>
-        <div class="kpi-sub">Resultado final</div>
+        <div class="kpi-sub" id="kpi-lucro-sub">Resultado final</div>
       </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom: 24px;">
+      <div class="chart-title"><div class="chart-title-badge" style="background: var(--purple-600);"></div> Evolução do Negócio — últimos 6 meses</div>
+      <div class="chart-container" style="height: 300px;"><canvas id="chartEvolucaoNegocio"></canvas></div>
     </div>
 
     <div class="charts-grid">
@@ -1960,9 +1972,12 @@ body.menu-open .menu-container {
     </div>
     
     <div class="card" style="margin-top: 0;">
-      <div class="card-title">
-        <div class="dot"></div>
-        Visão Geral dos Produtos — Lucro Líquido
+      <div class="card-title" style="justify-content: space-between; display: flex;">
+        <span style="display:flex; align-items:center; gap:8px;"><div class="dot"></div> Visão Geral dos Produtos</span>
+        <span style="display: flex; gap: 6px;">
+          <button class="btn-aba ativo" id="btn-ordenar-lucro" onclick="mudarOrdenacaoVisaoProdutos('lucro', this)">💰 Por Lucro</button>
+          <button class="btn-aba" id="btn-ordenar-margem" onclick="mudarOrdenacaoVisaoProdutos('margem', this)">📊 Por Margem %</button>
+        </span>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;" id="container-visao-produtos">
         <div class="empty" style="padding: 30px; font-size: 0.82rem;">Carregando produtos...</div>
@@ -2168,6 +2183,7 @@ body.menu-open .menu-container {
             <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
               <span class="stat-chip"><span id="produto-total-registros">0</span> registros</span>
               <span class="stat-chip"><span id="produto-total-areas">0</span> áreas</span>
+              <span class="stat-chip" id="produto-estoque-chip" style="display:none;"></span>
             </div>
           </div>
           <div style="background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15); padding: 20px 24px; border-radius: 14px; min-width: 230px; color: white;">
@@ -2177,6 +2193,8 @@ body.menu-open .menu-container {
           </div>
         </div>
       </div>
+
+      <div id="produto-insight-box" style="display:none; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;"></div>
 
       <div class="kpi-grid" style="margin-bottom: 24px;">
         <div class="kpi-card" style="">
@@ -2205,6 +2223,11 @@ body.menu-open .menu-container {
         </div>
       </div>
 
+      <div class="chart-card" style="margin-bottom: 24px;">
+        <div class="chart-title"><div class="chart-title-badge" style="background: var(--purple-600);"></div> Evolução do Produto — últimos 6 meses</div>
+        <div class="chart-container" style="height: 280px;"><canvas id="chartEvolucaoProduto"></canvas></div>
+      </div>
+
       <div class="charts-grid" style="margin-bottom: 24px;">
         <div class="chart-card">
           <div class="chart-title"><div class="chart-title-badge"></div> Distribuição por Tipo de Gasto</div>
@@ -2215,68 +2238,51 @@ body.menu-open .menu-container {
           <div class="chart-container"><canvas id="chartProdutoCategorias"></canvas></div>
         </div>
       </div>
-      <!-- ========== PONTO DE EQUILÍBRIO POR PRODUTO ========== -->
+
+      <!-- ========== PREÇO DE EQUILÍBRIO POR PRODUTO ========== -->
       <div class="break-even-card" id="break-even-produto-card" style="display: none;">
         <div class="break-even-header">
           <div class="break-even-header-icon">⚖️</div>
           <div>
-            <h3>Ponto de Equilíbrio - <span id="be-produto-nome">Produto</span></h3>
-            <p>Quantos kg você precisa vender para cobrir os custos?</p>
+            <h3>Preço de Equilíbrio - <span id="be-produto-nome">Produto</span></h3>
+            <p>Qual o preço mínimo por kg pra não ter prejuízo, considerando todo o histórico?</p>
           </div>
         </div>
-        
-        <!-- Preço e Custos -->
+
         <div class="break-even-grid">
           <div class="break-even-stat">
+            <div class="break-even-stat-label">🎯 Preço Mínimo (equilíbrio)</div>
+            <div class="break-even-stat-value" id="be-prod-preco-minimo">R$ 0,00</div>
+            <div class="break-even-stat-unit">por kg, cobre todos os custos</div>
+          </div>
+          <div class="break-even-stat">
             <div class="break-even-stat-label">💰 Preço Médio de Venda</div>
-            <div class="break-even-stat-value" id="be-prod-preco">R$ 0,00</div>
-            <div class="break-even-stat-unit">por kg</div>
+            <div class="break-even-stat-value" id="be-prod-preco-medio">R$ 0,00</div>
+            <div class="break-even-stat-unit">por kg, histórico</div>
           </div>
           <div class="break-even-stat">
-            <div class="break-even-stat-label">🌾 Custo de Produção</div>
-            <div class="break-even-stat-value" id="be-prod-custo-producao">R$ 0,00</div>
-            <div class="break-even-stat-unit">total do mês</div>
-          </div>
-          <div class="break-even-stat">
-            <div class="break-even-stat-label">💸 Gastos Específicos</div>
-            <div class="break-even-stat-value" id="be-prod-gastos-especificos">R$ 0,00</div>
-            <div class="break-even-stat-unit">total do mês</div>
+            <div class="break-even-stat-label">📐 Margem por KG</div>
+            <div class="break-even-stat-value" id="be-prod-margem-kg">R$ 0,00</div>
+            <div class="break-even-stat-unit">venda − mínimo</div>
           </div>
         </div>
-        
-        <!-- Pontos de Equilíbrio -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
-          <div class="break-even-stat" style="background: rgba(34,136,58,0.2);">
-            <div class="break-even-stat-label">🌾 Para pagar PRODUÇÃO</div>
-            <div class="break-even-stat-value" id="be-prod-pe-producao" style="font-size: 1.2rem;">0 kg</div>
-            <div class="break-even-stat-unit">apenas custos de colheita</div>
-          </div>
-          <div class="break-even-stat" style="background: rgba(220,38,38,0.2);">
-            <div class="break-even-stat-label">💸 Para pagar GASTOS</div>
-            <div class="break-even-stat-value" id="be-prod-pe-gastos" style="font-size: 1.2rem;">0 kg</div>
-            <div class="break-even-stat-unit">apenas gastos específicos</div>
-          </div>
-          <div class="break-even-stat" style="background: rgba(124,58,237,0.2);">
-            <div class="break-even-stat-label">🎯 Para pagar TUDO</div>
-            <div class="break-even-stat-value" id="be-prod-pe-total" style="font-size: 1.5rem;">0 kg</div>
-            <div class="break-even-stat-unit">produção + gastos</div>
-          </div>
-        </div>
-        
+
         <!-- Status Atual -->
         <div class="break-even-result">
-          <div class="break-even-result-label">📊 SITUAÇÃO ATUAL</div>
-          <div class="break-even-result-value" id="be-prod-status">0 kg vendidos</div>
+          <div class="break-even-result-label">📊 SITUAÇÃO</div>
+          <div class="break-even-result-value" id="be-prod-status">—</div>
           <div class="break-even-result-desc" id="be-prod-descricao">
             Selecione um produto para ver a análise
           </div>
         </div>
-        
-        <div class="break-even-footer" id="be-prod-footer">
-          ⚖️ Ponto de equilíbrio = (custo total) ÷ (preço médio por kg)
-        </div>
       </div>
-      
+
+      <!-- ========== DESEMPENHO POR ÁREA ========== -->
+      <div class="card" id="card-desempenho-area" style="display: none;">
+        <div class="card-title"><div class="dot" style="background: var(--blue-600);"></div> Desempenho por Área</div>
+        <div class="cultura-rows" id="desempenho-area-lista"></div>
+      </div>
+
       <div class="card" style="margin-bottom: 24px;">
         <div class="card-title"><div class="dot"></div> Todos os Registros</div>
         <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 14px;">
@@ -3541,6 +3547,16 @@ function formatarDataBR(dataStr) {
 // ============================================
 // DASHBOARD
 // ============================================
+function atualizarTendenciaKpi(subId, atual, anterior, invertido) {
+  const el = document.getElementById(subId);
+  if (!el) return;
+  if (anterior === 0) { el.textContent = 'Sem dados do mês passado'; el.style.color = ''; return; }
+  const variacao = ((atual - anterior) / Math.abs(anterior)) * 100;
+  const melhorou = invertido ? variacao <= 0 : variacao >= 0;
+  el.textContent = `${melhorou ? '▲' : '▼'} ${Math.abs(variacao).toFixed(0)}% vs mês passado`;
+  el.style.color = melhorou ? 'var(--green-700)' : 'var(--red-600)';
+}
+
 function atualizarDashboard() {
   const totalProd = producoes.reduce((s,p) => s+(Number(p?.total)||0), 0);
   const totalVendas = vendas.reduce((s,v) => s+(Number(v?.total)||0), 0);
@@ -3555,14 +3571,68 @@ function atualizarDashboard() {
   kpiLucro.textContent = formatMoney(lucro);
   kpiLucro.style.color = lucro >= 0 ? 'var(--green-700)' : 'var(--red-600)';
 
-  // As variáveis ultimasProd, ultimasVendas, ultimosGastos NÃO são mais usadas
-  // pois substituímos pelos novos componentes
+  // Tendência vs mês anterior em cada KPI
+  const hoje = new Date();
+  const ymAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+  const mesAnt = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+  const ymAnterior = `${mesAnt.getFullYear()}-${String(mesAnt.getMonth()+1).padStart(2,'0')}`;
+  const somaMes = (arr, campo, ym) => (arr||[]).filter(r=>ymDeData(r?.data)===ym).reduce((s,r)=>s+(Number(r?.[campo])||0),0);
+  atualizarTendenciaKpi('kpi-producao-sub', somaMes(producoes,'total',ymAtual), somaMes(producoes,'total',ymAnterior), true);
+  atualizarTendenciaKpi('kpi-vendas-sub', somaMes(vendas,'total',ymAtual), somaMes(vendas,'total',ymAnterior), false);
+  atualizarTendenciaKpi('kpi-gastos-sub', somaMes(gastos,'valor',ymAtual), somaMes(gastos,'valor',ymAnterior), true);
+  const lucroAtualMes = somaMes(vendas,'total',ymAtual) - (somaMes(producoes,'total',ymAtual)+somaMes(gastos,'valor',ymAtual));
+  const lucroAnteriorMes = somaMes(vendas,'total',ymAnterior) - (somaMes(producoes,'total',ymAnterior)+somaMes(gastos,'valor',ymAnterior));
+  atualizarTendenciaKpi('kpi-lucro-sub', lucroAtualMes, lucroAnteriorMes, false);
 
   criarGraficos();
-  
-  // NOVAS CHAMADAS
+  criarGraficoEvolucaoNegocio();
+  atualizarInsightsGerais();
+
   atualizarMargemCultura();
   atualizarUltimosRegistrosNovo();
+}
+
+let chartEvolucaoNegocio = null;
+function criarGraficoEvolucaoNegocio() {
+  const canvas = document.getElementById('chartEvolucaoNegocio');
+  if (!canvas) return;
+  const dados = calcularEvolucaoMensal(producoes, vendas, gastos, 6);
+  const ctx = canvas.getContext('2d');
+  if (chartEvolucaoNegocio) chartEvolucaoNegocio.destroy();
+  chartEvolucaoNegocio = new Chart(ctx, {
+    data: {
+      labels: dados.map(d=>d.label),
+      datasets: [
+        { type: 'bar', label: 'Receita', data: dados.map(d=>d.receita), backgroundColor: 'rgba(37,99,235,0.75)', borderRadius: 6, order: 2 },
+        { type: 'bar', label: 'Custos', data: dados.map(d=>d.custos), backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 6, order: 2 },
+        { type: 'line', label: 'Lucro', data: dados.map(d=>d.lucro), borderColor: '#22883a', backgroundColor: '#22883a', tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#22883a', order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatMoney(c.parsed.y)}` } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
+        x: { grid: { display: false }, ticks: { font: {size:11} } }
+      }
+    }
+  });
+}
+
+function atualizarInsightsGerais() {
+  const lista = document.getElementById('insights-gerais-lista');
+  if (!lista) return;
+  const insights = gerarInsightsGerais();
+  lista.innerHTML = insights.map(i => `
+    <div style="display:flex; align-items:flex-start; gap:10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;">
+      <span style="font-size:1.1rem; line-height:1;">${i.icon}</span>
+      <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; line-height: 1.5;">${i.texto}</span>
+    </div>
+  `).join('');
 }
 
 // ============================================
@@ -3896,6 +3966,16 @@ function toast(msg) {
 // ============================================
 // CUSTO POR KG
 // ============================================
+function unidadeParaKg(qtd, unidade) {
+  const q = Number(qtd)||0, u = (unidade||'').toLowerCase();
+  if(u==='kg'||u==='quilo'||u==='quilograma') return q;
+  if(u==='balde') return q*20;
+  if(u==='caixa') return q*15;
+  if(u==='saco') return q*30;
+  if(u==='un'||u==='unidade') return q*0.5;
+  return q;
+}
+
 function calcularCustoPorKg(produto) {
   if (!produto) return {custoPorKg:0,totalQuilos:0,formatado:'R$ 0,00/kg'};
   const custosProd = (producoes||[]).filter(p=>p?.produto===produto);
@@ -3904,17 +3984,221 @@ function calcularCustoPorKg(produto) {
   const totalCustos = custosProd.reduce((s,p)=>s+(Number(p?.total)||0),0);
   const totalGastos = gastosProd.reduce((s,g)=>s+(Number(g?.valor)||0),0);
   let totalQuilos = 0;
-  vendasProd.forEach(v => {
-    const qtd = Number(v?.qtd)||0, u = (v?.unidade||'').toLowerCase();
-    if(u==='kg'||u==='quilo'||u==='quilograma') totalQuilos+=qtd;
-    else if(u==='balde') totalQuilos+=qtd*20;
-    else if(u==='caixa') totalQuilos+=qtd*15;
-    else if(u==='saco') totalQuilos+=qtd*30;
-    else if(u==='un'||u==='unidade') totalQuilos+=qtd*0.5;
-    else totalQuilos+=qtd;
-  });
+  vendasProd.forEach(v => { totalQuilos += unidadeParaKg(v?.qtd, v?.unidade); });
   const custoPorKg = totalQuilos>0?(totalCustos+totalGastos)/totalQuilos:0;
   return {custoPorKg,totalGastos:totalCustos+totalGastos,totalQuilos,formatado:formatMoney(custoPorKg)+'/kg'};
+}
+
+// ============================================
+// EVOLUÇÃO MENSAL (tendência ao longo do tempo)
+// ============================================
+function ultimosNMeses(n) {
+  const hoje = new Date();
+  const meses = [];
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', '');
+    meses.push({ ym, label });
+  }
+  return meses;
+}
+
+function ymDeData(dataStr) {
+  if (!dataStr) return '';
+  const limpa = String(dataStr).replace(/\s.*$/, '').split('T')[0];
+  const partes = limpa.split('-');
+  return partes.length >= 2 ? `${partes[0]}-${partes[1]}` : '';
+}
+
+function calcularEvolucaoMensal(custosArr, vendasArr, gastosArr, n = 6) {
+  const meses = ultimosNMeses(n);
+  return meses.map(m => {
+    const receita = (vendasArr||[]).filter(v=>ymDeData(v?.data)===m.ym).reduce((s,v)=>s+(Number(v?.total)||0),0);
+    const custoProd = (custosArr||[]).filter(p=>ymDeData(p?.data)===m.ym).reduce((s,p)=>s+(Number(p?.total)||0),0);
+    const custoGasto = (gastosArr||[]).filter(g=>ymDeData(g?.data)===m.ym).reduce((s,g)=>s+(Number(g?.valor)||0),0);
+    const custos = custoProd + custoGasto;
+    return { label: m.label, receita, custos, lucro: receita - custos };
+  });
+}
+
+// ============================================
+// DESEMPENHO POR ÁREA (por produto)
+// ============================================
+function calcularDesempenhoPorArea(produto) {
+  const areasSet = new Set();
+  (producoes||[]).forEach(p=>{if(p?.produto===produto && p?.area) areasSet.add(p.area);});
+  (vendas||[]).forEach(v=>{if(v?.produto===produto && v?.area) areasSet.add(v.area);});
+  (gastos||[]).forEach(g=>{if(g?.produto===produto && g?.area) areasSet.add(g.area);});
+  return Array.from(areasSet).map(area => {
+    const v = (vendas||[]).filter(x=>x?.produto===produto && x?.area===area).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const c = (producoes||[]).filter(x=>x?.produto===produto && x?.area===area).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const g = (gastos||[]).filter(x=>x?.produto===produto && x?.area===area).reduce((s,x)=>s+(Number(x?.valor)||0),0);
+    return { area, vendas: v, custos: c, gastos: g, lucro: v-(c+g) };
+  }).sort((a,b)=>b.lucro-a.lucro);
+}
+
+// ============================================
+// PREÇO DE EQUILÍBRIO POR PRODUTO (histórico completo)
+// ============================================
+function calcularPrecoEquilibrioProduto(produto) {
+  const card = document.getElementById('break-even-produto-card');
+  if (!produto) {
+    if (card) card.style.display = 'none';
+    return null;
+  }
+  if (card) card.style.display = 'block';
+
+  const custosProd = (producoes||[]).filter(p=>p?.produto===produto);
+  const gastosProd = (gastos||[]).filter(g=>g?.produto===produto);
+  const vendasProd = (vendas||[]).filter(v=>v?.produto===produto);
+
+  const totalCustoProducao = custosProd.reduce((s,p)=>s+(Number(p?.total)||0),0);
+  const totalGastosEspecificos = gastosProd.reduce((s,g)=>s+(Number(g?.valor)||0),0);
+  const custoTotal = totalCustoProducao + totalGastosEspecificos;
+
+  const totalVendasValor = vendasProd.reduce((s,v)=>s+(Number(v?.total)||0),0);
+  let totalQuilosVendidos = 0;
+  vendasProd.forEach(v => { totalQuilosVendidos += unidadeParaKg(v?.qtd, v?.unidade); });
+
+  const precoMinimoKg = totalQuilosVendidos > 0 ? custoTotal / totalQuilosVendidos : 0;
+  const precoMedioKg = totalQuilosVendidos > 0 ? totalVendasValor / totalQuilosVendidos : 0;
+  const margemKg = precoMedioKg - precoMinimoKg;
+
+  document.getElementById('be-produto-nome').textContent = produto;
+  document.getElementById('be-prod-preco-minimo').textContent = formatMoney(precoMinimoKg) + '/kg';
+  document.getElementById('be-prod-preco-medio').textContent = formatMoney(precoMedioKg) + '/kg';
+  const margemEl = document.getElementById('be-prod-margem-kg');
+  margemEl.textContent = (margemKg>=0?'+':'') + formatMoney(margemKg) + '/kg';
+  margemEl.style.color = margemKg >= 0 ? '#4ade80' : '#f87171';
+
+  const statusEl = document.getElementById('be-prod-status');
+  const descEl = document.getElementById('be-prod-descricao');
+  if (totalQuilosVendidos === 0) {
+    statusEl.textContent = 'Sem vendas registradas';
+    statusEl.style.color = '#fbbf24';
+    descEl.textContent = custoTotal > 0
+      ? `⚠️ Você já gastou ${formatMoney(custoTotal)} com este produto mas ainda não vendeu nada. Assim que vender, calculamos o preço mínimo por kg pra não ter prejuízo.`
+      : 'Registre custos e vendas deste produto para ver a análise de preço de equilíbrio.';
+  } else if (margemKg >= 0) {
+    statusEl.textContent = `✅ Margem positiva`;
+    statusEl.style.color = '#4ade80';
+    descEl.textContent = `Você vende ${produto} a ${formatMoney(precoMedioKg)}/kg, ${formatMoney(margemKg)} acima do preço mínimo (${formatMoney(precoMinimoKg)}/kg) que cobriria todos os custos. Considerando os ${totalQuilosVendidos.toFixed(0)} kg já vendidos, o lucro é de ${formatMoney(totalVendasValor - custoTotal)}.`;
+  } else {
+    statusEl.textContent = `⚠️ Margem negativa`;
+    statusEl.style.color = '#f87171';
+    descEl.textContent = `Você vende ${produto} a ${formatMoney(precoMedioKg)}/kg, mas precisaria de pelo menos ${formatMoney(precoMinimoKg)}/kg pra cobrir os custos — está ${formatMoney(Math.abs(margemKg))} abaixo por kg. Ou reduz custos, ou reajusta o preço.`;
+  }
+
+  return { precoMinimoKg, precoMedioKg, margemKg, totalQuilosVendidos, custoTotal, totalVendasValor };
+}
+
+// ============================================
+// INSIGHTS AUTOMÁTICOS (linguagem simples)
+// ============================================
+function gerarInsightsGerais() {
+  const insights = [];
+  const hoje = new Date();
+  const ymAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+  const mesAnt = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+  const ymAnterior = `${mesAnt.getFullYear()}-${String(mesAnt.getMonth()+1).padStart(2,'0')}`;
+
+  const somaMes = (arr, campo, ym) => (arr||[]).filter(r=>ymDeData(r?.data)===ym).reduce((s,r)=>s+(Number(r?.[campo])||0),0);
+
+  const receitaAtual = somaMes(vendas,'total',ymAtual);
+  const custoAtual = somaMes(producoes,'total',ymAtual) + somaMes(gastos,'valor',ymAtual);
+  const lucroAtual = receitaAtual - custoAtual;
+
+  const receitaAnterior = somaMes(vendas,'total',ymAnterior);
+  const custoAnterior = somaMes(producoes,'total',ymAnterior) + somaMes(gastos,'valor',ymAnterior);
+  const lucroAnterior = receitaAnterior - custoAnterior;
+
+  if (receitaAtual===0 && custoAtual===0 && vendas.length===0 && producoes.length===0 && gastos.length===0) {
+    insights.push({icon:'👋', texto: 'Comece registrando produções, vendas e gastos para ver aqui como o seu negócio está indo.'});
+    return insights;
+  }
+
+  if (lucroAtual >= 0) {
+    insights.push({icon:'✅', texto: `Este mês seu resultado está positivo: lucro de ${formatMoney(lucroAtual)}.`});
+  } else {
+    insights.push({icon:'⚠️', texto: `Este mês você está no prejuízo: ${formatMoney(Math.abs(lucroAtual))} negativo até agora.`});
+  }
+
+  if (lucroAnterior !== 0 || receitaAnterior > 0) {
+    if (lucroAnterior !== 0) {
+      const variacao = ((lucroAtual - lucroAnterior) / Math.abs(lucroAnterior)) * 100;
+      if (variacao >= 0) insights.push({icon:'📈', texto: `Isso é ${variacao.toFixed(0)}% melhor que o mês passado (${formatMoney(lucroAnterior)}).`});
+      else insights.push({icon:'📉', texto: `Isso é ${Math.abs(variacao).toFixed(0)}% pior que o mês passado (${formatMoney(lucroAnterior)}).`});
+    }
+  }
+
+  const produtosSet = new Set();
+  (producoes||[]).forEach(p=>{if(p?.produto) produtosSet.add(p.produto);});
+  (vendas||[]).forEach(v=>{if(v?.produto) produtosSet.add(v.produto);});
+  (gastos||[]).forEach(g=>{if(g?.produto) produtosSet.add(g.produto);});
+  const porProduto = Array.from(produtosSet).map(produto => {
+    const v=(vendas||[]).filter(x=>x?.produto===produto).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const c=(producoes||[]).filter(x=>x?.produto===produto).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const g=(gastos||[]).filter(x=>x?.produto===produto).reduce((s,x)=>s+(Number(x?.valor)||0),0);
+    return { produto, lucro: v-(c+g) };
+  });
+  if (porProduto.length > 0) {
+    const melhor = porProduto.reduce((a,b)=>b.lucro>a.lucro?b:a);
+    const pior = porProduto.reduce((a,b)=>b.lucro<a.lucro?b:a);
+    if (melhor.lucro > 0) insights.push({icon:'🏆', texto: `${melhor.produto} é seu produto mais lucrativo, com ${formatMoney(melhor.lucro)} de lucro acumulado.`});
+    if (pior.lucro < 0 && pior.produto !== melhor.produto) insights.push({icon:'🔻', texto: `${pior.produto} está dando prejuízo: ${formatMoney(Math.abs(pior.lucro))} negativo. Vale revisar custos ou preço de venda.`});
+  }
+
+  const catTotais = {};
+  (gastos||[]).forEach(g=>{ if(g?.valor){ const c=g.categoria||'Outros'; catTotais[c]=(catTotais[c]||0)+(Number(g.valor)||0);} });
+  const catOrdenadas = Object.entries(catTotais).sort((a,b)=>b[1]-a[1]);
+  if (catOrdenadas.length > 0) {
+    const [catNome, catValor] = catOrdenadas[0];
+    const totalGastosGeral = catOrdenadas.reduce((s,[,v])=>s+v,0);
+    const pct = totalGastosGeral>0 ? (catValor/totalGastosGeral*100) : 0;
+    insights.push({icon:'💸', texto: `Sua maior despesa é "${catNome}", representando ${pct.toFixed(0)}% de tudo que você gastou.`});
+  }
+
+  if (typeof estoque !== 'undefined' && estoque.length > 0) {
+    const resumoEstoque = calcResumoEstoque();
+    const negativos = resumoEstoque.filter(r=>r.saldo < 0);
+    if (negativos.length > 0) {
+      insights.push({icon:'📦', texto: `Atenção: ${negativos.map(n=>n.produto).join(', ')} está${negativos.length>1?'ão':''} com estoque negativo — confira os lançamentos.`});
+    }
+  }
+
+  return insights;
+}
+
+function gerarInsightProduto(produto) {
+  if (!produto) return [];
+  const insights = [];
+  const hoje = new Date();
+  const ymAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
+  const mesAnt = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+  const ymAnterior = `${mesAnt.getFullYear()}-${String(mesAnt.getMonth()+1).padStart(2,'0')}`;
+
+  const lucroDoMes = (ym) => {
+    const v = (vendas||[]).filter(x=>x?.produto===produto && ymDeData(x?.data)===ym).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const c = (producoes||[]).filter(x=>x?.produto===produto && ymDeData(x?.data)===ym).reduce((s,x)=>s+(Number(x?.total)||0),0);
+    const g = (gastos||[]).filter(x=>x?.produto===produto && ymDeData(x?.data)===ym).reduce((s,x)=>s+(Number(x?.valor)||0),0);
+    return v - (c+g);
+  };
+  const atual = lucroDoMes(ymAtual);
+  const anterior = lucroDoMes(ymAnterior);
+
+  if (anterior !== 0) {
+    const variacao = ((atual-anterior)/Math.abs(anterior))*100;
+    if (variacao >= 0) insights.push(`📈 O resultado deste produto melhorou ${variacao.toFixed(0)}% em relação ao mês passado.`);
+    else insights.push(`📉 O resultado deste produto piorou ${Math.abs(variacao).toFixed(0)}% em relação ao mês passado.`);
+  }
+
+  const areas = calcularDesempenhoPorArea(produto);
+  if (areas.length >= 2) {
+    insights.push(`📍 A área "${areas[0].area}" é a mais lucrativa para ${produto} (${formatMoney(areas[0].lucro)}), enquanto "${areas[areas.length-1].area}" rende menos (${formatMoney(areas[areas.length-1].lucro)}).`);
+  }
+
+  return insights;
 }
 
 // ============================================
@@ -3944,8 +4228,6 @@ function mudarProdutoSelecionado() {
   if (produtoSelecionado) {
     if(s) s.style.display='none'; if(c) c.style.display='block';
     atualizarDashboardProduto();
-    // 👇 ADICIONE ESTA LINHA 👇
-    calcularPontoEquilibrioProduto(produtoSelecionado);
   } else {
     if(s) s.style.display='block'; if(c) c.style.display='none';
     // Esconder o card quando nenhum produto selecionado
@@ -3991,7 +4273,79 @@ function atualizarDashboardProduto() {
   atualizarTabelaProduto('todos', custosProd, vendasProd, gastosProd);
   criarGraficosProduto(custosProd, vendasProd, gastosProd);
   criarGraficoComparativo();
-  calcularPontoEquilibrioProduto(produtoSelecionado);
+  calcularPrecoEquilibrioProduto(produtoSelecionado);
+  criarGraficoEvolucaoProduto(custosProd, vendasProd, gastosProd);
+  atualizarDesempenhoPorAreaUI(produtoSelecionado);
+  atualizarEstoqueChipProduto(produtoSelecionado);
+  atualizarInsightProdutoUI(produtoSelecionado);
+}
+
+let chartEvolucaoProduto = null;
+function criarGraficoEvolucaoProduto(custosProd, vendasProd, gastosProd) {
+  const canvas = document.getElementById('chartEvolucaoProduto');
+  if (!canvas) return;
+  const dados = calcularEvolucaoMensal(custosProd, vendasProd, gastosProd, 6);
+  const ctx = canvas.getContext('2d');
+  if (chartEvolucaoProduto) chartEvolucaoProduto.destroy();
+  chartEvolucaoProduto = new Chart(ctx, {
+    data: {
+      labels: dados.map(d=>d.label),
+      datasets: [
+        { type: 'bar', label: 'Receita', data: dados.map(d=>d.receita), backgroundColor: 'rgba(37,99,235,0.75)', borderRadius: 6, order: 2 },
+        { type: 'bar', label: 'Custos', data: dados.map(d=>d.custos), backgroundColor: 'rgba(220,38,38,0.75)', borderRadius: 6, order: 2 },
+        { type: 'line', label: 'Lucro', data: dados.map(d=>d.lucro), borderColor: '#22883a', backgroundColor: '#22883a', tension: 0.3, borderWidth: 3, pointRadius: 4, pointBackgroundColor: '#22883a', order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatMoney(c.parsed.y)}` } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => `R$${(v/1000).toFixed(0)}k`, font: {size:11} } },
+        x: { grid: { display: false }, ticks: { font: {size:11} } }
+      }
+    }
+  });
+}
+
+function atualizarDesempenhoPorAreaUI(produto) {
+  const card = document.getElementById('card-desempenho-area');
+  const container = document.getElementById('desempenho-area-lista');
+  if (!card || !container) return;
+  const areas = calcularDesempenhoPorArea(produto);
+  if (areas.length < 2) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const maxAbs = Math.max(...areas.map(a=>Math.abs(a.lucro)), 1);
+  container.innerHTML = areas.map(a => `
+    <div class="cultura-row">
+      <span class="cultura-nome" style="width: 140px;">${a.area}</span>
+      <div class="cultura-bar-wrap">
+        <div class="cultura-bar-fill" style="width:${Math.max(5,Math.abs(a.lucro)/maxAbs*100)}%; background:${a.lucro>=0?'var(--green-600)':'var(--red-600)'};"></div>
+      </div>
+      <span class="cultura-pct ${a.lucro>=0?'positivo':'negativo'}">${formatMoney(a.lucro)}</span>
+    </div>
+  `).join('');
+}
+
+function atualizarEstoqueChipProduto(produto) {
+  const el = document.getElementById('produto-estoque-chip');
+  if (!el) return;
+  const saldos = (typeof calcResumoEstoque === 'function' ? calcResumoEstoque() : []).filter(r=>r.produto===produto);
+  if (saldos.length === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'inline-flex';
+  el.innerHTML = '📦 Estoque: ' + saldos.map(s=>`<strong>${s.saldo.toLocaleString('pt-BR')} ${s.unidade}</strong>`).join(' · ');
+}
+
+function atualizarInsightProdutoUI(produto) {
+  const box = document.getElementById('produto-insight-box');
+  if (!box) return;
+  const insights = gerarInsightProduto(produto);
+  if (insights.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = insights.map(t=>`<div style="margin-bottom:6px;">💡 ${t}</div>`).join('');
 }
 
 function mudarAbaProduto(tipo, botao) {
@@ -4107,6 +4461,14 @@ function criarGraficoComparativo() {
 // ============================================
 // VISÃO GERAL PRODUTOS
 // ============================================
+let ordenacaoVisaoProdutos = 'lucro';
+function mudarOrdenacaoVisaoProdutos(modo, btn) {
+  ordenacaoVisaoProdutos = modo;
+  document.querySelectorAll('#btn-ordenar-lucro, #btn-ordenar-margem').forEach(b=>b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  atualizarVisaoGeralProdutos();
+}
+
 function atualizarVisaoGeralProdutos() {
   const container = document.getElementById('container-visao-produtos');
   if (!container) return;
@@ -4125,11 +4487,12 @@ function atualizarVisaoGeralProdutos() {
     const v=(vendas||[]).filter(v=>v?.produto===produto).reduce((s,v)=>s+(Number(v?.total)||0),0);
     const g=(gastos||[]).filter(g=>g?.produto===produto).reduce((s,g)=>s+(Number(g?.valor)||0),0);
     const lucro=v-(c+g);
+    const margem=v>0?(lucro/v*100):-Infinity;
     const nC=(producoes||[]).filter(p=>p?.produto===produto).length;
     const nV=(vendas||[]).filter(v=>v?.produto===produto).length;
     const nG=(gastos||[]).filter(g=>g?.produto===produto).length;
-    return {nome:produto,custos:c,vendas:v,gastos:g,lucro,nC,nV,nG,total:nC+nV+nG};
-  }).sort((a,b)=>b.lucro-a.lucro);
+    return {nome:produto,custos:c,vendas:v,gastos:g,lucro,margem,nC,nV,nG,total:nC+nV+nG};
+  }).sort((a,b)=> ordenacaoVisaoProdutos==='margem' ? b.margem-a.margem : b.lucro-a.lucro);
   const luc=dados.filter(p=>p.lucro>0).length, prej=dados.filter(p=>p.lucro<0).length;
   document.getElementById('produtos-lucrativos').textContent=luc;
   document.getElementById('produtos-prejuizo').textContent=prej;
@@ -4811,223 +5174,6 @@ function mostrarSecaoAdmin() {
     }
 }
 
-// ============================================
-// PONTO DE EQUILÍBRIO (BREAK-EVEN)
-// ============================================
-
-function calcularPontoEquilibrio() {
-  // Pegar o primeiro dia do mês atual
-  const hoje = new Date();
-  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const primeiroDiaStr = primeiroDiaMes.toISOString().split('T')[0];
-  
-  // 1. Custos Fixos do mês (gastos sem produto específico)
-  const custosFixos = gastos.filter(g => {
-    if (!g?.valor) return false;
-    const dataGasto = new Date(g.data);
-    return dataGasto >= primeiroDiaMes && (!g.produto || g.produto === '');
-  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
-  
-  // 2. Adicionar custos de produção do mês (todos são variáveis)
-  const custosProducaoMes = producoes.filter(p => {
-    if (!p?.total) return false;
-    const dataProd = new Date(p.data);
-    return dataProd >= primeiroDiaMes;
-  }).reduce((s, p) => s + (Number(p.total) || 0), 0);
-  
-  // 3. Custos Variáveis totais do mês (gastos com produto específico)
-  const custosVariaveis = gastos.filter(g => {
-    if (!g?.valor) return false;
-    const dataGasto = new Date(g.data);
-    return dataGasto >= primeiroDiaMes && g.produto && g.produto !== '';
-  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
-  
-  const totalCustosVariaveis = custosProducaoMes + custosVariaveis;
-  
-  // 4. Vendas do mês (quantidade e valor)
-  const vendasMes = vendas.filter(v => {
-    if (!v?.total) return false;
-    const dataVenda = new Date(v.data);
-    return dataVenda >= primeiroDiaMes;
-  });
-  
-  const totalVendasValor = vendasMes.reduce((s, v) => s + (Number(v.total) || 0), 0);
-  
-  // 5. Calcular quantidade total vendida em KG (normalizado)
-  let totalQuilosVendidos = 0;
-  vendasMes.forEach(v => {
-    const qtd = Number(v.qtd) || 0;
-    const u = (v.unidade || '').toLowerCase();
-    if (u === 'kg' || u === 'quilo' || u === 'quilograma') {
-      totalQuilosVendidos += qtd;
-    } else if (u === 'balde') {
-      totalQuilosVendidos += qtd * 20;
-    } else if (u === 'caixa') {
-      totalQuilosVendidos += qtd * 15;
-    } else if (u === 'saco') {
-      totalQuilosVendidos += qtd * 30;
-    } else if (u === 'un' || u === 'unidade') {
-      totalQuilosVendidos += qtd * 0.5;
-    } else {
-      totalQuilosVendidos += qtd;
-    }
-  });
-  
-  // 6. Calcular preço médio por kg
-  const precoMedioKg = totalQuilosVendidos > 0 ? totalVendasValor / totalQuilosVendidos : 0;
-  
-  // 7. Calcular custo variável médio por kg
-  const custoVariavelMedioKg = totalQuilosVendidos > 0 ? totalCustosVariaveis / totalQuilosVendidos : 0;
-  
-  // 8. Margem de contribuição por kg
-  const margemContribuicaoKg = precoMedioKg - custoVariavelMedioKg;
-  
-  // 9. Ponto de equilíbrio em kg
-  const pontoEquilibrioKg = margemContribuicaoKg > 0 ? custosFixos / margemContribuicaoKg : 0;
-  
-  // 10. Atualizar o HTML
-  document.getElementById('be-preco-medio').textContent = formatMoney(precoMedioKg) + '/kg';
-  document.getElementById('be-custo-variavel').textContent = formatMoney(custoVariavelMedioKg) + '/kg';
-  document.getElementById('be-margem-contribuicao').textContent = formatMoney(margemContribuicaoKg) + '/kg';
-  
-  const pontoFormatado = pontoEquilibrioKg.toFixed(0);
-  document.getElementById('be-ponto-equilibrio').textContent = `${pontoFormatado} kg`;
-  
-  // Gerar descrição personalizada
-  const nomeMes = hoje.toLocaleString('pt-BR', { month: 'long' });
-  let descricao = '';
-  
-  if (pontoEquilibrioKg <= 0) {
-    descricao = `⚠️ Sem dados suficientes para calcular o ponto de equilíbrio. Adicione vendas e custos.`;
-    document.getElementById('be-ponto-equilibrio').style.color = '#fbbf24';
-  } else if (totalQuilosVendidos >= pontoEquilibrioKg) {
-    const excedente = totalQuilosVendidos - pontoEquilibrioKg;
-    descricao = `✅ Você já ultrapassou o ponto de equilíbrio! Vendeu ${totalQuilosVendidos.toFixed(0)} kg e está ${excedente.toFixed(0)} kg acima do necessário. Lucro garantido! 🎉`;
-    document.getElementById('be-ponto-equilibrio').style.color = '#4ade80';
-  } else {
-    const faltam = pontoEquilibrioKg - totalQuilosVendidos;
-    descricao = `⚠️ Você precisa vender mais ${faltam.toFixed(0)} kg para atingir o ponto de equilíbrio. Continue! 💪`;
-    document.getElementById('be-ponto-equilibrio').style.color = '#fbbf24';
-  }
-  
-  document.getElementById('be-descricao').textContent = descricao;
-  
-  // Atualizar footer com informações do mês
-  const mesAno = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-  const custosFixosFormatado = formatMoney(custosFixos);
-  document.getElementById('be-footer').innerHTML = `⚖️ Ponto de equilíbrio baseado nos custos fixos de ${mesAno} (${custosFixosFormatado}) · Margem de contribuição: ${formatMoney(margemContribuicaoKg)}/kg`;
-}
-
-// ============================================
-// PONTO DE EQUILÍBRIO POR PRODUTO (COMPLETO)
-// ============================================
-
-function calcularPontoEquilibrioProduto(produto) {
-  if (!produto) {
-    const card = document.getElementById('break-even-produto-card');
-    if (card) card.style.display = 'none';
-    return;
-  }
-  
-  const card = document.getElementById('break-even-produto-card');
-  if (card) card.style.display = 'block';
-  document.getElementById('be-produto-nome').textContent = produto;
-  
-  const hoje = new Date();
-  const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  
-  // ========== 1. VENDAS DO PRODUTO NO MÊS ==========
-  const vendasProduto = vendas.filter(v => {
-    if (!v?.total) return false;
-    const dataVenda = new Date(v.data);
-    return dataVenda >= primeiroDiaMes && v.produto === produto;
-  });
-  
-  const totalVendasValor = vendasProduto.reduce((s, v) => s + (Number(v.total) || 0), 0);
-  
-  // Calcular quantidade total em KG
-  let totalQuilosVendidos = 0;
-  vendasProduto.forEach(v => {
-    const qtd = Number(v.qtd) || 0;
-    const u = (v.unidade || '').toLowerCase();
-    if (u === 'kg' || u === 'quilo' || u === 'quilograma') {
-      totalQuilosVendidos += qtd;
-    } else if (u === 'balde') {
-      totalQuilosVendidos += qtd * 20;
-    } else if (u === 'caixa') {
-      totalQuilosVendidos += qtd * 15;
-    } else if (u === 'saco') {
-      totalQuilosVendidos += qtd * 30;
-    } else {
-      totalQuilosVendidos += qtd;
-    }
-  });
-  
-  // ========== 2. CUSTOS ==========
-  // Custos de produção
-  const custosProducao = producoes.filter(p => {
-    if (!p?.total) return false;
-    const dataProd = new Date(p.data);
-    return dataProd >= primeiroDiaMes && p.produto === produto;
-  }).reduce((s, p) => s + (Number(p.total) || 0), 0);
-  
-  // Gastos específicos do produto
-  const gastosEspecificos = gastos.filter(g => {
-    if (!g?.valor) return false;
-    const dataGasto = new Date(g.data);
-    return dataGasto >= primeiroDiaMes && g.produto === produto;
-  }).reduce((s, g) => s + (Number(g.valor) || 0), 0);
-  
-  const custoTotal = custosProducao + gastosEspecificos;
-  
-  // ========== 3. PREÇO MÉDIO ==========
-  const precoMedioKg = totalQuilosVendidos > 0 ? totalVendasValor / totalQuilosVendidos : 0;
-  
-  // ========== 4. PONTOS DE EQUILÍBRIO ==========
-  const peProducao = precoMedioKg > 0 ? custosProducao / precoMedioKg : 0;
-  const peGastos = precoMedioKg > 0 ? gastosEspecificos / precoMedioKg : 0;
-  const peTotal = precoMedioKg > 0 ? custoTotal / precoMedioKg : 0;
-  
-  // ========== 5. ATUALIZAR HTML ==========
-  document.getElementById('be-prod-preco').textContent = formatMoney(precoMedioKg) + '/kg';
-  document.getElementById('be-prod-custo-producao').textContent = formatMoney(custosProducao);
-  document.getElementById('be-prod-gastos-especificos').textContent = formatMoney(gastosEspecificos);
-  
-  document.getElementById('be-prod-pe-producao').textContent = `${peProducao.toFixed(0)} kg`;
-  document.getElementById('be-prod-pe-gastos').textContent = `${peGastos.toFixed(0)} kg`;
-  document.getElementById('be-prod-pe-total').textContent = `${peTotal.toFixed(0)} kg`;
-  
-  // ========== 6. STATUS ATUAL ==========
-  const statusElement = document.getElementById('be-prod-status');
-  const descElement = document.getElementById('be-prod-descricao');
-  
-  if (totalQuilosVendidos === 0) {
-    statusElement.textContent = `0 kg vendidos`;
-    descElement.textContent = `⚠️ Você ainda não vendeu ${produto} neste mês. Comece a vender!`;
-    statusElement.style.color = '#fbbf24';
-  } else {
-    statusElement.textContent = `${totalQuilosVendidos.toFixed(0)} kg vendidos`;
-    
-    if (totalQuilosVendidos >= peTotal) {
-      const excedente = totalQuilosVendidos - peTotal;
-      descElement.textContent = `✅ Você ultrapassou o ponto de equilíbrio total! Vendeu ${totalQuilosVendidos.toFixed(0)} kg e está ${excedente.toFixed(0)} kg acima. Todo kg extra é lucro! 🎉`;
-      statusElement.style.color = '#4ade80';
-    } else if (totalQuilosVendidos >= peProducao) {
-      const faltam = peTotal - totalQuilosVendidos;
-      descElement.textContent = `📈 Você já pagou os custos de produção! Faltam ${faltam.toFixed(0)} kg para pagar os gastos específicos e começar a lucrar. Continue! 💪`;
-      statusElement.style.color = '#fbbf24';
-    } else {
-      const faltamProducao = peProducao - totalQuilosVendidos;
-      descElement.textContent = `⚠️ Faltam ${faltamProducao.toFixed(0)} kg para pagar apenas os custos de produção. Depois disso, faltará mais ${peGastos.toFixed(0)} kg para pagar os gastos específicos.`;
-      statusElement.style.color = '#fbbf24';
-    }
-  }
-  
-  // ========== 7. FOOTER ==========
-  const mesAno = hoje.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-  document.getElementById('be-prod-footer').innerHTML = `⚖️ Ponto de equilíbrio em kg = (custo total) ÷ (preço médio R$ ${formatMoney(precoMedioKg)}/kg) · Dados de ${mesAno}`;
-}
-  
 
 // ============================================
 // MENU
