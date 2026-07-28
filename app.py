@@ -338,7 +338,24 @@ def criar_tabelas():
             )
         ''')
         print("✅ Tabela 'gastos' criada/verificada")
-        
+
+        # Tabela de movimentações de estoque
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS estoque_movimentacoes (
+                id VARCHAR(50) PRIMARY KEY,
+                data DATE NOT NULL,
+                produto VARCHAR(255) NOT NULL,
+                unidade VARCHAR(50) NOT NULL,
+                tipo VARCHAR(10) NOT NULL,
+                qtd DECIMAL(10,2) NOT NULL,
+                obs TEXT,
+                venda_id VARCHAR(50) REFERENCES vendas(id) ON DELETE CASCADE,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("✅ Tabela 'estoque_movimentacoes' criada/verificada")
+
         # Tabela de vínculos consultor-cliente
         cur.execute('''
             CREATE TABLE IF NOT EXISTS vinculos_consultor (
@@ -526,10 +543,20 @@ def create_venda():
         INSERT INTO vendas (id, data, produto, cliente, area, unidade, qtd, valor_unit, total, usuario_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
-        data['id'], data['data'], data['produto'], 
-        data.get('cliente', ''), data.get('area', ''), 
+        data['id'], data['data'], data['produto'],
+        data.get('cliente', ''), data.get('area', ''),
         data['unidade'], data['qtd'], data['valorUnit'], data['total'], request.target_user_id
     ))
+
+    if data.get('deduzirEstoque'):
+        cur.execute('''
+            INSERT INTO estoque_movimentacoes (id, data, produto, unidade, tipo, qtd, obs, venda_id, usuario_id)
+            VALUES (%s, %s, %s, %s, 'saida', %s, %s, %s, %s)
+        ''', (
+            data['id'] + '-est', data['data'], data['produto'], data['unidade'],
+            data['qtd'], 'Saída automática por venda', data['id'], request.target_user_id
+        ))
+
     conn.commit()
     cur.close()
     conn.close()
@@ -591,13 +618,62 @@ def create_gasto():
 def delete_gasto(id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s', 
+    cur.execute('DELETE FROM gastos WHERE id = %s AND usuario_id = %s',
                 (id, request.target_user_id))
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({'message': 'Gasto deletado'})
 
+# ========== API ESTOQUE ==========
+@app.route('/api/estoque', methods=['GET'])
+@token_required
+@context_required
+def get_estoque():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM estoque_movimentacoes WHERE usuario_id = %s ORDER BY data DESC, created_at DESC',
+                (request.target_user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return jsonify(list(rows))
+
+@app.route('/api/estoque', methods=['POST'])
+@token_required
+@context_required
+@require_write_permission
+def create_estoque():
+    data = request.json
+    if data.get('tipo') not in ('entrada', 'saida'):
+        return jsonify({'error': "Tipo deve ser 'entrada' ou 'saida'"}), 400
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO estoque_movimentacoes (id, data, produto, unidade, tipo, qtd, obs, usuario_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    ''', (
+        data['id'], data['data'], data['produto'], data['unidade'],
+        data['tipo'], data['qtd'], data.get('obs', ''), request.target_user_id
+    ))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Movimentação de estoque criada'}), 201
+
+@app.route('/api/estoque/<id>', methods=['DELETE'])
+@token_required
+@context_required
+@require_write_permission
+def delete_estoque(id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM estoque_movimentacoes WHERE id = %s AND usuario_id = %s AND venda_id IS NULL',
+                (id, request.target_user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Movimentação removida'})
 
 
 @app.route('/add-tipo-column')
