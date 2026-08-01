@@ -1,0 +1,231 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBRO
+}
+
+enum Produto {
+  CASTANHA
+  LENHA
+  ACEROLA
+  CAJU
+  OUTRO
+}
+
+enum UnidadeMedida {
+  KG
+  BALDE
+  CAIXA
+  UNIDADE
+  OUTRO
+}
+
+/// Categoria do lançamento em Despesa — cobre tanto custos de produção quanto despesas gerais;
+/// o campo Despesa.custoProducao é que decide em qual balde do lucro líquido ele cai.
+enum CategoriaDespesa {
+  COLHEITA
+  MAO_DE_OBRA
+  ADUBO
+  COMBUSTIVEL
+  MANUTENCAO
+  INSUMOS
+  OUTROS
+}
+
+enum TipoMovimentacaoEstoque {
+  ENTRADA
+  SAIDA
+}
+
+enum FrequenciaRelatorio {
+  DIARIO
+  SEMANAL
+  MENSAL
+}
+
+model Fazenda {
+  id        String   @id @default(cuid())
+  nome      String
+  cidade    String?
+  estado    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  usuarios             Usuario[]
+  vendas               Venda[]
+  despesas             Despesa[]
+  estoqueMovimentacoes EstoqueMovimentacao[]
+  estoqueSaldos        EstoqueSaldo[]
+  configuracoesEmail   ConfiguracaoEmail[]
+  auditLogs            AuditLog[]
+
+  @@map("fazendas")
+}
+
+model Usuario {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  senhaHash      String   @map("senha_hash")
+  nome           String?
+  ativo          Boolean  @default(true)
+  role           Role     @default(MEMBRO)
+  sessionVersion Int      @default(0) @map("session_version")
+  fazendaId      String?  @map("fazenda_id")
+  fazenda        Fazenda? @relation(fields: [fazendaId], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  vendasCriadas     Venda[]               @relation("VendaCriadoPor")
+  despesasCriadas   Despesa[]             @relation("DespesaCriadoPor")
+  movimentosCriados EstoqueMovimentacao[] @relation("MovimentoCriadoPor")
+  configuracaoEmail ConfiguracaoEmail?
+  resetTokens       PasswordResetToken[]
+  auditLogs         AuditLog[]
+
+  @@map("usuarios")
+}
+
+model Venda {
+  id          String        @id
+  fazendaId   String        @map("fazenda_id")
+  fazenda     Fazenda       @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  criadoPorId Int?          @map("usuario_id")
+  criadoPor   Usuario?      @relation("VendaCriadoPor", fields: [criadoPorId], references: [id])
+  area        String?
+  data        DateTime      @db.Date
+  produto     Produto
+  cliente     String?
+  unidade     UnidadeMedida
+  qtd         Decimal       @db.Decimal(10, 2)
+  valorUnit   Decimal       @map("valor_unit") @db.Decimal(10, 2)
+  total       Decimal       @db.Decimal(10, 2)
+  safra       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  estoqueMovimentacoes EstoqueMovimentacao[]
+
+  @@index([fazendaId, data])
+  @@map("vendas")
+}
+
+/// Unifica os antigos "Custos de Colheita" (Producao) e "Despesas Gerais" (Gasto):
+/// cada lançamento tem uma categoria e uma marcação explícita `custoProducao` que decide
+/// se ele entra no custo de produção de um produto específico ou como despesa geral do negócio.
+model Despesa {
+  id            String           @id
+  fazendaId     String           @map("fazenda_id")
+  fazenda       Fazenda          @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  criadoPorId   Int?             @map("usuario_id")
+  criadoPor     Usuario?         @relation("DespesaCriadoPor", fields: [criadoPorId], references: [id])
+  data          DateTime         @db.Date
+  categoria     CategoriaDespesa
+  custoProducao Boolean          @default(false) @map("custo_producao")
+  produto       Produto?
+  area          String?
+  qtd           Decimal?         @db.Decimal(10, 2)
+  unidade       UnidadeMedida?
+  valorUnit     Decimal?         @map("valor_unit") @db.Decimal(10, 2)
+  total         Decimal          @db.Decimal(10, 2)
+  obs           String?
+  safra         String?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@index([fazendaId, data])
+  @@index([fazendaId, custoProducao])
+  @@map("despesas")
+}
+
+model EstoqueMovimentacao {
+  id            String                  @id
+  fazendaId     String                  @map("fazenda_id")
+  fazenda       Fazenda                 @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  criadoPorId   Int?                    @map("usuario_id")
+  criadoPor     Usuario?                @relation("MovimentoCriadoPor", fields: [criadoPorId], references: [id])
+  data          DateTime                @db.Date
+  produto       Produto
+  unidade       UnidadeMedida
+  tipo          TipoMovimentacaoEstoque
+  qtd           Decimal                 @db.Decimal(10, 2)
+  custoUnitario Decimal?                @map("custo_unitario") @db.Decimal(10, 2)
+  valorTotal    Decimal?                @map("valor_total") @db.Decimal(10, 2)
+  obs           String?
+  vendaId       String?                 @map("venda_id")
+  venda         Venda?                  @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  createdAt     DateTime                @default(now()) @map("created_at")
+
+  @@index([fazendaId, produto, data])
+  @@map("estoque_movimentacoes")
+}
+
+/// Current weighted-average balance per produto/unidade, maintained transactionally
+model EstoqueSaldo {
+  id              String        @id @default(cuid())
+  fazendaId       String        @map("fazenda_id")
+  fazenda         Fazenda       @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  produto         Produto
+  unidade         UnidadeMedida
+  qtdAtual        Decimal       @default(0) @map("qtd_atual") @db.Decimal(10, 2)
+  custoMedioAtual Decimal       @default(0) @map("custo_medio_atual") @db.Decimal(10, 2)
+  valorTotalAtual Decimal       @default(0) @map("valor_total_atual") @db.Decimal(10, 2)
+  qtdMinima       Decimal?      @map("qtd_minima") @db.Decimal(10, 2)
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@unique([fazendaId, produto, unidade])
+  @@map("estoque_saldos")
+}
+
+model ConfiguracaoEmail {
+  id            String                @id @default(cuid())
+  fazendaId     String                @map("fazenda_id")
+  fazenda       Fazenda               @relation(fields: [fazendaId], references: [id], onDelete: Cascade)
+  usuarioId     Int                   @unique @map("usuario_id")
+  usuario       Usuario               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  emailDestino  String                @map("email_destino")
+  frequencias   FrequenciaRelatorio[]
+  horario       String
+  ativo         Boolean               @default(true)
+  ultimoEnvioEm DateTime?             @map("ultimo_envio_em")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  @@map("configuracoes_email")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  fazendaId    String?  @map("fazenda_id")
+  fazenda      Fazenda? @relation(fields: [fazendaId], references: [id])
+  usuarioId    Int?     @map("usuario_id")
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id])
+  acao         String
+  entidade     String?
+  entidadeId   String?  @map("entidade_id")
+  detalhesJson Json?    @map("detalhes_json")
+  ip           String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([fazendaId, createdAt])
+  @@map("audit_logs")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  usuarioId Int       @map("usuario_id")
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+}

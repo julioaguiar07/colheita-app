@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# local AI tooling skill caches (not app code)
+/.agents/
+/.claude/
+/.windsurf/
+/skills-lock.json
