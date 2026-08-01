@@ -10,7 +10,8 @@ import { PeriodoSelect } from "@/components/dashboard/periodo-select";
 import { ProdutoSelect } from "@/components/produtos/produto-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PRODUTO_LABEL, formatBRL } from "@/lib/format";
-import { Produto, UnidadeMedida } from "@/generated/prisma/enums";
+import { Produto } from "@/generated/prisma/enums";
+import { somaEmKg } from "@/lib/financeiro/unidades";
 
 export const metadata: Metadata = { title: "Produtos — AGROcore" };
 
@@ -51,26 +52,29 @@ export default async function ProdutosPage({
     ? (produtoParam as Produto)
     : disponiveis[0];
 
-  const [resumo, qtdVendidaKg, qtdProduzidaKg] = await Promise.all([
+  const [resumo, vendasQtd, despesasQtd] = await Promise.all([
     getResumoFinanceiro({ fazendaId: usuario.fazendaId, periodoInicio: inicio, periodoFim: fim, produto: produtoSelecionado }),
-    db.venda.aggregate({
-      where: { fazendaId: usuario.fazendaId, produto: produtoSelecionado, unidade: UnidadeMedida.KG, data: { gte: inicio, lte: fim } },
-      _sum: { qtd: true },
+    db.venda.findMany({
+      where: { fazendaId: usuario.fazendaId, produto: produtoSelecionado, data: { gte: inicio, lte: fim } },
+      select: { qtd: true, unidade: true },
     }),
-    db.despesa.aggregate({
+    db.despesa.findMany({
       where: {
         fazendaId: usuario.fazendaId,
         produto: produtoSelecionado,
         custoProducao: true,
-        unidade: UnidadeMedida.KG,
+        unidade: { not: null },
+        qtd: { not: null },
         data: { gte: inicio, lte: fim },
       },
-      _sum: { qtd: true },
+      select: { qtd: true, unidade: true },
     }),
   ]);
 
-  const qtdVendida = Number(qtdVendidaKg._sum.qtd ?? 0);
-  const qtdProduzida = Number(qtdProduzidaKg._sum.qtd ?? 0);
+  const qtdVendida = somaEmKg(vendasQtd.map((v) => ({ qtd: Number(v.qtd), unidade: v.unidade })));
+  const qtdProduzida = somaEmKg(
+    despesasQtd.map((d) => ({ qtd: Number(d.qtd), unidade: d.unidade! }))
+  );
   const precoMedioKg = qtdVendida > 0 ? resumo.receitaVendas / qtdVendida : null;
   const custoMedioKg = qtdProduzida > 0 ? resumo.custosColheita / qtdProduzida : null;
   const margemPorKg = precoMedioKg !== null && custoMedioKg !== null ? precoMedioKg - custoMedioKg : null;
