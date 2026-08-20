@@ -5,21 +5,32 @@ import { db } from "@/lib/db";
 import { deleteMovimentacao } from "@/lib/actions/estoque";
 import { NovaMovimentacaoDialog } from "@/components/forms/nova-movimentacao-dialog";
 import { DeleteButton } from "@/components/forms/delete-button";
+import { QuerySelectFilter } from "@/components/tables/query-select-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PRODUTO_LABEL, UNIDADE_LABEL, formatBRL } from "@/lib/format";
+import { Produto, TipoMovimentacaoEstoque } from "@/generated/prisma/enums";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Estoque — AGROcore" };
 
-export default async function EstoquePage() {
+export default async function EstoquePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ produto?: string; tipo?: string }>;
+}) {
   const usuario = await requireFazenda();
+  const { produto, tipo } = await searchParams;
 
   const [saldos, movimentos] = await Promise.all([
     db.estoqueSaldo.findMany({ where: { fazendaId: usuario.fazendaId }, orderBy: { produto: "asc" } }),
     db.estoqueMovimentacao.findMany({
-      where: { fazendaId: usuario.fazendaId },
+      where: {
+        fazendaId: usuario.fazendaId,
+        ...(produto ? { produto: produto as Produto } : {}),
+        ...(tipo ? { tipo: tipo as TipoMovimentacaoEstoque } : {}),
+      },
       orderBy: [{ data: "desc" }, { createdAt: "desc" }],
       take: 300,
     }),
@@ -75,6 +86,23 @@ export default async function EstoquePage() {
           <CardTitle>Movimentações</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <QuerySelectFilter
+              paramName="produto"
+              placeholder="Produto"
+              allLabel="Todos os produtos"
+              options={Object.entries(PRODUTO_LABEL).map(([value, label]) => ({ value, label }))}
+            />
+            <QuerySelectFilter
+              paramName="tipo"
+              placeholder="Tipo"
+              allLabel="Todos os tipos"
+              options={[
+                { value: "ENTRADA", label: "Entrada" },
+                { value: "SAIDA", label: "Saída" },
+              ]}
+            />
+          </div>
           <Table>
             <TableHeader>
               <TableRow>

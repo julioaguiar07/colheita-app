@@ -26,8 +26,10 @@ export default async function ProdutosPage({
 
   const [produtosVendas, produtosDespesas] = await Promise.all([
     db.venda.findMany({ where: { fazendaId: usuario.fazendaId }, select: { produto: true }, distinct: ["produto"] }),
+    // Qualquer despesa vinculada a um produto entra na lista — custo de produção ou não,
+    // já que o vínculo com produto é independente da classificação do lançamento.
     db.despesa.findMany({
-      where: { fazendaId: usuario.fazendaId, custoProducao: true },
+      where: { fazendaId: usuario.fazendaId, produto: { not: null } },
       select: { produto: true },
       distinct: ["produto"],
     }),

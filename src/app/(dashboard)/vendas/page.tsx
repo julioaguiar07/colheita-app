@@ -15,15 +15,28 @@ export const metadata: Metadata = { title: "Vendas — AGROcore" };
 export default async function VendasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ produto?: string }>;
+  searchParams: Promise<{ produto?: string; cliente?: string }>;
 }) {
   const usuario = await requireFazenda();
-  const { produto } = await searchParams;
+  const { produto, cliente } = await searchParams;
+
+  // Cliente é texto livre — as opções do filtro vêm dos valores já registrados.
+  const clientesRegistrados = await db.venda.findMany({
+    where: { fazendaId: usuario.fazendaId, cliente: { not: null } },
+    select: { cliente: true },
+    distinct: ["cliente"],
+    orderBy: { cliente: "asc" },
+  });
+  const opcoesCliente = clientesRegistrados
+    .map((v) => v.cliente!.trim())
+    .filter((c) => c.length > 0)
+    .map((c) => ({ value: c, label: c }));
 
   const vendas = await db.venda.findMany({
     where: {
       fazendaId: usuario.fazendaId,
       ...(produto ? { produto: produto as Produto } : {}),
+      ...(cliente ? { cliente } : {}),
     },
     orderBy: [{ data: "desc" }, { createdAt: "desc" }],
     take: 300,
@@ -58,6 +71,14 @@ export default async function VendasPage({
           allLabel="Todos os produtos"
           options={Object.entries(PRODUTO_LABEL).map(([value, label]) => ({ value, label }))}
         />
+        {opcoesCliente.length > 0 && (
+          <QuerySelectFilter
+            paramName="cliente"
+            placeholder="Cliente"
+            allLabel="Todos os clientes"
+            options={opcoesCliente}
+          />
+        )}
       </div>
 
       {topClientes.length > 0 && (

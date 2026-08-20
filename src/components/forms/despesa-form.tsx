@@ -12,8 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CATEGORIA_DESPESA_LABEL, PRODUTO_LABEL, UNIDADE_LABEL, formatBRL } from "@/lib/format";
 
 const CATEGORIAS = Object.entries(CATEGORIA_DESPESA_LABEL);
-const PRODUTOS = Object.entries(PRODUTO_LABEL);
 const UNIDADES = Object.entries(UNIDADE_LABEL);
+
+/** Sentinela para "sem vínculo com produto" — normalizada para null na Server Action. */
+export const PRODUTO_NENHUM = "NENHUM";
+const PRODUTO_ITEMS = { [PRODUTO_NENHUM]: "Nenhum produto", ...PRODUTO_LABEL };
+const PRODUTOS = Object.entries(PRODUTO_ITEMS);
 
 export function DespesaForm({ onSuccess }: { onSuccess?: () => void }) {
   const [state, action, pending] = useActionState(createDespesa, undefined);
@@ -66,29 +70,33 @@ export function DespesaForm({ onSuccess }: { onSuccess?: () => void }) {
         <Field orientation="horizontal" className="items-center justify-between rounded-lg border border-border px-3 py-2.5">
           <div className="flex flex-col">
             <FieldLabel htmlFor="custo-producao-switch">Custo de produção</FieldLabel>
-            <span className="text-xs text-muted-foreground">Vinculado a um produto específico</span>
+            <span className="text-xs text-muted-foreground">
+              Entra no cálculo de custo de produção, com ou sem produto vinculado
+            </span>
           </div>
           <Switch id="custo-producao-switch" checked={custoProducao} onCheckedChange={setCustoProducao} />
         </Field>
 
-        {custoProducao && (
-          <Field data-invalid={!!state?.errors?.produto}>
-            <FieldLabel htmlFor="produto">Produto</FieldLabel>
-            <Select name="produto" items={PRODUTO_LABEL}>
-              <SelectTrigger id="produto" className="w-full">
-                <SelectValue placeholder="Selecione o produto" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRODUTOS.map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldError errors={state?.errors?.produto?.map((message) => ({ message }))} />
-          </Field>
-        )}
+        <Field data-invalid={!!state?.errors?.produto}>
+          <FieldLabel htmlFor="produto">Produto (opcional)</FieldLabel>
+          <Select name="produto" items={PRODUTO_ITEMS} defaultValue={PRODUTO_NENHUM}>
+            <SelectTrigger id="produto" className="w-full">
+              <SelectValue placeholder="Nenhum produto" />
+            </SelectTrigger>
+            <SelectContent>
+              {PRODUTOS.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground">
+            Vincule a um produto para organizar a análise. Deixe em &quot;Nenhum produto&quot; se o lançamento não for
+            atribuível a um produto específico.
+          </span>
+          <FieldError errors={state?.errors?.produto?.map((message) => ({ message }))} />
+        </Field>
 
         <div className="grid grid-cols-3 gap-3">
           <Field>

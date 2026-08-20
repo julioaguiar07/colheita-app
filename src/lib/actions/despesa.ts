@@ -9,14 +9,20 @@ import { DespesaFormSchema, type DespesaFormState } from "@/lib/validation/despe
 import { flattenFieldErrors } from "@/lib/validation/utils";
 import type { Produto, UnidadeMedida } from "@/generated/prisma/enums";
 
+/** Sentinela do <Select> de produto para "sem vínculo" — vira null no banco. */
+const PRODUTO_NENHUM = "NENHUM";
+
 export async function createDespesa(_state: DespesaFormState, formData: FormData): Promise<DespesaFormState> {
   const usuario = await requireFazenda();
+
+  const produtoRaw = formData.get("produto");
+  const produto = !produtoRaw || produtoRaw === PRODUTO_NENHUM ? "" : produtoRaw;
 
   const validated = DespesaFormSchema.safeParse({
     data: formData.get("data"),
     categoria: formData.get("categoria"),
     custoProducao: formData.get("custoProducao") ?? "false",
-    produto: formData.get("produto") ?? "",
+    produto,
     qtd: formData.get("qtd") ?? "",
     unidade: formData.get("unidade") ?? "",
     valorUnit: formData.get("valorUnit") ?? "",

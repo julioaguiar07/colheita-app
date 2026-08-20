@@ -14,10 +14,11 @@ export const DespesaFormSchema = z
     obs: z.string().optional(),
     safra: z.string().optional(),
   })
-  .refine((data) => !data.custoProducao || !!data.produto, {
-    error: "Selecione o produto quando o lançamento é custo de produção.",
-    path: ["produto"],
-  })
+  // Nota: "custo de produção" e "vínculo com produto" são informações independentes.
+  // Um custo de produção continua sendo custo de produção mesmo sem produto vinculado
+  // (ex.: pagamento de funcionário que não é atribuível a um produto específico), e uma
+  // despesa geral também pode estar vinculada a um produto. Por isso não há refine
+  // obrigando produto quando custoProducao é true.
   .refine((data) => (data.qtd && data.valorUnit) || (data.total && Number(data.total) > 0), {
     error: "Informe quantidade + valor unitário, ou um valor total.",
     path: ["total"],

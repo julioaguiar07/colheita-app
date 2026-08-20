@@ -9,17 +9,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CATEGORIA_DESPESA_LABEL, PRODUTO_LABEL, formatBRL } from "@/lib/format";
-import { CategoriaDespesa } from "@/generated/prisma/enums";
+import { CategoriaDespesa, Produto } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Despesas — AGROcore" };
+
+/** Valor do filtro de produto para lançamentos sem vínculo com produto. */
+const SEM_PRODUTO = "sem-produto";
 
 export default async function DespesasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ categoria?: string; tipo?: string }>;
+  searchParams: Promise<{ categoria?: string; tipo?: string; produto?: string }>;
 }) {
   const usuario = await requireFazenda();
-  const { categoria, tipo } = await searchParams;
+  const { categoria, tipo, produto } = await searchParams;
+
+  const filtroProduto =
+    produto === SEM_PRODUTO ? { produto: null } : produto ? { produto: produto as Produto } : {};
 
   const despesas = await db.despesa.findMany({
     where: {
@@ -27,6 +33,7 @@ export default async function DespesasPage({
       ...(categoria ? { categoria: categoria as CategoriaDespesa } : {}),
       ...(tipo === "producao" ? { custoProducao: true } : {}),
       ...(tipo === "geral" ? { custoProducao: false } : {}),
+      ...filtroProduto,
     },
     orderBy: [{ data: "desc" }, { createdAt: "desc" }],
     take: 300,
@@ -40,7 +47,7 @@ export default async function DespesasPage({
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Despesas</h1>
           <p className="text-sm text-muted-foreground">
-            Custos de produção (vinculados a um produto) e despesas gerais do negócio.
+            Custos de produção e despesas gerais. O vínculo com um produto é opcional e independente do tipo.
           </p>
         </div>
         <NovaDespesaDialog />
@@ -62,6 +69,15 @@ export default async function DespesasPage({
           allLabel="Todas as categorias"
           options={Object.entries(CATEGORIA_DESPESA_LABEL).map(([value, label]) => ({ value, label }))}
         />
+        <QuerySelectFilter
+          paramName="produto"
+          placeholder="Produto"
+          allLabel="Todos os produtos"
+          options={[
+            ...Object.entries(PRODUTO_LABEL).map(([value, label]) => ({ value, label })),
+            { value: SEM_PRODUTO, label: "Sem produto vinculado" },
+          ]}
+        />
       </div>
 
       <Card>
@@ -73,6 +89,7 @@ export default async function DespesasPage({
                 <TableHead>Categoria</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Produto</TableHead>
+                <TableHead>Observação</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
@@ -92,6 +109,9 @@ export default async function DespesasPage({
                   <TableCell className="text-muted-foreground">
                     {d.produto ? PRODUTO_LABEL[d.produto] : "—"}
                   </TableCell>
+                  <TableCell className="max-w-[16rem] truncate text-muted-foreground" title={d.obs ?? undefined}>
+                    {d.obs || "—"}
+                  </TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{formatBRL(Number(d.total))}</TableCell>
                   <TableCell>
                     <DeleteButton action={deleteDespesa.bind(null, d.id)} label="essa despesa" />
@@ -100,7 +120,7 @@ export default async function DespesasPage({
               ))}
               {despesas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhuma despesa encontrada.
                   </TableCell>
                 </TableRow>
